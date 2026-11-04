@@ -1,1 +1,0 @@
-"""One independent Python file per rotation method; discovered at runtime."""
