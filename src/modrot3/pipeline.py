@@ -366,6 +366,11 @@ def extract(args):
     print(f'Saved ALL subjects Z using ALL observed trials: {target} shape={z.shape}')
 
 
+def evaluate_np(args):
+    from .nn_eval import report
+    report(args)
+
+
 def analyze(args):
     from .analysis import report
     report(args)
@@ -373,7 +378,7 @@ def analyze(args):
 
 def main(argv=None):
     ap = argparse.ArgumentParser(description='Binary-choice generator / precheck / NP / Z / PCA & Ridge')
-    ap.add_argument('stage', choices=('generate','precheck','train','extract','analyze','all','selftest'))
+    ap.add_argument('stage', choices=('generate','precheck','train','evaluate-np','extract','analyze','all','selftest'))
     ap.add_argument('--model', choices=MODELS, default='CR3')
     ap.add_argument('--beta', type=float, default=0.0)
     ap.add_argument('--lambda-sparse', type=float, default=0.0)
@@ -412,9 +417,9 @@ def main(argv=None):
         selftest()
         return
     commands={'generate':generate,'precheck':precheck,'train':train,
-              'extract':extract,'analyze':analyze}
+              'evaluate-np':evaluate_np,'extract':extract,'analyze':analyze}
     if args.stage == 'all':
-        for stage in ('generate','precheck','train','extract','analyze'):
+        for stage in ('generate','precheck','train','evaluate-np','extract','analyze'):
             print('\n===',args.model, stage,'===',flush=True)
             commands[stage](args)
     else:

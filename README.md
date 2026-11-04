@@ -4,7 +4,7 @@
 
 The project deliberately has **two separate pipelines**:
 
-1. `baseline/`: exact C1/C2/C3/CR3 simulation, original model-specific prechecks, shared binary-choice Neural Process training, full-observed-trial latent Z, PCA and true-parameter linear Ridge evaluation.
+1. `baseline/`: exact C1/C2/C3/CR3 simulation, original model-specific prechecks, shared binary-choice Neural Process training, checkpoint predictive evaluation, full-observed-trial latent Z, PCA and true-parameter linear Ridge evaluation.
 2. `rotations/`: experiment with objective functions on **frozen** Z, X, Y. Nothing in this module retrains NP or modifies the generators. The included identity, quartic and kurtosis procedures are baseline controls, not a claim of recovering ground-truth parameters. Add future UXY objectives here.
 
 All source data/checkpoints/plots/rotation matrices are written under **`outputs/` (gitignored)**. No generated datasets or models are committed.
@@ -91,14 +91,21 @@ CR3 (native 8D, exactly beta=0):
 python baseline/run.py train --model CR3 --beta 0 --lambda-sparse 0 --latent-dim 8 --context-min 0.25 --context-max 0.80 --batch-size 128 --learning-rate 0.0005 --weight-decay 0 --max-epochs 500 --patience 50 --repeat 1 --train-seed 31 --device auto
 ```
 
-**4. Extract every subject's posterior mean Z using ALL observed trials:**
+**4. Separately report the original NP validation/TEST prediction accuracy and learning curves (no retraining):**
+
+```cmd
+python baseline/run.py evaluate-np --model C3 --beta 0.00625 --lambda-sparse 0 --latent-dim 16 --context-min 0.25 --context-max 0.80 --repeat 1
+python baseline/run.py evaluate-np --model CR3 --beta 0 --lambda-sparse 0 --latent-dim 8 --context-min 0.25 --context-max 0.80 --repeat 1
+```
+
+**5. Extract every subject's posterior mean Z using ALL observed trials:**
 
 ```cmd
 python baseline/run.py extract --model C3 --beta 0.00625 --lambda-sparse 0 --latent-dim 16 --context-min 0.25 --context-max 0.80 --repeat 1 --device auto
 python baseline/run.py extract --model CR3 --beta 0 --lambda-sparse 0 --latent-dim 8 --context-min 0.25 --context-max 0.80 --repeat 1 --device auto
 ```
 
-**5. PCA + held-out linear parameter recovery:**
+**6. PCA + held-out linear parameter recovery:**
 
 ```cmd
 python baseline/run.py analyze --model C3 --beta 0.00625 --lambda-sparse 0 --latent-dim 16 --context-min 0.25 --context-max 0.80 --repeat 1
@@ -130,6 +137,9 @@ outputs/choice/C3/
     s3_train__checkpoint.pt
     s3_train__history.csv
     s3_train__summary.json
+  s3_evaluate/<same-condition>/repeat01/
+    s3_evaluate__summary.json
+    s3_evaluate__learning_curves.png
   s4_evaluate/<same-condition>/repeat01/
     s4_evaluate__latent.npz
     s4_evaluate__summary.json
