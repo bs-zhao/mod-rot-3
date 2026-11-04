@@ -1,0 +1,13 @@
+# All generated data, checkpoints, diagnostics, figures and rotations stay local.
+outputs/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+build/
+dist/
+.venv/
+.env
+.ipynb_checkpoints/
