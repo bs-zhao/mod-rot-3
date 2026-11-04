@@ -68,7 +68,7 @@ def test_multifile_method_package_and_transitive_code_hash(tmp_path):
 
 def test_run_persists_matrix_U_and_preserves_theta_boundary(tmp_path):
     from sklearn.decomposition import PCA
-    from modrot3.rotation_engine import _run_one, discover
+    from rotations.engine import _run_one, discover
     rng = np.random.default_rng(17)
     z = rng.normal(size=(26, 4))
     tr = np.arange(15)
