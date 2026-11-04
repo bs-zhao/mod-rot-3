@@ -16,8 +16,8 @@ dependencies = [
 dev = ["pytest>=7.0"]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["np/src"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
-testpaths = ["tests"]
+pythonpath = ["np/src", "."]
+testpaths = ["np/tests", "rotations"]

@@ -31,7 +31,7 @@ from modlearn_rot.training.continuous import (
     training_condition_tag, save_checkpoint, save_history_csv, load_checkpoint,
 )
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 MODELS = ('C1', 'C2', 'C3', 'CR3')
 
 
@@ -82,7 +82,7 @@ def _run_legacy(script: Path, argv: list[str]):
 
 
 def _cr3_refs():
-    return (ROOT / 'reference' / 's0_cr2_design_recovery.py',
+    return (ROOT / 'np' / 'reference' / 's0_cr2_design_recovery.py',
             ROOT / 'reference' / 'cr3' / 's0_s1_cr3.py')
 
 

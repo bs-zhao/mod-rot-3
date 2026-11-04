@@ -31,7 +31,7 @@ from scipy.special import expit, logit
 
 HERE = Path(__file__).resolve().parent
 RESEARCH = HERE.parent
-ROOT = HERE.parents[1]
+ROOT = HERE.parents[2]
 sys.path.insert(0, str(RESEARCH))
 from s0_cr2_design_recovery import logits, sample_prior
 

@@ -16,7 +16,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 RESEARCH = HERE.parent
-ROOT = HERE.parents[1]
+ROOT = HERE.parents[2]
 sys.path[:0] = [str(HERE), str(RESEARCH),
                 str(RESEARCH / "functional_role_identifiability")]
 from s0_s1_cr3 import BANK, ORIGINAL, OUT, condition_counts, hash_file, dominance_audit

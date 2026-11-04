@@ -20,8 +20,8 @@ from scipy.special import expit
 
 HERE = Path(__file__).resolve().parent
 RESEARCH = HERE.parent
-ROOT = HERE.parents[1]
-sys.path[:0] = [str(RESEARCH), str(ROOT / "src")]
+ROOT = HERE.parents[2]
+sys.path[:0] = [str(RESEARCH), str(ROOT / "np" / "src")]
 from s0_cr2_design_recovery import sample_prior, logits, NAMES, make_candidates
 from modlearn_rot.generators.dataset import GeneratedDataset, save_dataset
 
