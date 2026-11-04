@@ -14,8 +14,13 @@ All source data/checkpoints/plots/rotation matrices are written under **`outputs
 ```text
 mod-rot-3/
   baseline/run.py                       # generate/precheck/train/extract/analyze/all
-  rotations/run.py                      # post-hoc, independent rotation methods
+  rotations/run.py                      # plugin discovery and batch execution
+  rotations/methods/                   # one file per independent loss/optimizer
+  rotations/plans/                     # JSON experiment grids
   src/modrot3/
+    rotation_api.py                    # stable theta-free plugin contract
+    rotation_engine.py                 # generic method-agnostic runner
+    rotation_data.py                   # held-out audit and padded-trial aligner
     pipeline.py                         # model-specific I/O / exact NP orchestration
     analysis.py                         # TRAIN PCA; VAL-selected Ridge; TEST scores
     rotation.py                         # frozen-ZXY rotation interface and baseline methods
@@ -125,7 +130,23 @@ python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --
 
 The default 4D CR3 rotation uses the first four TRAIN-fitted whitened PCs of the frozen native 8D Z. For a full 8D orthogonal rotation use `--representation full --rotation-dim 8`. No model is retrained and no theta is read by the rotation optimizer. The rotation writes `R`, the original Z-to-U affine matrix `A` and offset, each subject's U, a JSON loss record, and a separate postfit TEST true-parameter correlation heatmap.
 
-`src/modrot3/rotation.py` contains the **only** rotation method registry. Existing methods are intentionally simple distribution-only controls (`identity`, `quartic`, `kurtosis`); new interaction/Hessian/Functional-MDL/UXY objectives belong in this module or standalone files imported by it. No old UXR1–5 accumulation or circular imports are copied.
+**Extensible plugin architecture:** add each new rotation as its own standalone file under `rotations/methods/`. No edits to the central runner or registry are required. Each plugin owns its loss/optimizer/config/version and can return custom artifact tensors. The built-in controls are `identity`, `quartic`, `kurtosis`, and the demonstrative `xy_effect` method that uses all three ZXY. Read [`rotations/README.md`](rotations/README.md) for the plugin contract, external plugin directories, JSON experiment plans, provenance fingerprints, batch execution and held-out evaluation rules.
+
+Explore unlimited independent algorithms:
+
+```cmd
+python rotations/run.py --list-methods
+python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --methods all --continue-on-error
+python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --plan rotations/plans/example.json
+python rotations/run.py --model CR3 --summary
+```
+
+`--set METHOD.parameter=value` and `--config-file config.json` support new
+per-method hyperparameters without touching the CLI code. Every run is
+fingerprinted by plugin version/source, ZXY SHA256 and configuration; no
+collisions across model/seed/objective settings. `--plugin-dir` supports methods
+kept outside this repository. Independent errors can be isolated with
+`--continue-on-error`.
 
 ## Outputs
 
@@ -153,7 +174,7 @@ outputs/choice/C3/
     s12__theta_vs_z.png
     s12__theta_vs_pca.png
     s12__ridge_scatter.png
-  rotations/<method>/<condition>/repeat01/
+  rotations/<method>/<condition>/repeat01/run_<sha16>/
     rotation__matrix.npz
     rotation__U.npz
     rotation__fit.json
