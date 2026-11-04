@@ -10,7 +10,7 @@ def objective(q_fit, original_X, original_Y, trial_mask_or_counts, R):
     return scalar_complexity
 ```
 
-`R` is constrained to SO(k), and `U = (Z - mean_train) W.T R.T`. The equivalent affine transform in original Z coordinates is saved as `A = R W` and `offset = -A mean_train`.
+`original_X` has shape (N,T,D), `original_Y` and `trial_mask_or_counts` have shape (N,T), and all three share the exact subject rows of `q_fit`. Variable-length trials are padded and ignored by the mask. `R` is constrained to SO(k), and `U = (Z - mean_train) W.T R.T`. The equivalent affine transform in original Z coordinates is saved as `A = R W` and `offset = -A mean_train`.
 
 Included baseline controls:
 - identity — no extra orthogonal rotation of PCA-whitened q

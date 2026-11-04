@@ -111,6 +111,30 @@ def evaluate_after_freeze(theta,z,u,test,folder,method,labels):
     return report
 
 
+def aligned_observations(data):
+    """Return (N,T,D), (N,T), (N,T) arrays aligned to each subject's Z.
+
+    Original observations are unchanged; shorter C-series trial histories are
+    zero padded with a False mask and must never contribute to objective loss.
+    """
+    counts=np.asarray(data.trial_counts,dtype=int)
+    n=len(counts);t=int(counts.max());d=int(data.x.shape[1])
+    x=np.zeros((n,t,d),dtype=np.float32)
+    y=np.zeros((n,t),dtype=np.int64)
+    mask=np.zeros((n,t),dtype=bool)
+    offsets=np.r_[0,np.cumsum(counts)]
+    if offsets[-1]!=len(data.x):
+        raise ValueError('Subject trial counts disagree with data')
+    if not np.array_equal(np.asarray(data.subject_index),np.repeat(np.arange(n),counts)):
+        raise ValueError('Rotation expects preserved contiguous subject trial order')
+    for sid in range(n):
+        a,b=int(offsets[sid]),int(offsets[sid+1])
+        x[sid,:counts[sid]]=data.x[a:b]
+        y[sid,:counts[sid]]=np.asarray(data.y[a:b]).reshape(-1)
+        mask[sid,:counts[sid]]=True
+    return x,y,mask
+
+
 def main(argv=None):
     p=argparse.ArgumentParser(description='Independent frozen-ZXY rotation objectives')
     p.add_argument('--model',choices=['C1','C2','C3','CR3'],required=True)
@@ -134,8 +158,8 @@ def main(argv=None):
         if str(f['context_mode']) != 'all_observed_trials':
             raise RuntimeError('Rotation requires Z encoded using all observed trials')
     data=load_dataset(dataset_path(a.model))
-    # x,y are frozen observations passed unchanged to the metric interface.
-    x=data.x;y=data.y;mask=data.trial_counts
+    # X,Y are grouped by subject and aligned to the same IDs as rows of Z.
+    x,y,mask=aligned_observations(data)
     k = a.rotation_dim or {'C1':4,'C2':4,'C3':6,'CR3':4}[a.model]
     if k>z.shape[1] or k<2:raise ValueError('rotation-dim must be 2..latent_dim')
     pca=PCA(n_components=k,svd_solver='full').fit(z[tr])
@@ -146,9 +170,10 @@ def main(argv=None):
     q=(z-pca.mean_)@W.T
     chosen=tr if len(tr)<=a.fit_max_subjects else np.random.default_rng(a.seed).choice(tr,a.fit_max_subjects,replace=False)
     if a.fit_max_subjects<1:raise ValueError('--fit-max-subjects must be >=1')
-    # For methods needing aligned X,Y use subject index arrays; the library
-    # receives exactly the unmodified original X,Y arrays and indices.
-    R,stats=optimize(q[chosen],x,y,mask,a.method,a.starts,a.maxiter,a.seed)
+    # Every metric receives subject-aligned (U,X,Y,mask) with the SAME rows.
+    # True theta is deliberately unavailable during optimize().
+    R,stats=optimize(q[chosen],x[chosen],y[chosen],mask[chosen],
+                     a.method,a.starts,a.maxiter,a.seed)
     A=R@W
     offset=-A@pca.mean_
     u=(z@A.T)+offset
