@@ -1,0 +1,6 @@
+{
+  "starts": 4,
+  "maxiter": 200,
+  "seed": 31,
+  "optimizer": "Powell"
+}

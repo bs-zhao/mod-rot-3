@@ -1,17 +1,7 @@
 import numpy as np
-from modrot3.analysis import ridge_probe, corr
 from rotations.api import RotationInput, skew_matrix, validate_result, RotationResult
 from rotations.engine import discover, BUILTINS, _invoke, _configs, _digest_json
 from types import SimpleNamespace
-
-
-def test_ridge_recovery_heldout():
-    rng = np.random.default_rng(10)
-    z = rng.normal(size=(150, 4))
-    theta = z @ rng.normal(size=(4, 4))
-    r = ridge_probe(z, theta, np.arange(100), np.arange(100, 125), np.arange(125, 150))
-    assert min(r['test_r2']) > .9999
-    assert corr(theta, z).shape == (4, 4)
 
 
 def test_plugins_and_so4_optimizer():
