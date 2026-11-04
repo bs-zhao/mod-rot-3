@@ -13,7 +13,7 @@ from pathlib import Path
 import numpy as np
 import torch
 from modlearn_rot.generators.dataset import load_dataset
-from modlearn_rot.nn.np.point.discrete import DiscreteData
+from modlearn_rot.training.np.point.discrete import DiscreteData
 from modlearn_rot.training.continuous import stable_run_seed, training_condition_tag
 
 ROOT = Path(__file__).resolve().parents[3]
