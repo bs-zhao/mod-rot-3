@@ -88,97 +88,25 @@ def plot_corr(matrix, rows, title, target, xlabel='Latent axes'):
     fig.tight_layout();fig.savefig(target,dpi=180);plt.close(fig)
 
 
-def report(args):
-    source=latent_path(args)
-    if not source.is_file():
-        raise FileNotFoundError('Run extract first: '+str(source))
-    with np.load(source,allow_pickle=False) as f:
-        if str(f['checkpoint_sha256']) != sha256(train_path(args)):
-            raise RuntimeError('S4 Z provenance mismatch: checkpoint was changed')
-        z=np.array(f['z'],float)
-        theta=np.array(f['theta_true'],float)
-        splits={k:np.array(f[k+'_ids'],int) for k in ('train','validation','test')}
-        if str(f['context_mode'])!='all_observed_trials':
-            raise RuntimeError('Only full-trial extracted Z may be analysed')
-    if z.shape[0]!=theta.shape[0] or z.shape[1]!=args.latent_dim:
-        raise ValueError('Z and theta geometry inconsistent with model config')
-    tr,va,te=(splits[k] for k in ('train','validation','test'))
-    if not np.array_equal(np.sort(np.r_[tr,va,te]),np.arange(len(z))):
-        raise ValueError('Splits must be exhaustive and disjoint')
-    names=param_names(args.model)
-    full=ridge_probe(z,theta,tr,va,te)
-    pca=PCA(n_components=z.shape[1],svd_solver='full').fit(z[tr])
-    components=pca.transform(z)
-    curve=[]
-    for k in range(1,z.shape[1]+1):
-        metrics=ridge_probe(components[:,:k],theta,tr,va,te)
-        curve.append(dict(n_pcs=k,mean_test_r2=float(np.mean(metrics['test_r2'])),
-                          min_test_r2=float(np.min(metrics['test_r2'])),
-                          **{f'r2_{name}':float(score) for name,score in zip(names,metrics['test_r2'])}))
-    folder=stage_folder(args,'s12_z_diagnostics')
-    folder.mkdir(parents=True,exist_ok=True)
-    pc_variance=pca.explained_variance_ratio_
-    raw_corr=corr(theta[te],z[te]);pc_corr=corr(theta[te],components[te])
-    summary=dict(model=args.model,condition=condition(args),latent_dim=args.latent_dim,
-                 source_latent_sha256=sha256(source),source_checkpoint_sha256=sha256(train_path(args)),
-                 subjects={k:len(v) for k,v in splits.items()},
-                 parameter_names=names,
-                 pca=dict(explained_variance_ratio=pc_variance.tolist(),
-                          cumulative_explained_variance=np.cumsum(pc_variance).tolist(),
-                          eigenvalues=pca.explained_variance_.tolist(),
-                          train_mean=pca.mean_.tolist(),
-                          components_rows=pca.components_.tolist(),
-                          theta_vs_raw_test_corr=raw_corr.tolist(),
-                          theta_vs_pc_test_corr=pc_corr.tolist()),
-                 full_z_ridge=dict(test_r2=full['test_r2'],test_pearson_r=full['test_pearson_r'],
-                                   test_rmse=full['test_rmse'],
-                                   validation_r2=full['validation_r2'],
-                                   ridge_alpha=full['selected_ridge_alpha']),
-                 pca_k_ridge=curve,
-                 evaluation_policy='TRAIN-only PCA/standardization; VAL-only ridge selection; final FIT+VAL fit; TEST scores')
-    (folder/'s12__diagnostics.json').write_text(json.dumps(summary,indent=2),encoding='utf-8')
-    np.savez_compressed(folder/'s12__pca.npz',components=pca.components_,
-                        explained_variance=pca.explained_variance_,
-                        explained_variance_ratio=pc_variance,
-                        transformed_z=components,train_ids=tr,validation_ids=va,test_ids=te)
-    write_rows(folder/'s12__pca_ridge_curve.csv',curve)
-    results=[dict(parameter=name,test_r2=full['test_r2'][j],
-                  test_pearson_r=full['test_pearson_r'][j],
-                  test_rmse=full['test_rmse'][j],
-                  validation_r2=full['validation_r2'][j],
-                  selected_ridge_alpha=full['selected_ridge_alpha'][j])
-             for j,name in enumerate(names)]
-    write_rows(folder/'s12__full_z_ridge.csv',results)
-    s4=stage_folder(args,'s4_evaluate');s4.mkdir(parents=True,exist_ok=True)
-    (s4/'s4_evaluate__summary.json').write_text(json.dumps(
-        dict(model=args.model,latent_dim=args.latent_dim,
-             latent_is='encoder posterior mean using ALL observed trials',
-             parameter_names=names,results=results,
-             source_checkpoint_sha256=sha256(train_path(args))),indent=2),encoding='utf-8')
-    np.savez_compressed(s4/'s4_evaluate__linear_predictions.npz',test_ids=te,
-                        theta_true=theta[te],theta_linear_pred=full['theta_linear_pred'])
-    plot_corr(raw_corr,names,f'{args.model} full Z: held-out theta–Z correlations',
-              folder/'s12__theta_vs_z.png')
-    plot_corr(pc_corr,names,f'{args.model} PCA: held-out theta–PC correlations',
-              folder/'s12__theta_vs_pca.png',xlabel='Principal components')
-    fig,axes=plt.subplots(1,2,figsize=(12,4.5))
-    axes[0].bar(np.arange(1,len(pc_variance)+1),pc_variance)
-    axes[0].plot(np.arange(1,len(pc_variance)+1),np.cumsum(pc_variance),'o-',label='Cumulative')
-    axes[0].set_xlabel('PC');axes[0].set_ylabel('Explained variance ratio');axes[0].set_title('TRAIN PCA variance')
-    axes[0].legend()
-    axes[1].plot([r['n_pcs'] for r in curve],[r['mean_test_r2'] for r in curve],'o-',label='Mean TEST R²')
-    for name in names:
-        axes[1].plot([r['n_pcs'] for r in curve],[r['r2_'+name] for r in curve],label=name,alpha=.7)
-    axes[1].axhline(np.mean(full['test_r2']),ls='--',c='k',label='Full Z')
-    axes[1].set_xlabel('Number of top PCs');axes[1].set_ylabel('TEST parameter R²');axes[1].legend(fontsize=8)
-    fig.tight_layout();fig.savefig(folder/'s12__pca_and_regression.png',dpi=180);plt.close(fig)
-    fig,axs=plt.subplots(1,len(names),figsize=(3.1*len(names),3.3),squeeze=False)
-    for j,name in enumerate(names):
-        axs[0,j].scatter(theta[te,j],full['theta_linear_pred'][:,j],s=6,alpha=.28)
-        axs[0,j].set_title(f'{name}: TEST R²={full["test_r2"][j]:.3f}')
-        axs[0,j].set_xlabel('True theta');axs[0,j].set_ylabel('Linear prediction')
-    fig.tight_layout();fig.savefig(folder/'s12__ridge_scatter.png',dpi=180);plt.close(fig)
-    print(f'{args.model} complete TEST full-Z Ridge r²:',
-          ', '.join(f'{p}={q:.4f}' for p,q in zip(names,full['test_r2'])))
-    print('PCA explained variance:',np.round(pc_variance,5))
-    print('Results:',folder)
+def load_frozen(args):
+    """Check provenance, full-trial origin, shapes and disjoint subject splits."""
+    source = latent_path(args)
+    checkpoint = train_path(args)
+    if not source.exists():
+        raise FileNotFoundError(f'Run S5 extraction first: {source}')
+    if not checkpoint.exists():
+        raise FileNotFoundError(f'Missing trained checkpoint: {checkpoint}')
+    with np.load(source, allow_pickle=False) as saved:
+        if str(saved['checkpoint_sha256']) != sha256(checkpoint):
+            raise RuntimeError('Saved Z belongs to a different NP checkpoint')
+        if str(saved['context_mode']) != 'all_observed_trials':
+            raise RuntimeError('Analysis requires Z encoded using ALL observed trials')
+        z = np.asarray(saved['z'], float)
+        theta = np.asarray(saved['theta_true'], float)
+        split = {name: np.asarray(saved[name+'_ids'], int) for name in ('train','validation','test')}
+    if z.shape[0] != theta.shape[0] or z.shape[1] != args.latent_dim:
+        raise ValueError('Z/theta geometry inconsistent with --latent-dim')
+    if not np.array_equal(np.sort(np.r_[split['train'],split['validation'],split['test']]),
+                          np.arange(len(z))):
+        raise ValueError('Subject splits must be disjoint and exhaustive')
+    return z, theta, split, source

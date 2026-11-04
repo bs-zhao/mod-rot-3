@@ -1,71 +1,24 @@
 # mod-rot-3
 
-The repository has **two physically separate research modules**:
+Two independent modules:
 
-```text
-mod-rot-3/
-  np/
-    run.py                     # generate/precheck/train/evaluate-np/extract/analyze
-    src/modlearn_rot/          # original generators, NP, trainer, prechecks
-    src/modrot3/              # pipeline, PCA/Ridge, reporting
-    reference/                 # original CR3 CPT/prior/fixed bank/oracle
-    tests/                     # tests only for NP
-    README.md
-  rotations/
-    run.py                     # shared CLI for any number of methods
-    api.py                     # ZXY/R contracts
-    engine.py                  # discovery and reproducible output manager
-    data.py                    # X/Y alignment and postfit test evaluation
-    identity/                  # EACH rotation method gets a complete folder
-      __init__.py
-      config.json
-      README.md
-      test_method.py
-    kurtosis/
-    quartic/
-    xy_effect/
-    ...                        # arbitrary independent methods and submodules
-    template_method.py
-    plan_example.json
-    README.md
-  outputs/                     # all generated artifacts, ignored by Git
-  pyproject.toml
-```
+- **[`np/`](np/README.md)** — all four original C1/C2/C3/CR3 binary-choice simulators, precheck, NP model/training, trained network evaluation, full-trial Z extraction, PCA and parameter Ridge recovery. **Seven separately runnable Python scripts. No `all` stage.**
+- **[`rotations/`](rotations/README.md)** — self-contained `rotations/<method>/` subfolders for individual post-hoc rotation algorithms, each with its own implementation, configuration, tests and documentation.
 
-There is no root `src/`, `reference/`, `baseline/`, or `tests/`
-folder. New rotation methods never require changes to `np/`.
-
-## Installation
+The NN workflow is explicitly manual; run exactly one script for the stage you want:
 
 ```cmd
-cd /d D:\Projects\mod-rot-3
-pip install -e ".[dev]"
-pytest -q
+python np/s1_generate.py --model CR3 --subjects 5000
+python np/s2_precheck.py --model CR3
+python np/s3_train.py --model CR3 --beta 0 --lambda-sparse 0 --latent-dim 8 --context-min 0.25 --context-max 0.8 --batch-size 128 --learning-rate 0.0005 --max-epochs 500 --patience 50
+python np/s4_evaluate.py --model CR3 --beta 0 --latent-dim 8
+python np/s5_extract_z.py --model CR3 --beta 0 --latent-dim 8
+python np/s6_pca.py --model CR3 --beta 0 --latent-dim 8
+python np/s7_regression.py --model CR3 --beta 0 --latent-dim 8
 ```
 
-## NP workflow
+Commands 4–7 must reuse the same checkpoint condition flags (`--beta`, `--lambda-sparse`, `--latent-dim`, `--context-min`, `--context-max`, `--repeat`). Each script accepts `--help` and only performs its own stage.
 
-```cmd
-python np/run.py selftest
-python np/run.py all --model CR3 --beta 0 --lambda-sparse 0 --latent-dim 8 --context-min 0.25 --context-max 0.80 --batch-size 128 --learning-rate 0.0005 --weight-decay 0 --max-epochs 500 --patience 50 --repeat 1 --device auto
-```
+The rotator continues reading the same frozen `outputs/choice/<MODEL>/s4_evaluate/<CONDITION>/repeatXX/s4_evaluate__latent.npz`; outputs are entirely excluded from Git by `.gitignore`.
 
-The `np/` folder contains all four binary-choice generators, original
-prechecks and Neural Process source, checkpoint evaluation, full-trial Z extraction,
-PCA and held-out linear regression. See [NP guide](np/README.md).
-
-## Independent rotation methods
-
-```cmd
-python rotations/run.py --list-methods
-python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --method xy_effect
-python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --methods all --continue-on-error
-```
-
-Every method lives exclusively inside its own `rotations/<method>/` folder,
-including implementation, optimization, configuration, tests and local docs.
-See [Rotation guide](rotations/README.md). True theta is never provided to
-the unsupervised rotation method and appears only in postfit TEST evaluations.
-
-All data, checkpoints, figures, and rotation results are saved to the root
-`outputs/`, excluded through `.gitignore`.
+Install with `pip install -e ".[dev]"` and run `pytest -q`. The frozen original generator and NP numerical implementation live under `np/src/modlearn_rot/`.

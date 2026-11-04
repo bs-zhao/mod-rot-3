@@ -1,18 +1,21 @@
-"""Checkpoint-only validation/test predictive evaluation of the frozen NP.
+from pathlib import Path
+import sys
+# Support direct invocation as: python np/sN_*.py ...
+NP_ROOT = Path(__file__).resolve().parent
+sys.path.insert(0, str(NP_ROOT / 'src'))
+"""S4: Display and plot original NP checkpoint validation/test behavior.
 
-No re-training, no Z extraction, no true theta. Uses S3's originally saved
-fixed-context VALIDATION and TEST metrics and per-epoch history.
+This stage reads fixed-context test metrics saved by the S3 trainer; it does
+not retrain, rerun inference, or use theta.
 """
-from __future__ import annotations
 import csv
 import json
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-import numpy as np
+from modrot3.cli import parse_args
+from modrot3.pipeline import train_path, stage_folder, condition, sha256, dataset_path
 from modlearn_rot.training.continuous import load_checkpoint
-from .pipeline import train_path,stage_folder,condition,sha256,dataset_path
-
 
 def report(args):
     ckpt=train_path(args)
@@ -50,3 +53,6 @@ def report(args):
     print(args.model,'original NP validation metrics:',state['validation_metrics'])
     print(args.model,'original NP TEST metrics:',state['test_metrics'])
     print('Saved NN evaluation:',folder)
+
+if __name__ == '__main__':
+    report(parse_args('S4: evaluate saved NP checkpoint and training curves'))
