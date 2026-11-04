@@ -83,7 +83,7 @@ def _run_legacy(script: Path, argv: list[str]):
 
 def _cr3_refs():
     return (ROOT / 'np' / 'reference' / 's0_cr2_design_recovery.py',
-            ROOT / 'reference' / 'cr3' / 's0_s1_cr3.py')
+            ROOT / 'np' / 'reference' / 'cr3' / 's0_s1_cr3.py')
 
 
 def _cr3_bank() -> Path:
@@ -134,7 +134,7 @@ def _verify_cr3(data):
     if x.shape != (500, 6):
         raise ValueError(f'CR3 bank must be (500,6), got {x.shape}')
     # Import the exact FOSD and categorization functions from frozen reference.
-    sys.path.insert(0, str(ROOT / 'reference' / 'cr3'))
+    sys.path.insert(0, str(ROOT / 'np' / 'reference' / 'cr3'))
     from s0_s1_cr3 import dominance_audit, condition_counts, COUNTS
     if dominance_audit(x)['total']:
         raise ValueError('CR3 stimulus bank contains strictly dominant trials')
