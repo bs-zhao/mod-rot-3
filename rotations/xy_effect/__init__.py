@@ -4,7 +4,7 @@ Experimental: demonstrates preprocessing inside a standalone plugin. There is
 no claim of identifying true psychological parameters.
 """
 import numpy as np
-from modrot3.rotation_api import optimize_objective
+from rotations.api import optimize_objective
 
 NAME = 'xy_effect'
 VERSION = '1.0'

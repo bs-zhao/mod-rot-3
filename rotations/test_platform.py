@@ -3,9 +3,9 @@ import numpy as np
 import pytest
 from pathlib import Path
 from types import SimpleNamespace
-from modrot3.rotation_api import RotationInput, RotationResult, validate_result, skew_matrix
-from modrot3.rotation_engine import discover, BUILTINS, _read_plan, _configs, _digest_json
-from modrot3.rotation_data import aligned_observations, corr
+from rotations.api import RotationInput, RotationResult, validate_result, skew_matrix
+from rotations.engine import discover, BUILTINS, _read_plan, _configs, _digest_json
+from rotations.data import aligned_observations, corr
 
 
 def test_plugin_autodiscovery_without_registry_edits(tmp_path):
@@ -51,7 +51,7 @@ def test_variable_length_subject_alignment():
 
 
 def test_multifile_method_package_and_transitive_code_hash(tmp_path):
-    from modrot3.rotation_engine import discover_paths, load_plugin, method_code_sha
+    from rotations.engine import discover_paths, load_plugin, method_code_sha
     pkg = tmp_path/'compositional_mdl'
     pkg.mkdir()
     (pkg/'helper.py').write_text('''def penalty(u):\n    return float((u*u).mean())\n''', encoding='utf-8')

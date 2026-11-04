@@ -1,6 +1,6 @@
 """Scalable method-agnostic rotation runner.
 
-Each independent module in rotations/methods/ defines NAME, VERSION, DEFAULTS,
+Each independent folder rotations/<method>/ defines NAME, VERSION, DEFAULTS,
 and either objective(data, R, config) or fit(data, config). The engine never
 edits its method registry to add an algorithm. All methods are fit on frozen
 ZXY TRAIN participants; true parameter values are loaded only after saving R.
@@ -24,7 +24,7 @@ import numpy as np
 from sklearn.decomposition import PCA
 
 # Method discovery must remain independent of the baseline NN/simulator imports.
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[1]
 
 def sha256(path: Path) -> str:
     digest = hashlib.sha256()
@@ -32,10 +32,10 @@ def sha256(path: Path) -> str:
         for chunk in iter(lambda: stream.read(1024 * 1024), b''):
             digest.update(chunk)
     return digest.hexdigest()
-from .rotation_api import RotationInput, RotationResult, optimize_objective, validate_result
-from .rotation_data import aligned_observations, evaluate_after_freeze
+from .api import RotationInput, RotationResult, optimize_objective, validate_result
+from .data import aligned_observations, evaluate_after_freeze
 
-BUILTINS = ROOT / 'rotations' / 'methods'
+BUILTINS = ROOT / 'rotations'
 ALLOWED_NAME = re.compile(r'^[a-z][a-z0-9_]*$')
 
 
@@ -76,7 +76,8 @@ def discover_paths(directories: list[Path]) -> dict[str, Path]:
     for directory in directories:
         if not directory.is_dir():
             raise FileNotFoundError(f'Plugin directory not found: {directory}')
-        candidates = sorted(directory.glob('*.py')) + sorted(directory.glob('*/__init__.py'))
+        candidates = (sorted(directory.glob('*/__init__.py')) if directory.resolve() == BUILTINS.resolve()
+                      else sorted(directory.glob('*.py')) + sorted(directory.glob('*/__init__.py')))
         for path in candidates:
             name = _method_name_from_path(path)
             if path.name == '__init__.py' and path.parent == directory:
@@ -198,6 +199,13 @@ def _read_plan(path: Path | None, methods: list[str]):
 
 def _configs(plugin: Plugin, args, item: dict):
     cfg = dict(plugin.defaults)
+    # Per-method defaults live beside each method, independent of the runner.
+    local_config = plugin.path.parent / 'config.json' if plugin.path.name == '__init__.py' else None
+    if local_config is not None and local_config.is_file():
+        values = json.loads(local_config.read_text(encoding='utf-8'))
+        if not isinstance(values, dict) or set(values) - set(cfg):
+            raise ValueError(f'{plugin.name}: invalid local config.json keys')
+        cfg.update(values)
     if 'seed' in cfg:
         cfg['seed'] = args.seed
     if args.starts is not None and 'starts' in cfg:
@@ -244,7 +252,7 @@ def _digest_json(payload):
 
 
 def _build_source(args):
-    from .pipeline import dataset_path
+    from modrot3.pipeline import dataset_path
     from modlearn_rot.generators.dataset import load_dataset
     if args.model not in ('C1', 'C2', 'C3', 'CR3'):
         raise ValueError('Supported models: C1 C2 C3 CR3')
@@ -310,7 +318,7 @@ def _run_one(args, plugin: Plugin, config: dict, source: dict):
     data = source['data']
     meta = dict(method=plugin.name, method_version=plugin.version,
                 code_sha256=plugin.code_sha256,
-                optimizer_api_sha256=sha256(Path(__file__).with_name('rotation_api.py')),
+                optimizer_api_sha256=sha256(Path(__file__).with_name('api.py')),
                 runner_sha256=sha256(Path(__file__)), model=args.model,
                 condition=args.condition, repeat=args.repeat, representation=args.representation,
                 rotation_dim=data.k, configuration=config,

@@ -1,7 +1,7 @@
 import numpy as np
 from modrot3.analysis import ridge_probe, corr
-from modrot3.rotation_api import RotationInput, skew_matrix, validate_result, RotationResult
-from modrot3.rotation_engine import discover, BUILTINS, _invoke, _configs, _digest_json
+from rotations.api import RotationInput, skew_matrix, validate_result, RotationResult
+from rotations.engine import discover, BUILTINS, _invoke, _configs, _digest_json
 from types import SimpleNamespace
 
 
