@@ -1,11 +1,13 @@
-"""Subject-forward predictive structural description length for a fixed rotation.
+"""Subject-forward, nonlinear-module predictive MDL for one frozen ZXY suite.
 
-This is a deliberately *restricted* predictive-MDL approximation:
-- Group selection uses fitted response-profile coefficient energy on FIT only.
-- Refits chosen raw-monomial modules using progressively more FIT subjects.
-- Predicts future subjects' binary choices via a limited stimulus basis.
-- Reports predictive nats/trial and a separate nats/subject structure code.
-It is not an exact universal-code MDL nor a claim of causal parameter recovery.
+This is a *restricted predictive-code approximation*, NOT universal MDL.
+Selection is forward and nested: each training prefix is further split into
+inner-fit and inner-validation subjects. Nonlinear monomials are selected
+using held-out Bernoulli cross entropy plus their structural code cost.
+Selected modules are refit on the entire prefix and evaluated on future
+subjects. All subsets remain inside NP TRAIN subjects, not NP TEST.
+The four full linear terms are included as a rotation-invariant reference
+so the question is whether nonlinear modules add predictive value.
 """
 from __future__ import annotations
 from itertools import combinations_with_replacement
@@ -14,93 +16,166 @@ import numpy as np
 from .surrogate import poly_design, rotate_coefficients, _safe_ridge
 
 
-def _all_terms(k,d):
-    return [()] + [t for degree in range(1,d+1)
-                   for t in combinations_with_replacement(range(k),degree)]
+def _all_terms(k, degree):
+    return [()] + [idx for d in range(1,degree+1)
+                   for idx in combinations_with_replacement(range(k),d)]
 
 
-def _weighted_groups(coeff):
-    groups=[]
-    for d in sorted(x for x in coeff if x):
-        for term in combinations_with_replacement(range(coeff[1].shape[0]),d):
-            mult=math.factorial(d)
-            for v in set(term):mult//=math.factorial(term.count(v))
-            coef=coeff[d][term]*mult
-            groups.append((term,float(np.sum(coef**2)),d))
-    return groups
+def _term_amplitude(coeff, term):
+    d=len(term)
+    value=coeff[d][term]
+    multiplicity=math.factorial(d)
+    for i in set(term):
+        multiplicity//=math.factorial(term.count(i))
+    return float(np.linalg.norm(value*multiplicity))
 
 
-def selected_modules(coeff,config):
-    entries=_weighted_groups(coeff)
-    total=sum(e for _,e,_ in entries)
-    sorted_entries=sorted(entries,key=lambda item:-item[1])
-    target=float(config['mdl_energy_fraction'])
-    if not 0<target<=1:raise ValueError('mdl_energy_fraction must be in (0,1]')
-    chosen=[()];covered=0.
-    for term,energy,degree in sorted_entries:
-        if covered>=target*max(total,1e-14) and len(chosen)>1:break
-        chosen.append(term)
-        covered+=energy
-    return chosen
+def nonlinear_candidate_pool(proxy, R, config):
+    k=proxy.k
+    coeff=rotate_coefficients(proxy.coef,R)
+    all_nonlin=[t for t in _all_terms(k,len(coeff)-1) if len(t)>=2]
+    # Candidate shortlist is generated from FIT-only structural amplitudes,
+    # not from true theta or from the forward validation responses.
+    ordered=sorted(all_nonlin,key=lambda term:(-_term_amplitude(coeff,term),term))
+    count=int(config.get('mdl_candidate_pool',18))
+    if count<1:raise ValueError('mdl_candidate_pool must be >=1')
+    return ordered[:count]
+
+
+def _binary_nll(predicted_profiles, phi, y, mask):
+    prob=np.einsum('ntl,nl->nt',phi,predicted_profiles,optimize=True)
+    prob=np.clip(prob,1e-5,1-1e-5)
+    losses=-(y*np.log(prob)+(1-y)*np.log1p(-prob))*mask
+    return float(losses.sum()),int(mask.sum())
+
+
+def _fit_profile_ridge(v,h,ids,ridge):
+    design=v[ids]
+    rms=np.maximum(np.sqrt(np.mean(design**2,axis=0)),1e-6)
+    rms[0]=1.
+    weights=_safe_ridge(design/rms,h[ids],ridge)
+    return weights/rms[:,None]
+
+
+def _module_code(num_nonlin, pool_size, n_subjects, n_channels, n_linear):
+    """Two-part model/module code in nats; channel parameter costs per subject."""
+    if num_nonlin>pool_size:raise ValueError('invalid selected module count')
+    # Encode sparse support and coefficient parameters. The common linear
+    # component is included, but cannot alone distinguish rotations.
+    support=math.log(pool_size+1)+math.log(max(1,math.comb(pool_size,num_nonlin)))
+    parameters=.5*(n_linear+num_nonlin)*n_channels*math.log(max(n_subjects,2))
+    return float(support+parameters)
 
 
 def prequential_mdl(proxy,R,config):
+    """Compare nonlinear rotations by *nested* forward binary predictive code."""
+    k=proxy.k
+    ids=np.asarray(proxy.fit_ids,dtype=int).copy()
     rng=np.random.default_rng(int(config['seed'])+9041)
-    ids=proxy.fit_ids.copy()
     rng.shuffle(ids)
-    limit=min(len(ids),int(config['max_mdl_subjects']))
-    ids=ids[:limit]
-    if limit<60:raise ValueError('Need at least 60 subjects for subject-forward MDL')
-    R=np.asarray(R,float)
-    coeff=rotate_coefficients(proxy.coef,R)
-    selected=selected_modules(coeff,config)
-    q=proxy.q_train[ids]@R.T
-    design=poly_design(q,selected)
-    h=proxy.h_train[ids]
+    count=min(len(ids),int(config['max_mdl_subjects']))
+    if count<60:raise ValueError('Need >=60 FIT subjects for nonlinear predictive MDL')
+    ids=ids[:count]
+    pool=nonlinear_candidate_pool(proxy,R,config)
+    linear=[()] + [(i,) for i in range(k)]
+    all_terms=linear+pool
+    q=proxy.q_train[ids]@np.asarray(R,float).T
+    V=poly_design(q,all_terms)
+    H=proxy.h_train[ids]
     phi=proxy.phi_train[ids]
-    y=proxy.y_train[ids]
+    Y=proxy.y_train[ids]
     mask=proxy.mask_train[ids]
-    folds=int(config['mdl_prefix_folds'])
-    folds=max(1,min(folds,5))
-    all_folds=[]
-    total_nll=0.;total_trials=0
-    # Start with half the subjects, then expand prefix and evaluate future blocks.
+    folds=max(1,min(int(config['mdl_prefix_folds']),5))
+    max_extra=max(0,min(int(config.get('mdl_max_extra_modules',5)),len(pool)))
+    inner_fraction=float(config.get('mdl_inner_validation_frac',.2))
+    if not .05<=inner_fraction<=.45:raise ValueError('mdl_inner_validation_frac must be in [.05,.45]')
+    min_gain=float(config.get('mdl_min_delta_nats',.0002))
+    if min_gain<0:raise ValueError('mdl_min_delta_nats must be >=0')
+    ridge=float(config['surrogate_ridge'])
+    # Smaller fixed, X-only trial grid for repeated nested module selection;
+    # future-subject evaluation uses ALL observed trials.
+    nt=int(config.get('mdl_selection_trials',64))
+    if nt<=0:raise ValueError('mdl_selection_trials must be positive')
+    trial=np.unique(np.linspace(0,phi.shape[1]-1,
+                                min(nt,phi.shape[1]),dtype=int))
+    phi_select=phi[:,trial,:]
+    y_select=Y[:,trial]
+    mask_select=mask[:,trial]
+    future_nll=0.;future_linear_nll=0.;future_trials=0
+    accumulated_code=0.;details=[]
+    final_terms=linear[:]
     for step in range(folds):
-        train_end=int(limit*(0.50+0.40*step/folds))
-        future_end=int(limit*(0.50+0.40*(step+1)/folds))
-        future_end=max(future_end,train_end+1)
-        tr=np.arange(train_end)
-        te=np.arange(train_end,min(limit,future_end))
-        if len(te)==0:continue
-        matrix=design[tr]
-        rms=np.maximum(np.sqrt(np.mean(matrix*matrix,axis=0)),1e-6)
-        rms[0]=1
-        coefscaled=_safe_ridge(matrix/rms,h[tr],config['surrogate_ridge'])
-        coeff_fit=coefscaled/rms[:,None]
-        predicted=design[te]@coeff_fit
-        p=np.einsum('ntl,nl->nt',phi[te],predicted,optimize=True)
-        p=np.clip(p,1e-4,1-1e-4)
-        nll=-np.sum((y[te]*np.log(p)+(1-y[te])*np.log(1-p))*mask[te])
-        count=int(mask[te].sum())
-        total_nll+=float(nll);total_trials+=count
-        all_folds.append(dict(fold=step+1,prefix_subjects=len(tr),future_subjects=len(te),
-                              future_trials=count,predictive_nats_per_trial=float(nll/max(count,1))))
-    nmodules=len(selected)-1
-    # Encode module locations/powers and ridge coefficient channels, using number
-    # of independently sampled subjects (not number of within-subject trials).
-    module_space=max(len(_all_terms(proxy.k,len(proxy.coef)-1))-1,1)
-    graph_nats=math.log(max(1,math.comb(module_space,min(nmodules,module_space))))
-    parameter_nats=0.5*nmodules*proxy.channels*math.log(max(limit//2,2))
-    description_nats=graph_nats+parameter_nats
-    nll_per_trial=total_nll/max(total_trials,1)
-    # Treat each participant as a unit for structural coding; report separate terms.
-    per_subject_code=description_nats/max(sum(f['future_subjects'] for f in all_folds),1)
-    # Nats per trial, explicitly conditional on the chosen finite stimulus basis.
-    total_obj=nll_per_trial+description_nats/max(total_trials,1)
-    return dict(objective=float(total_obj),predictive_nats_per_trial=float(nll_per_trial),
-                code_nats_per_trial=float(description_nats/max(total_trials,1)),
-                code_nats_per_future_subject=float(per_subject_code),
-                selected_module_count=nmodules,
-                selected_monomials=[list(v) for v in selected],
-                folds=all_folds,
-                caution='Restricted response-profile predictive-MDL proxy, not a universal code')
+        start=int(count*(.50+.40*step/folds))
+        end=int(count*(.50+.40*(step+1)/folds))
+        end=min(count,max(start+1,end))
+        if end<=start:continue
+        n_inner_val=max(8,int(start*inner_fraction))
+        n_inner_fit=start-n_inner_val
+        if n_inner_fit<=len(linear)+2:continue
+        inner_fit=np.arange(n_inner_fit)
+        inner_val=np.arange(n_inner_fit,start)
+        future=np.arange(start,end)
+        chosen=list(range(len(linear)))
+        available=list(range(len(linear),len(all_terms)))
+        def inner_score(column_ids):
+            fitted=_fit_profile_ridge(V[:,column_ids],H,inner_fit,ridge)
+            p=V[inner_val][:,column_ids]@fitted
+            n,obs=_binary_nll(p,phi_select[inner_val],
+                               y_select[inner_val],mask_select[inner_val])
+            code=_module_code(len(column_ids)-len(linear),len(pool),
+                              len(inner_fit),proxy.channels,k)
+            return n/max(obs,1)+code/max(obs,1)
+        current=inner_score(chosen)
+        selected_trace=[]
+        for _ in range(max_extra):
+            scores=[]
+            for col in available:
+                value=inner_score(chosen+[col])
+                scores.append((value,col))
+            if not scores:break
+            next_score,col=min(scores,key=lambda x:(x[0],x[1]))
+            if current-next_score<=min_gain:break
+            chosen.append(col)
+            available.remove(col)
+            selected_trace.append(dict(term=list(all_terms[col]),
+                                       validation_mdl_improvement_nats_per_trial=float(current-next_score)))
+            current=next_score
+        chosen_terms=[all_terms[j] for j in chosen]
+        fitted=_fit_profile_ridge(V[:,chosen],H,np.arange(start),ridge)
+        future_profiles=V[future][:,chosen]@fitted
+        nll,obs=_binary_nll(future_profiles,phi[future],Y[future],mask[future])
+        linear_fit=_fit_profile_ridge(V[:,:len(linear)],H,np.arange(start),ridge)
+        linear_profiles=V[future,:len(linear)]@linear_fit
+        linear_nll,_=_binary_nll(linear_profiles,phi[future],Y[future],mask[future])
+        code=_module_code(len(chosen)-len(linear),len(pool),start,proxy.channels,k)
+        future_nll+=nll
+        future_linear_nll+=linear_nll
+        future_trials+=obs
+        accumulated_code+=code
+        final_terms=chosen_terms
+        details.append(dict(fold=step+1,prefix_subjects=start,
+                            inner_fit_subjects=len(inner_fit),
+                            inner_validation_subjects=len(inner_val),
+                            future_subjects=len(future),future_trials=obs,
+                            selected_nonlinear_modules=len(chosen)-len(linear),
+                            selected_nonlinear_terms=[list(t) for t in chosen_terms[len(linear):]],
+                            nonlinear_greedy_trace=selected_trace,
+                            future_nats_per_trial=float(nll/max(obs,1)),
+                            future_linear_only_nats_per_trial=float(linear_nll/max(obs,1)),
+                            structural_code_nats=float(code)))
+    if future_trials==0:raise RuntimeError('No future subjects in predictive MDL')
+    prediction=future_nll/future_trials
+    linear_prediction=future_linear_nll/future_trials
+    structural=accumulated_code/future_trials
+    return dict(objective=float(prediction+structural),
+                predictive_nats_per_trial=float(prediction),
+                linear_only_nats_per_trial=float(linear_prediction),
+                nonlinear_prediction_gain_nats_per_trial=float(linear_prediction-prediction),
+                code_nats_per_trial=float(structural),
+                future_trials=int(future_trials),
+                selected_module_count=len(final_terms)-1,
+                selected_nonlinear_module_count=len(final_terms)-(k+1),
+                selected_monomials=[list(v) for v in final_terms],
+                candidate_pool=[list(v) for v in pool],
+                folds=details,
+                caution='Nested subject-forward sparse polynomial Bernoulli predictive-code approximation, not universal MDL; Z encodes all observed Y')
