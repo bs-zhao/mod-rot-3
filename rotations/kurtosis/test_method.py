@@ -1,6 +1,6 @@
 """Method-specific smoke test: kurtosis."""
 import numpy as np
-from rotations.api import RotationInput
+from rotations.${name}.api import RotationInput
 import rotations.kurtosis as method
 
 def test_kurtosis_smoke():

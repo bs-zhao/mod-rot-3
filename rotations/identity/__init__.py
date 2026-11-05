@@ -1,6 +1,6 @@
 """Identity (PCA-whitened coordinate) baseline; no optimization."""
 import numpy as np
-from rotations.api import RotationResult
+from .api import RotationResult
 
 NAME = 'identity'
 VERSION = '1.0'

@@ -1,6 +1,6 @@
 """Method-specific smoke test: identity."""
 import numpy as np
-from rotations.api import RotationInput
+from rotations.${name}.api import RotationInput
 import rotations.identity as method
 
 def test_identity_smoke():

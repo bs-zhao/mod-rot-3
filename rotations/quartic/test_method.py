@@ -1,6 +1,6 @@
 """Method-specific smoke test: quartic."""
 import numpy as np
-from rotations.api import RotationInput
+from rotations.${name}.api import RotationInput
 import rotations.quartic as method
 
 def test_quartic_smoke():

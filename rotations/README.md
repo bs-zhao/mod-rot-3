@@ -1,56 +1,54 @@
-# One folder = one complete rotation method
+# Rotation experiment suites (fully independent)
+
+**One subfolder is one complete rotation suite**, not one metric. A suite may
+contain several interacting metrics, loss terms, optimizers, model fitting
+stages and plots, all belonging to one experiment. The user runs that suite's
+own `run.py`. Suites never import or run one another.
 
 ```text
 rotations/
-  run.py              # common batch CLI
-  api.py              # frozen-ZXY contract and optional generic optimizer
-  engine.py           # dynamic plugin discovery + saving R, A, U, results
-  data.py             # subject alignment, postfit parameter evaluation
   identity/
-    __init__.py       # independently implemented rotation
-    config.json       # this method's parameters
-    README.md         # documentation
-    test_method.py    # this method's tests
-  kurtosis/           # same self-contained structure
-  quartic/            # same self-contained structure
-  xy_effect/          # same self-contained structure
-  ...                 # add as many independent algorithms as needed
-  template_method.py  # example (not registered)
-  plan_example.json
-  test_platform.py
-  test_methods.py
+    run.py
+    __init__.py       # this suite's fit/objective
+    experiment.py     # this suite's ZXY loading, fitting and result saving
+    api.py            # this suite's local rotation optimizer/contract
+    data.py           # local subject alignment and TEST evaluation
+    config.json
+    test_method.py
+    README.md
+  kurtosis/
+    ...
+  quartic/
+    ...
+  xy_effect/
+    ...
+  future_composite_suite/
+    run.py
+    __init__.py
+    metrics.py
+    optimization.py
+    diagnostics.py
+    experiment.py
+    config.json
+    README.md
 ```
 
-There is **no intermediate `methods/` directory** and no central method
-registry. Add `rotations/new_algorithm/__init__.py`, local config, README,
-tests, helper estimators, optimization algorithms or model files **all in that
-single directory**. The shared runner discovers it automatically.
+No global `rotations/run.py`, no registry, no batch launcher, and no
+`--methods all` command. There is no shared rotation API or engine outside
+these package folders. Each suite keeps its own copy of I/O and evaluation
+helpers so it can evolve without modifying other suites.
 
-Each method supplies `NAME='new_algorithm'`, `VERSION`, `DEFAULTS` and
-either `objective(data,R,config)` (generic multistart SO(K) optimization) or
-`fit(data,config)` (fully customized optimization). `data.q` is whitened
-frozen Z for FIT subjects; `data.x`, `data.y` and `data.mask` contain
-subject-aligned X and binary Y. The method NEVER receives theta.
+Only S5 frozen full-trial latent Z, S1 observed X and binary Y enter a fit.
+Parameters theta are accessed after R and U are persisted for TEST diagnostics.
 
-You may import `RotationResult` or `optimize_objective` from `rotations.api`,
-or implement an entirely independent estimator and optimizer. Local relative
-imports of arbitrary auxiliary modules work inside the method package.
-`config.json` (optional) overlays local `DEFAULTS`; CLI `--set` and
-experiment-plan overrides take precedence. The loader hashes every Python file
-inside a method; changes create a new run fingerprint.
+## Run exactly one selected suite
 
 ```cmd
-python rotations/run.py --list-methods
-python rotations/run.py --describe-method xy_effect
-python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --method xy_effect
-python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --method xy_effect --set xy_effect.ridge=0.001
-python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --methods all --continue-on-error
-python rotations/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --plan rotations/plan_example.json
-pytest -q rotations
+python rotations/identity/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4
+python rotations/kurtosis/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --starts 8 --maxiter 300
+python rotations/xy_effect/run.py --model CR3 --condition beta0_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --set ridge=0.001
 ```
 
-The runner saves `R`, the original-Z-to-U affine transformation `A`, U for
-all subjects, a config/source/code fingerprint, and postfit TEST theta recovery
-with matched and off-target correlations in ignored root
-`outputs/choice/<MODEL>/rotations/<METHOD>/...`.
-Untrusted Python plugins are NOT a sandbox.
+Use `--representation full --rotation-dim 8` to retain all 8 NP dimensions.
+Every suite writes under ignored `outputs/choice/<MODEL>/rotations/<SUITE>/`
+with a fingerprint for the data, source code and hyperparameters.
