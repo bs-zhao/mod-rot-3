@@ -1,0 +1,23 @@
+{
+  "seed": 31,
+  "stimulus_features": 18,
+  "stimulus_ridge": 1.0,
+  "surrogate_degree": 3,
+  "surrogate_ridge": 3.0,
+  "anchor_subjects": 160,
+  "sweep_steps": 37,
+  "sweep_pairs": 6,
+  "starts": 4,
+  "maxiter": 140,
+  "optimizer": "Powell",
+  "support_threshold": 0.08,
+  "weight_operator": 1.0,
+  "weight_fingerprint": 0.25,
+  "weight_jointdiag": 0.12,
+  "weight_separation": 0.0,
+  "weight_hypergraph": 0.0,
+  "mdl_prefix_folds": 3,
+  "mdl_energy_fraction": 0.93,
+  "max_mdl_subjects": 1000,
+  "make_plots": true
+}

@@ -52,3 +52,13 @@ python rotations/xy_effect/run.py --model CR3 --condition beta0_lambda0_ctx0p25t
 Use `--representation full --rotation-dim 8` to retain all 8 NP dimensions.
 Every suite writes under ignored `outputs/choice/<MODEL>/rotations/<SUITE>/`
 with a fingerprint for the data, source code and hyperparameters.
+
+## Functional composition research suite
+
+[`functional_composition/`](functional_composition/README.md) is **one self-contained rotation experiment** containing 20 operationalized functional-complexity diagnostics and a joint loss (operator-module codelength + effect-fingerprint rank + contextual gradient structure). Run **only** its own entrypoint:
+
+```cmd
+python rotations/functional_composition/run.py --model CR3 --condition beta0p0005_lambda0_ctx0p25to0p8_L8 --rotation-dim 4
+```
+
+Its own folder contains `surrogate.py`, `metrics.py`, `mdl.py`, `optimizer.py`, `diagnostics.py`, `experiment.py`, `runner.py`, `run.py`, `config.json`, and tests. It neither imports nor runs other rotation suites. Not all 20 indicators are exact population statistics; the suite documents which are estimators, proxies, and negative controls.
