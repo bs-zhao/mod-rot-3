@@ -276,7 +276,13 @@ def execute(args, config: dict, fit: Callable, source: dict | None = None) -> Pa
                 source_checkpoint_sha256=source["checkpoint_sha"], fingerprint=fingerprint)
     (folder / "rotation__fit.json").write_text(json.dumps(meta, indent=2, allow_nan=False), encoding="utf-8")
     if not args.no_evaluate:
-        report = evaluate_after_fit(source["dataset"].parameters, U, source["te"],
+        # Snapshot ONLY held-out TEST truths, after FIT has persisted R/U.
+        # This supports entirely local package ablations without reloading
+        # simulator data or ever passing theta to FIT/MDL selection.
+        true_theta=np.asarray(source["dataset"].parameters)
+        np.savez_compressed(folder/"rotation__test_truth.npz",
+                            theta_test=true_theta[source["te"]],test_ids=source["te"])
+        report = evaluate_after_fit(true_theta, U, source["te"],
                                     folder, args.model, PACKAGE)
         print(f"[OK] {PACKAGE}: TEST matched mean r²={report['matched_mean_r2']:.4f}")
     (folder / "rotation__complete.json").write_text(

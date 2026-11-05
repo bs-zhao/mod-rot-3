@@ -132,17 +132,22 @@ def save_ablations(folder, proxy, ablations, main_R, config):
         np.savez_compressed(sub/'rotation__U.npz',U=U,
                             train_ids=tr,validation_ids=val,test_ids=te)
         alternative[name]=(sub,U)
-    # True theta is *first* accessed here, only after every candidate R/U
-    # and the candidate-fit configuration have already been persisted.
+    # The already-frozen TEST-only truth snapshot is accessed here,
+    # after all candidate R/U matrices have been persisted. No theta is
+    # available to the earlier fitting or MDL selection functions.
     report={}
     if not json.loads((folder/'rotation__complete.json').read_text())['evaluated']:
         report['warning']='TEST evaluation disabled'
     else:
-        from modlearn_rot.generators.dataset import load_dataset
         meta=json.loads((folder/'rotation__fit.json').read_text())
         model=meta['model']
-        dataset_path=experiment.ROOT/'outputs'/'choice'/model/'s1_generate'/'s1_generate__dataset.npz'
-        truth=load_dataset(dataset_path).parameters
+        with np.load(folder/'rotation__test_truth.npz',allow_pickle=False) as audit:
+            truth_test=np.asarray(audit['theta_test'],float)
+            audit_ids=np.asarray(audit['test_ids'],int)
+        if not np.array_equal(audit_ids,te):
+            raise RuntimeError('Frozen TEST truth IDs do not match rotation U IDs')
+        truth=np.zeros((len(Umain),truth_test.shape[1]),dtype=float)
+        truth[te]=truth_test
         report['joint']=json.loads((folder/'rotation__test_evaluation.json').read_text())
         for name,(sub,U) in alternative.items():
             report[name]=experiment.evaluate_after_fit(
