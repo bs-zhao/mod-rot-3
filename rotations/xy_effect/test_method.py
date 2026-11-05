@@ -1,6 +1,6 @@
 """Method-specific smoke test: xy_effect."""
 import numpy as np
-from rotations.${name}.api import RotationInput
+from rotations.xy_effect.api import RotationInput
 import rotations.xy_effect as method
 
 def test_xy_effect_smoke():
