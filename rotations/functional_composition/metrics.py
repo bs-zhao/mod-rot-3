@@ -92,6 +92,52 @@ def support_complexity(coeff, threshold=.08):
                 active=active,norm_by_degree=norm_by_degree)
 
 
+
+def calibrated_operator_complexity(proxy,R,config,details=False):
+    """Noise-calibrated compositional module code (proxy, not universal MDL).
+
+    Independently fit the same response-profile polynomial on two disjoint FIT
+    halves. For each rotated monomial tensor group, estimate a scale from
+    the *difference* of those fits; tiny terms unsupported by both halves
+    cost approximately zero. A fixed reference degree-norm floor prevents
+    dividing by nearly zero. A product and a pure square have the SAME base
+    operator cost, so simple multiplication is not intrinsically disfavored.
+    This heuristic uncertainty estimate is not a bootstrap confidence interval.
+    """
+    rotated=rotate_coefficients(proxy.coef,R)
+    if not getattr(proxy,'split_coefficients',None):
+        raw=support_complexity(rotated,config['support_threshold'])
+        return (raw['operator'],{'fallback':'legacy','hard_modules':None}) if details else raw['operator']
+    a,b=(rotate_coefficients(t,R) for t in proxy.split_coefficients)
+    floor=float(config.get('operator_relative_floor',.025))
+    cutoff_z=float(config.get('operator_noise_z',2.0))
+    temperature=float(config.get('operator_temperature',.75))
+    if floor<=0 or cutoff_z<0 or temperature<=0:
+        raise ValueError('Invalid calibrated module thresholds')
+    degrees={d:max(float(np.linalg.norm(rotated[d])),1e-12) for d in rotated if d}
+    total=0.;hard=0;modules=[]
+    for inds,d,_,norm,vec in _coeff_group_list(rotated):
+        mult=math.factorial(d)
+        for i in set(inds):mult//=math.factorial(inds.count(i))
+        diff=np.linalg.norm(a[d][inds]-b[d][inds])*np.sqrt(mult)
+        # Half-split difference /2 approximates the SD of the full-FIT
+        # estimate; the fixed relative floor stabilizes weak, noisy degrees.
+        noise=max(float(diff)/2.,floor*degrees[d])
+        snr=norm/noise
+        t=np.clip((snr-cutoff_z)/temperature,-30.,30.)
+        presence=float(1/(1+np.exp(-t)))
+        cost=(1.+.15*(d-1))*presence
+        total+=cost
+        hard+=int(snr>=cutoff_z)
+        if details:
+            modules.append(dict(term=list(inds),degree=d,signal=norm,
+                                uncertainty=noise,snr=float(snr),soft_presence=presence,
+                                code_nats=cost))
+    if details:
+        return float(total),dict(hard_modules=hard,total_modules=len(modules),modules=modules,
+                                calibration='FIT half-split noise, not exact MDL')
+    return float(total)
+
 def interaction_rank(coeff):
     k,L=coeff[1].shape
     total=0.;detail=[]
@@ -154,6 +200,9 @@ def contextual_jointdiag(proxy,R,q, max_contexts=12):
 def combined_scores(proxy,R,config,q_anchor=None):
     rotated=rotate_coefficients(proxy.coef,R)
     groups=support_complexity(rotated,config['support_threshold'])
+    operator=(calibrated_operator_complexity(proxy,R,config) if
+              config.get('operator_mode','calibrated')=='calibrated'
+              else groups['operator'])
     q=proxy.q_train[proxy.fit_ids]
     if q_anchor is not None:q=q_anchor
     elif len(q)>int(config['anchor_subjects']):
@@ -161,7 +210,7 @@ def combined_scores(proxy,R,config,q_anchor=None):
         q=q[rng.choice(len(q),int(config['anchor_subjects']),replace=False)]
     fp,drift,detail=fingerprint_and_drift(proxy,R,q)
     jd=contextual_jointdiag(proxy,R,q)
-    return dict(operator=float(groups['operator']),fingerprint=float(fp),
+    return dict(operator=float(operator),fingerprint=float(fp),
                 jointdiag=float(jd),separation=float(interaction_rank(rotated)[0]),
                 hypergraph=float(groups['hypergraph']),drift=float(drift))
 
@@ -371,7 +420,7 @@ def diagnostic_metrics(proxy,R,config,include_expensive=True):
         '05_functional_anova_effective_order_proxy':order,
         '06_pair_interaction_H_proxy':pair,
         '07_pairwise_separation_effective_rank':sep,
-        '08_compositional_operator_soft_code':float(summary['operator']),
+        '08_compositional_operator_soft_code':float(scores['operator']),
         '09_interaction_hypergraph_soft_code':float(summary['hypergraph']),
         '10_tensor_train_rank_invariant_control':_tt_rank_control(rotated),
         '11_effect_fingerprint_effective_rank':effective_rank_fp,
@@ -388,4 +437,6 @@ def diagnostic_metrics(proxy,R,config,include_expensive=True):
         from .mdl import prequential_mdl
         results['20_prequential_structural_MDL_proxy']=prequential_mdl(proxy,R,config)['objective']
     else:results['20_prequential_structural_MDL_proxy']=None
-    return results,dict(pair_modules=detail,axis_fingerprints=fp_detail,axis_ablation=ablation_each)
+    operator,operator_info=calibrated_operator_complexity(proxy,R,config,details=True)
+    return results,dict(pair_modules=detail,axis_fingerprints=fp_detail,axis_ablation=ablation_each,
+                        operator_module_selection=operator_info)
