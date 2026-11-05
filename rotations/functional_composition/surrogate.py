@@ -110,6 +110,8 @@ class PolynomialProxy:
     fidelity: dict
     stimulus_ridge: float
     train_x: np.ndarray
+    # Independent half-FIT tensor estimates for noise-calibrated module selection.
+    split_coefficients: tuple[dict[int,np.ndarray],dict[int,np.ndarray]] | None = None
 
     @property
     def k(self): return self.coef[1].shape[0]
@@ -189,8 +191,27 @@ def make_proxy(q,x,y,mask,config):
               'constant_y_cross_entropy':naive_ce,'profile_dimensions':h.shape[1],
               'polynomial_features':len(terms),'fit_subjects':len(a),
               'validation_subjects':len(b),'input_scale':'frozen whitened PCA q'}
+    # Estimate coefficient uncertainty from two disjoint FIT-subject halves.
+    # Keep the same stimulus map, polynomial basis and train-derived scaling.
+    shuffled_fit=np.random.default_rng(int(config['seed'])+741).permutation(a)
+    half_a,half_b=np.array_split(shuffled_fit,2)
+    def half_tensor(ids):
+        scaled=_safe_ridge(vscaled[ids],h[ids],config['surrogate_ridge'])
+        raw=scaled/rms[:,None]
+        tensors={0:raw[0].copy(),1:np.zeros_like(coefs[1])}
+        if degree>=2:tensors[2]=np.zeros_like(coefs[2])
+        if degree>=3:tensors[3]=np.zeros_like(coefs[3])
+        from itertools import permutations
+        for indices,row in zip(terms[1:],raw[1:]):
+            positions=set(permutations(indices))
+            for pos in positions:
+                tensors[len(indices)][pos]=row/len(positions)
+        return tensors
+    halves=(half_tensor(half_a),half_tensor(half_b))
+    fidelity['split_half_fit_subjects']=[int(len(half_a)),int(len(half_b))]
+    fidelity['operator_uncertainty']='Independent FIT-half differences; heuristic scale, not an exact bootstrap confidence interval'
     return PolynomialProxy(coefs,terms,stimulus,h,q,phi,y,mask,a,b,fidelity,
-                           config['stimulus_ridge'],x)
+                           config['stimulus_ridge'],x,halves)
 
 
 def rotate_coefficients(coef,R):
