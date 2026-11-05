@@ -84,3 +84,64 @@ The entire suite has its own `run.py`, `experiment.py`, `surrogate.py`, `metrics
 - Maximizing simplicity **cannot uniquely identify theta in general**. It can favor stable but incorrect axes. The toy test `ab` versus rotated squares only establishes one of many desirable structural properties.
 - Trial X values are drawn from the observed design; finite differences in X are extrapolation/interpolation assumptions.
 - Weight changes use no true theta automatically. Tune on analytic toys or independent discovery datasets, then evaluate CR3 parameters only at the end.
+## V2: calibrated module selection and integrated ablation comparison
+
+**V2 supersedes the descriptions of 08 and 20 in the older table above.**
+
+- **08:** noise-calibrated operator code. Two disjoint FIT-subject half-fits
+  estimate the uncertainty of each rotated polynomial term. An uncertainty
+  threshold and fixed relative floor determine soft module activation.
+  A simple product does not receive an arbitrary penalty over a square.
+  The half-fit scale is heuristic, not a calibrated z-test or universal MDL.
+- **20:** nested nonlinear predictive code. In each forward FIT-subject
+  prefix, select degree-2/3 polynomial modules using inner-validation
+  Bernoulli log-loss plus structural code; refit on the prefix and evaluate
+  future FIT subjects. A full 4D linear subspace alone cannot win by default.
+  Module shortlists are ranked using **inner-FIT only** responses, not future.
+- **08/11/13 ablations:** three independent optimization objectives run
+  **inside this one suite**, yielding separate R/U, held-out TEST correlation
+  heatmaps, and angle-loss curves. No other rotation package is invoked.
+- **MDL20 candidate selector:** ranks identity, joint, 08-only, 11-only,
+  and 13-only based on FIT-subject predictive code. Saves the winner as
+  an additional candidate, without replacing the joint rotation.
+  True theta is not used to rank candidates.
+
+New configurable keys: operator_mode, operator_relative_floor,
+operator_noise_z, operator_temperature, ablation_enabled, ablation_starts,
+ablation_maxiter, ablation_sweep_steps, ablation_sweep_pairs,
+mdl_compare_candidates, mdl_candidate_pool, mdl_max_extra_modules,
+mdl_inner_validation_frac, mdl_min_delta_nats, mdl_selection_trials.
+
+### Run this single package
+
+```cmd
+python rotations/functional_composition/run.py --model CR3 --condition beta0p0005_lambda0_ctx0p25to0p8_L8 --rotation-dim 4
+```
+
+For a quick fit without the additional 08/11/13 runs or predictive selector:
+
+```cmd
+python rotations/functional_composition/run.py --model CR3 --condition beta0p0005_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --set starts=1 --set maxiter=20 --set ablation_enabled=false --set mdl_compare_candidates=false --set sweep_steps=9
+```
+
+### New outputs in the **same suite** run directory
+
+- functional__ablation_fit.json: 08/11/13 fit information, nested MDL20
+  candidate scores, nonlinear modules and held-out FIT-subject predictions.
+- functional__candidate_rotations.npz: candidate matrices for identity,
+  joint, 08-only, 11-only, 13-only and MDL-selected coordinates.
+- functional__ablation_comparison.csv and functional__ablation_test.json:
+  FIT predictive MDL vs independently audited TEST theta recovery.
+- functional__ablation_plane_curves.csv/png: separate loss-vs-angle curves
+  for each of the three single-objective ablations.
+- ablation__<candidate>/rotation__matrix.npz, rotation__U.npz,
+  rotation__test_evaluation.json, rotation__test_corr2.png: independent
+  saved transformation and TEST diagnostics for each candidate.
+- rotation__test_truth.npz: TEST-only audit copy, created strictly after
+  the joint R/U are saved. FIT objectives never receive this array.
+
+**Scientific boundary:** a finite-degree ZXY response-profile surrogate
+is not the true CR3 generating function. Selecting a candidate using FIT
+predictive-MDL can overfit the candidate library, so TEST theta should only
+be used for final evaluation, not for changing weights. S5 Z contains
+each subject's already-observed Y and is not an unseen-trial forecast.
