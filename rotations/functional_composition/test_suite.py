@@ -16,7 +16,8 @@ HERE=Path(__file__).resolve().parent
 def cfg(**updates):
     config=json.loads((HERE/'config.json').read_text())
     config.update(dict(anchor_subjects=32,starts=1,maxiter=3,sweep_steps=5,
-                       sweep_pairs=1,max_mdl_subjects=100,make_plots=False))
+                       sweep_pairs=1,max_mdl_subjects=100,make_plots=False,
+                       ablation_enabled=False,mdl_compare_candidates=False))
     config.update(updates)
     return config
 
@@ -119,3 +120,51 @@ def test_only_own_package_end_to_end_and_truth_only_after_U(tmp_path):
     with open(folder/'functional__20_metrics.json') as f:
         result=json.load(f)
     assert len(result['best']['metrics'])==20
+
+
+def test_noise_calibrated_operator_uses_disjoint_fit_halves():
+    from rotations.functional_composition.metrics import calibrated_operator_complexity
+    q,x,y,mask=binary_fake(n=112,k=3)
+    config=cfg()
+    proxy=make_proxy(q,x,y,mask,config)
+    assert proxy.split_coefficients is not None
+    assert sum(proxy.fidelity['split_half_fit_subjects'])==proxy.fidelity['fit_subjects']
+    identity,detail=calibrated_operator_complexity(proxy,np.eye(3),config,details=True)
+    tilted=calibrated_operator_complexity(proxy,as_rotation(np.array([.2,.3,-.15]),3),config)
+    assert np.isfinite(identity) and np.isfinite(tilted)
+    assert 0<=detail['hard_modules']<=detail['total_modules']
+    assert detail['calibration'].startswith('FIT')
+    assert all(v['uncertainty']>0 for v in detail['modules'])
+
+
+def test_mdl20_is_nested_and_can_select_nonlinear_modules():
+    q,x,y,mask=binary_fake(n=110,k=3)
+    config=cfg(mdl_candidate_pool=8,mdl_max_extra_modules=2,
+               mdl_selection_trials=12,mdl_prefix_folds=2,
+               mdl_min_delta_nats=0.,max_mdl_subjects=85)
+    proxy=make_proxy(q,x,y,mask,config)
+    mdl=prequential_mdl(proxy,np.eye(3),config)
+    assert np.isfinite(mdl['objective'])
+    assert np.isfinite(mdl['nonlinear_prediction_gain_nats_per_trial'])
+    assert len(mdl['folds'])==2
+    assert mdl['selected_module_count']>=3
+    assert all(f['inner_fit_subjects']+f['inner_validation_subjects']==f['prefix_subjects']
+               for f in mdl['folds'])
+    assert all(f['future_trials']>0 and f['selected_nonlinear_modules']<=2
+               for f in mdl['folds'])
+
+
+def test_all_ablation_directions_and_mdl_candidate_selector():
+    from rotations.functional_composition.ablation import fit_ablations
+    q,x,y,mask=binary_fake(n=112,k=3)
+    config=cfg(ablation_enabled=True,ablation_starts=1,ablation_maxiter=2,
+               mdl_compare_candidates=True,max_mdl_subjects=80,
+               mdl_candidate_pool=5,mdl_max_extra_modules=1,
+               mdl_selection_trials=12,mdl_prefix_folds=1)
+    proxy=make_proxy(q,x,y,mask,config)
+    ab=fit_ablations(proxy,config,np.eye(3))
+    assert set(('identity','joint','operator08','fingerprint11','jointdiag13','mdl20_selected'))==set(ab['rotations'])
+    assert ab['mdl_winner'] in ('identity','joint','operator08','fingerprint11','jointdiag13')
+    assert len(ab['mdl'])==5
+    assert all(np.allclose(r@r.T,np.eye(3),atol=1e-7)
+               for r in ab['rotations'].values())
