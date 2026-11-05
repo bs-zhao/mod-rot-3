@@ -105,3 +105,16 @@ def test_run_persists_matrix_U_and_preserves_theta_boundary(tmp_path):
     assert np.allclose(U,z@A.T+b)
     assert np.allclose(U[chosen],source['data'].rotated(R))
     assert _run_one(args,plugins['identity'],plugins['identity'].defaults,source)[0]=='skipped'
+    # Integration: theta is accessed only AFTER R and U have been persisted.
+    class DatasetWithTheta:
+        @property
+        def parameters(self):
+            assert (out/'rotation__matrix.npz').is_file()
+            assert (out/'rotation__U.npz').is_file()
+            return z + 0.01 * rng.normal(size=z.shape)
+    source['dataset'] = DatasetWithTheta()
+    args.no_evaluate = False
+    status, evaluated = _run_one(args, plugins['identity'], plugins['identity'].defaults, source)
+    assert status == 'completed'
+    assert (evaluated/'rotation__test_evaluation.json').is_file()
+    assert (evaluated/'rotation__test_corr2.png').is_file()

@@ -368,7 +368,7 @@ def _run_one(args, plugin: Plugin, config: dict, source: dict):
     # Theta is only accessed after successful persistence. No ground-truth parameter
     # vector is passed to any plugin or the optimization engine.
     if not args.no_evaluate:
-        from .analysis import param_names
+        from modrot3.analysis import param_names
         labels = param_names(args.model)
         report = evaluate_after_freeze(source['dataset'].parameters, U, source['test'],
                                        folder, plugin.name, labels)
