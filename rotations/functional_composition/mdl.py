@@ -34,8 +34,8 @@ def nonlinear_candidate_pool(proxy, R, config):
     k=proxy.k
     coeff=rotate_coefficients(proxy.coef,R)
     all_nonlin=[t for t in _all_terms(k,len(coeff)-1) if len(t)>=2]
-    # Candidate shortlist is generated from FIT-only structural amplitudes,
-    # not from true theta or from the forward validation responses.
+    # Legacy diagnostic helper only; predictive screening is now performed
+    # separately inside each prefix using its own inner FIT subjects.
     ordered=sorted(all_nonlin,key=lambda term:(-_term_amplitude(coeff,term),term))
     count=int(config.get('mdl_candidate_pool',18))
     if count<1:raise ValueError('mdl_candidate_pool must be >=1')
@@ -76,17 +76,19 @@ def prequential_mdl(proxy,R,config):
     count=min(len(ids),int(config['max_mdl_subjects']))
     if count<60:raise ValueError('Need >=60 FIT subjects for nonlinear predictive MDL')
     ids=ids[:count]
-    pool=nonlinear_candidate_pool(proxy,R,config)
     linear=[()] + [(i,) for i in range(k)]
-    all_terms=linear+pool
+    all_terms=_all_terms(k,len(proxy.coef)-1)
     q=proxy.q_train[ids]@np.asarray(R,float).T
     V=poly_design(q,all_terms)
+    n_nonlin=len(all_terms)-len(linear)
+    pool_limit=min(int(config.get('mdl_candidate_pool',18)),n_nonlin)
+    if pool_limit<1:raise ValueError('mdl_candidate_pool must be >=1')
     H=proxy.h_train[ids]
     phi=proxy.phi_train[ids]
     Y=proxy.y_train[ids]
     mask=proxy.mask_train[ids]
     folds=max(1,min(int(config['mdl_prefix_folds']),5))
-    max_extra=max(0,min(int(config.get('mdl_max_extra_modules',5)),len(pool)))
+    max_extra=max(0,min(int(config.get('mdl_max_extra_modules',5)),pool_limit))
     inner_fraction=float(config.get('mdl_inner_validation_frac',.2))
     if not .05<=inner_fraction<=.45:raise ValueError('mdl_inner_validation_frac must be in [.05,.45]')
     min_gain=float(config.get('mdl_min_delta_nats',.0002))
@@ -116,13 +118,20 @@ def prequential_mdl(proxy,R,config):
         inner_val=np.arange(n_inner_fit,start)
         future=np.arange(start,end)
         chosen=list(range(len(linear)))
-        available=list(range(len(linear),len(all_terms)))
+        # Rank candidate nonlinear modules using INNER FIT subjects ONLY:
+        # no future choice and no inner-validation response is used to build
+        # the shortlist. This avoids candidate screening leakage.
+        prelim=_fit_profile_ridge(V,H,inner_fit,ridge)
+        amplitude=np.linalg.norm(prelim[len(linear):],axis=1)
+        amplitude*=np.maximum(np.std(V[inner_fit,len(linear):],axis=0),1e-6)
+        candidate_idx=np.argsort(-amplitude,kind='stable')[:pool_limit]+len(linear)
+        available=list(map(int,candidate_idx))
         def inner_score(column_ids):
             fitted=_fit_profile_ridge(V[:,column_ids],H,inner_fit,ridge)
             p=V[inner_val][:,column_ids]@fitted
             n,obs=_binary_nll(p,phi_select[inner_val],
                                y_select[inner_val],mask_select[inner_val])
-            code=_module_code(len(column_ids)-len(linear),len(pool),
+            code=_module_code(len(column_ids)-len(linear),n_nonlin,
                               len(inner_fit),proxy.channels,k)
             return n/max(obs,1)+code/max(obs,1)
         current=inner_score(chosen)
@@ -147,7 +156,7 @@ def prequential_mdl(proxy,R,config):
         linear_fit=_fit_profile_ridge(V[:,:len(linear)],H,np.arange(start),ridge)
         linear_profiles=V[future,:len(linear)]@linear_fit
         linear_nll,_=_binary_nll(linear_profiles,phi[future],Y[future],mask[future])
-        code=_module_code(len(chosen)-len(linear),len(pool),start,proxy.channels,k)
+        code=_module_code(len(chosen)-len(linear),n_nonlin,start,proxy.channels,k)
         future_nll+=nll
         future_linear_nll+=linear_nll
         future_trials+=obs
@@ -159,6 +168,7 @@ def prequential_mdl(proxy,R,config):
                             future_subjects=len(future),future_trials=obs,
                             selected_nonlinear_modules=len(chosen)-len(linear),
                             selected_nonlinear_terms=[list(t) for t in chosen_terms[len(linear):]],
+                            inner_fit_candidate_pool=[list(all_terms[int(i)]) for i in candidate_idx],
                             nonlinear_greedy_trace=selected_trace,
                             future_nats_per_trial=float(nll/max(obs,1)),
                             future_linear_only_nats_per_trial=float(linear_nll/max(obs,1)),
@@ -176,6 +186,6 @@ def prequential_mdl(proxy,R,config):
                 selected_module_count=len(final_terms)-1,
                 selected_nonlinear_module_count=len(final_terms)-(k+1),
                 selected_monomials=[list(v) for v in final_terms],
-                candidate_pool=[list(v) for v in pool],
+                candidate_dictionary=[list(v) for v in all_terms[len(linear):]],
                 folds=details,
                 caution='Nested subject-forward sparse polynomial Bernoulli predictive-code approximation, not universal MDL; Z encodes all observed Y')
