@@ -93,7 +93,11 @@ def test_s7_additional_artifacts_without_replacing_original(tmp_path):
                  "s12__pca_and_regression.png","s12__ridge_scatter.png",
                  "s12__diagnostics.json","s12__pca_threshold_ridge.csv",
                  "s12__pca_threshold_predictions.npz",
-                 "s12__pca_threshold_scatter.png"):
+                 "s12__pca_threshold_scatter.png",
+                 "s12__ridge_input_comparison.csv",
+                 "s12__ridge_input_deltas.csv",
+                 "s12__ridge_input_comparison_scatter.png",
+                 "s12__ridge_input_comparison_r2.png"):
         assert (folder/name).is_file(), name
     with np.load(folder/"s12__pca_threshold_predictions.npz") as fz:
         assert fz["theta_threshold_pca_pred"].shape == (15,d)
@@ -103,3 +107,55 @@ def test_s7_additional_artifacts_without_replacing_original(tmp_path):
     assert old["pca_variance_threshold_ridge"]["retained_pc_count"]==2
     s4=json.loads((tmp_path/"s4_evaluate"/"s4_evaluate__summary.json").read_text())
     assert "results" in s4 and "pca_variance_threshold_ridge" in s4
+
+
+def test_s7_prints_and_compares_all_z_and_thresholded_pcs(tmp_path, capsys):
+    import csv
+    from types import SimpleNamespace
+    ns=_s7()
+    f=ns["regression_report"]
+    rng=np.random.default_rng(99)
+    n,d=90,4
+    z=rng.normal(size=(n,d))
+    truth=z@rng.normal(size=(d,d)) + rng.normal(size=(n,d))*.03
+    splits=dict(train=np.arange(60),validation=np.arange(60,75),
+                test=np.arange(75,90))
+    folder=tmp_path/"s12_z_diagnostics"
+    folder.mkdir()
+    source=tmp_path/"s5.npz"
+    source.write_bytes(b"synthetic")
+    np.savez_compressed(folder/"s12__pca.npz",
+        source_latent_sha256=np.array("same"),transformed_z=z,
+        train_ids=splits["train"],validation_ids=splits["validation"],
+        test_ids=splits["test"],
+        explained_variance_ratio=np.array([.65,.20,.10,.05]),
+        components=np.eye(d),train_mean=np.zeros(d),
+        explained_variance=np.array([6.5,2.,1.,.5]))
+    st=f.__globals__
+    st["load_frozen"]=lambda _: (z,truth,splits,source)
+    st["sha256"]=lambda _: "same"
+    st["train_path"]=lambda _: tmp_path/"ck.pt"
+    st["condition"]=lambda _: "synthetic"
+    st["stage_folder"]=lambda _,stage:tmp_path/stage
+    f(SimpleNamespace(model="CR3",beta=0.,latent_dim=d,pca_threshold=.10))
+    printed=capsys.readouterr().out
+    assert "FULL Z (all raw Z)" in printed
+    assert "SELECTED PCs (thresholded PCA)" in printed
+    assert "Full-Z predictors: Z1-Z4 (4 jointly)" in printed
+    assert "Retained PCA components: 2 / 4 (PC1, PC2)" in printed
+    assert printed.count("alpha: TEST R²=")==2
+    assert printed.count("lambda_loss: TEST R²=")==2
+    assert "SELECTED PCs minus FULL Z" in printed
+    with (folder/"s12__ridge_input_comparison.csv").open(newline="") as fp:
+        rows=list(csv.DictReader(fp))
+    assert len(rows)==8
+    assert {r["representation"] for r in rows}=={"full_z","threshold_pca"}
+    assert all(int(r["feature_count"])==4 for r in rows[:4])
+    assert all(int(r["feature_count"])==2 for r in rows[4:])
+    assert all(r["features"]=="PC1,PC2" for r in rows[4:])
+    with (folder/"s12__ridge_input_deltas.csv").open(newline="") as fp:
+        deltas=list(csv.DictReader(fp))
+    assert len(deltas)==4
+    assert np.isclose(
+        float(deltas[0]["delta_test_r2_pca_minus_full_z"]),
+        float(rows[4]["test_r2"])-float(rows[0]["test_r2"]))

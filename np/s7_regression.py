@@ -114,6 +114,35 @@ def regression_report(args):
                   validation_r2=full['validation_r2'][j],
                   selected_ridge_alpha=full['selected_ridge_alpha'][j])
              for j,name in enumerate(names)]
+    # One auditable table containing BOTH independently fitted regressions.
+    # All eight raw Z columns are included jointly, not fitted one at a time.
+    comparison_rows=[]
+    for label,metrics,features in (
+        ('full_z',full,[f'Z{i+1}' for i in range(z.shape[1])]),
+        ('threshold_pca',filtered,selected_pc_names),
+    ):
+        for j,name in enumerate(names):
+            comparison_rows.append(dict(
+                representation=label,parameter=name,feature_count=len(features),
+                features=','.join(features),
+                pca_threshold=(threshold if label=='threshold_pca' else ''),
+                test_r2=metrics['test_r2'][j],
+                test_pearson_r=metrics['test_pearson_r'][j],
+                test_rmse=metrics['test_rmse'][j],
+                validation_r2=metrics['validation_r2'][j],
+                selected_ridge_alpha=metrics['selected_ridge_alpha'][j]))
+    comparison_deltas=[
+        dict(parameter=name,
+             full_z_test_r2=full['test_r2'][j],
+             threshold_pca_test_r2=filtered['test_r2'][j],
+             delta_test_r2_pca_minus_full_z=filtered['test_r2'][j]-full['test_r2'][j],
+             full_z_test_pearson_r=full['test_pearson_r'][j],
+             threshold_pca_test_pearson_r=filtered['test_pearson_r'][j],
+             full_z_test_rmse=full['test_rmse'][j],
+             threshold_pca_test_rmse=filtered['test_rmse'][j])
+        for j,name in enumerate(names)]
+    write_rows(folder/'s12__ridge_input_comparison.csv',comparison_rows)
+    write_rows(folder/'s12__ridge_input_deltas.csv',comparison_deltas)
     write_rows(folder/'s12__full_z_ridge.csv',results)
     write_rows(folder/'s12__pca_ridge_curve.csv',curve)
     write_rows(folder/'s12__pca_threshold_ridge.csv',filtered_rows)
@@ -151,6 +180,15 @@ def regression_report(args):
             selected_ridge_alpha=full['selected_ridge_alpha']),
         pca_k_ridge=curve,
         pca_variance_threshold_ridge=filtered_summary,
+        ridge_input_comparison=dict(
+            full_z_feature_count=int(z.shape[1]),
+            selected_pc_count=int(len(retained)),
+            selected_pc_names=selected_pc_names,
+            full_z_mean_test_r2=float(np.mean(full['test_r2'])),
+            threshold_pca_mean_test_r2=float(np.mean(filtered['test_r2'])),
+            delta_mean_test_r2_pca_minus_full_z=float(
+                np.mean(filtered['test_r2'])-np.mean(full['test_r2'])),
+            per_parameter_deltas=comparison_deltas),
         evaluation_policy='TRAIN PCA; TRAIN standardization; VAL ridge alpha; FIT+VAL refit; TEST scores')
     (folder/'s12__diagnostics.json').write_text(json.dumps(diagnostics,indent=2),encoding='utf-8')
     fig,axes=plt.subplots(1,2,figsize=(12,4.5))
@@ -183,20 +221,70 @@ def regression_report(args):
     fig.tight_layout()
     fig.savefig(folder/'s12__pca_threshold_scatter.png',dpi=180)
     plt.close(fig)
-    print(f'{args.model} complete TEST full-Z Ridge r²:',
-          ', '.join(f'{p}={q:.4f}' for p,q in zip(names,full['test_r2'])))
+    # Compare both fitted models on identical TEST subjects and parameter scales.
+    fig,axs=plt.subplots(2,len(names),figsize=(3.1*len(names),7.0),squeeze=False)
+    for j,name in enumerate(names):
+        true=theta[te,j]
+        all_values=np.concatenate((
+            true,full['theta_linear_pred'][:,j],
+            filtered['theta_linear_pred'][:,j]))
+        low,high=float(np.min(all_values)),float(np.max(all_values))
+        padding=max((high-low)*.05,1e-6)
+        low-=padding
+        high+=padding
+        for row,(label,metrics) in enumerate((
+            ('All Z',full),('Selected PCs',filtered))):
+            ax=axs[row,j]
+            ax.scatter(true,metrics['theta_linear_pred'][:,j],s=6,alpha=.28)
+            ax.plot([low,high],[low,high],ls='--',lw=1,color='gray')
+            ax.set(xlim=(low,high),ylim=(low,high),
+                   xlabel='True theta',ylabel=f'{label} prediction',
+                   title=f'{name} | TEST R²={metrics["test_r2"][j]:.3f}')
+            ax.set_aspect('equal',adjustable='box')
+    fig.suptitle(
+        f'{args.model}: Full Z ({z.shape[1]}) vs '
+        f'threshold PCs ({len(retained)}; explained ratio > {threshold:g})')
+    fig.tight_layout()
+    fig.savefig(folder/'s12__ridge_input_comparison_scatter.png',dpi=180)
+    plt.close(fig)
+    fig,ax=plt.subplots(figsize=(max(7,1.6*len(names)+2),4.5))
+    positions=np.arange(len(names))
+    width=.38
+    ax.bar(positions-width/2,full['test_r2'],width,label=f'All {z.shape[1]} Z')
+    ax.bar(positions+width/2,filtered['test_r2'],width,
+           label=f'Selected {len(retained)} PCs')
+    ax.set_xticks(positions,names)
+    ax.set_ylabel('TEST parameter R²')
+    ax.set_title(f'{args.model}: Full Z vs PCA threshold > {threshold:g}')
+    ax.legend()
+    fig.tight_layout()
+    fig.savefig(folder/'s12__ridge_input_comparison_r2.png',dpi=180)
+    plt.close(fig)
+    print(f'=== {args.model} S7: BOTH linear parameter regressions ===')
+    print(f'Full-Z predictors: Z1-Z{z.shape[1]} ({z.shape[1]} jointly)')
     print(f'PCA individual explained-variance threshold: > {threshold:g}')
     print(f'Retained PCA components: {len(retained)} / {len(explained)} '
           f'({", ".join(selected_pc_names)}); '
           f'variance explained: {100*np.sum(explained_retained):.2f}%')
-    print(f'Thresholded-PCA TEST mean r²: {np.mean(filtered["test_r2"]):.4f}')
-    for j,name in enumerate(names):
-        print(f'  {name}: TEST r²={filtered["test_r2"][j]:.4f}, '
-              f'r={filtered["test_pearson_r"][j]:+.4f}, '
-              f'RMSE={filtered["test_rmse"][j]:.4f}, '
-              f'VAL r²={filtered["validation_r2"][j]:.4f}, '
-              f'ridge alpha={filtered["selected_ridge_alpha"][j]:g}')
-    print('Thresholded-PCA regression CSV:', folder/'s12__pca_threshold_ridge.csv')
+    for label,metrics in (
+        ('FULL Z (all raw Z)',full),
+        ('SELECTED PCs (thresholded PCA)',filtered),
+    ):
+        print(f'--- {label} ---')
+        print(f'Mean TEST R²: {np.mean(metrics["test_r2"]):.4f}')
+        for j,name in enumerate(names):
+            print(f'  {name}: TEST R²={metrics["test_r2"][j]:.4f}, '
+                  f'Pearson r={metrics["test_pearson_r"][j]:+.4f}, '
+                  f'RMSE={metrics["test_rmse"][j]:.4f}, '
+                  f'VAL R²={metrics["validation_r2"][j]:.4f}, '
+                  f'Ridge alpha={metrics["selected_ridge_alpha"][j]:g}')
+    print('--- SELECTED PCs minus FULL Z: TEST R² changes ---')
+    for row in comparison_deltas:
+        print(f'  {row["parameter"]}: '
+              f'{row["delta_test_r2_pca_minus_full_z"]:+.4f}')
+    print('Input comparison CSV:', folder/'s12__ridge_input_comparison.csv')
+    print('Comparison scatter:', folder/'s12__ridge_input_comparison_scatter.png')
+    print('Comparison R² plot:', folder/'s12__ridge_input_comparison_r2.png')
     print('Regression results:', folder)
 
 
