@@ -60,16 +60,17 @@ def main():
     ax.set_xticks(positions,models);ax.set_ylim(0,1.08);ax.set_ylabel('TEST mean Pearson r² (TRAIN axis matching)')
     ax.set_title('Fixed objective audit | exploratory data');ax.legend(frameon=False,loc='upper center',ncol=3,fontsize=8)
     ax.spines[['top','right']].set_visible(False);fig.tight_layout();fig.savefig(dest/'stage_summary.png',dpi=180);plt.close(fig)
-    fig,axes=plt.subplots(4,3,figsize=(12,15),squeeze=False)
+    fig,axes=plt.subplots(4,3,figsize=(15,16),squeeze=False)
     for row,m in enumerate(models):
         for col,name in enumerate(['identity','contrast_logit','supervised_reference']):
             report=details[m][name];c=np.array(report['signed_test_corr']);ax=axes[row,col]
             ax.imshow(c*c,vmin=0,vmax=1,cmap='Blues')
             ax.set_xticks(range(c.shape[1]),[f'u{i+1}' for i in range(c.shape[1])]);ax.set_yticks(range(c.shape[0]),report['parameter_names'])
+            ax.tick_params(labelsize=9)
             for i in range(c.shape[0]):
                 for j in range(c.shape[1]):ax.text(j,i,f'{c[i,j]**2:.2f}',ha='center',va='center',fontsize=8,color='white' if c[i,j]**2>.55 else 'black')
             ax.set_title(f'{m} | {name}',fontsize=10)
-    fig.tight_layout();fig.savefig(dest/'all_model_heatmaps.png',dpi=160);plt.close(fig)
+    fig.tight_layout(w_pad=3,h_pad=2);fig.savefig(dest/'all_model_heatmaps.png',dpi=160);plt.close(fig)
     analytic=ROOT/'outputs'/'research'/'stimulus_contrast'/'analytic_v1'
     for name in ['analytic.json','toy_counterexamples.png']:shutil.copy2(analytic/name,dest/name)
     for m in ['C1','CR3']:
