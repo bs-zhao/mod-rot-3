@@ -1,0 +1,41 @@
+{
+  "seed": 31,
+  "stimulus_features": 18,
+  "stimulus_ridge": 1,
+  "surrogate_degree": 3,
+  "surrogate_ridge": 3,
+  "anchor_subjects": 160,
+  "rank_metric": "entropy",
+  "channel_mode": "raw",
+  "channel_floor": 0.025,
+  "starts": 8,
+  "maxiter": 250,
+  "optimizer": "Powell",
+  "min_axis_energy_fraction": 0,
+  "weak_axis_weight": 0,
+  "plane_steps": 73,
+  "plane_pairs": 6,
+  "stress_enabled": false,
+  "stress_subject_counts": [
+    320,
+    640,
+    1280
+  ],
+  "stress_seeds": [
+    31,
+    47,
+    73
+  ],
+  "stress_rank_metrics": [
+    "entropy",
+    "participation",
+    "tail"
+  ],
+  "stress_channel_modes": [
+    "raw",
+    "unitvar"
+  ],
+  "stress_starts": 2,
+  "stress_maxiter": 90,
+  "make_plots": true
+}

@@ -62,3 +62,8 @@ python rotations/functional_composition/run.py --model CR3 --condition beta0p000
 ```
 
 Its own folder contains `surrogate.py`, `metrics.py`, `mdl.py`, `optimizer.py`, `diagnostics.py`, `experiment.py`, `runner.py`, `run.py`, `config.json`, and tests. It neither imports nor runs other rotation suites. Not all 20 indicators are exact population statistics; the suite documents which are estimators, proxies, and negative controls.
+
+
+## Effect fingerprint rank suite
+
+[`effect_fingerprint/`](effect_fingerprint/README.md) is an independent full experiment to validate metric 11 under multiple rank definitions, channel metrics and FIT-only resampling. It has its own run.py, surrogate, loss, optimizer, diagnostics and tests. No other rotation suite is executed.
