@@ -1,0 +1,149 @@
+{
+  "input_checks": [
+    {
+      "model": "C1",
+      "representation": "pca_whitened",
+      "kind": "dataset_sha",
+      "sha256": "2765dd0031c983b5bfcdff37808687e60a07eebb51c58bf78399930597338c09"
+    },
+    {
+      "model": "C1",
+      "representation": "pca_whitened",
+      "kind": "checkpoint_sha",
+      "sha256": "ee635bc2e8c527062f667a3112d971287e10176962f41cebea31d9f6072016b2"
+    },
+    {
+      "model": "C1",
+      "representation": "pca_whitened",
+      "kind": "latent_sha",
+      "sha256": "b68be02ae58c476c6e930a266d506fc2aba4ac3d5ce0796a5848784d961a6652"
+    },
+    {
+      "model": "C1",
+      "representation": "raw_top_standardized",
+      "kind": "dataset_sha",
+      "sha256": "2765dd0031c983b5bfcdff37808687e60a07eebb51c58bf78399930597338c09"
+    },
+    {
+      "model": "C1",
+      "representation": "raw_top_standardized",
+      "kind": "checkpoint_sha",
+      "sha256": "ee635bc2e8c527062f667a3112d971287e10176962f41cebea31d9f6072016b2"
+    },
+    {
+      "model": "C1",
+      "representation": "raw_top_standardized",
+      "kind": "latent_sha",
+      "sha256": "b68be02ae58c476c6e930a266d506fc2aba4ac3d5ce0796a5848784d961a6652"
+    },
+    {
+      "model": "C2",
+      "representation": "pca_whitened",
+      "kind": "dataset_sha",
+      "sha256": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+    },
+    {
+      "model": "C2",
+      "representation": "pca_whitened",
+      "kind": "checkpoint_sha",
+      "sha256": "84ac9a0a770abe900840b703d4d015b301cb10e592babb31d2759eb89628cae7"
+    },
+    {
+      "model": "C2",
+      "representation": "pca_whitened",
+      "kind": "latent_sha",
+      "sha256": "6e7e30ab0b7715e664e56795720581d07c6001d73c949850d3a26ae79a9fd346"
+    },
+    {
+      "model": "C2",
+      "representation": "raw_top_standardized",
+      "kind": "dataset_sha",
+      "sha256": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+    },
+    {
+      "model": "C2",
+      "representation": "raw_top_standardized",
+      "kind": "checkpoint_sha",
+      "sha256": "84ac9a0a770abe900840b703d4d015b301cb10e592babb31d2759eb89628cae7"
+    },
+    {
+      "model": "C2",
+      "representation": "raw_top_standardized",
+      "kind": "latent_sha",
+      "sha256": "6e7e30ab0b7715e664e56795720581d07c6001d73c949850d3a26ae79a9fd346"
+    },
+    {
+      "model": "C3",
+      "representation": "pca_whitened",
+      "kind": "dataset_sha",
+      "sha256": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+    },
+    {
+      "model": "C3",
+      "representation": "pca_whitened",
+      "kind": "checkpoint_sha",
+      "sha256": "75c25b84a86c5928533ddaf6fb6b3e4ef117f5bf2c188067616d2efa3d11659e"
+    },
+    {
+      "model": "C3",
+      "representation": "pca_whitened",
+      "kind": "latent_sha",
+      "sha256": "c3a5bb8d65082ed9250bde6a17e6d61b2674d54d36f3d520783009404aafb012"
+    },
+    {
+      "model": "C3",
+      "representation": "raw_top_standardized",
+      "kind": "dataset_sha",
+      "sha256": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+    },
+    {
+      "model": "C3",
+      "representation": "raw_top_standardized",
+      "kind": "checkpoint_sha",
+      "sha256": "75c25b84a86c5928533ddaf6fb6b3e4ef117f5bf2c188067616d2efa3d11659e"
+    },
+    {
+      "model": "C3",
+      "representation": "raw_top_standardized",
+      "kind": "latent_sha",
+      "sha256": "c3a5bb8d65082ed9250bde6a17e6d61b2674d54d36f3d520783009404aafb012"
+    },
+    {
+      "model": "CR3",
+      "representation": "pca_whitened",
+      "kind": "dataset_sha",
+      "sha256": "6a7b7773300d6052f062b034a0f1733ca4a431b77935c97197a167b993b21b45"
+    },
+    {
+      "model": "CR3",
+      "representation": "pca_whitened",
+      "kind": "checkpoint_sha",
+      "sha256": "dcdf5270d8fff12f5ff4c2670ff7e2cd9b5b3d7ae3ed031ad278ed3469b54c36"
+    },
+    {
+      "model": "CR3",
+      "representation": "pca_whitened",
+      "kind": "latent_sha",
+      "sha256": "04ca2ecf3f956c1a24b9550da382bd1c374e9acbd262f884f6db40ee2c39963c"
+    },
+    {
+      "model": "CR3",
+      "representation": "raw_top_standardized",
+      "kind": "dataset_sha",
+      "sha256": "6a7b7773300d6052f062b034a0f1733ca4a431b77935c97197a167b993b21b45"
+    },
+    {
+      "model": "CR3",
+      "representation": "raw_top_standardized",
+      "kind": "checkpoint_sha",
+      "sha256": "dcdf5270d8fff12f5ff4c2670ff7e2cd9b5b3d7ae3ed031ad278ed3469b54c36"
+    },
+    {
+      "model": "CR3",
+      "representation": "raw_top_standardized",
+      "kind": "latent_sha",
+      "sha256": "04ca2ecf3f956c1a24b9550da382bd1c374e9acbd262f884f6db40ee2c39963c"
+    }
+  ],
+  "all_source_hashes_verified": true
+}

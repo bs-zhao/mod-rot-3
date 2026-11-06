@@ -1,0 +1,83 @@
+{
+  "model": "CR3",
+  "condition": "beta0p0005_lambda0_ctx0p25to0p8_L8",
+  "repeat": 1,
+  "representation": {
+    "kind": "raw_top_standardized",
+    "selected_indices": [
+      1,
+      2,
+      3,
+      4
+    ],
+    "scale": [
+      1.04980080457929,
+      1.0204753656149324,
+      0.9361032305113279,
+      0.8427905113734306
+    ]
+  },
+  "config": {
+    "seed": 31,
+    "condition": "beta0p0005_lambda0_ctx0p25to0p8_L8",
+    "representations": [
+      "pca_whitened",
+      "raw_top_standardized"
+    ],
+    "rotation_dimensions": {
+      "C1": 4,
+      "C2": 4,
+      "C3": 6,
+      "CR3": 4
+    },
+    "fit_max_subjects": 128,
+    "trials_per_subject": 40,
+    "common_x": 64,
+    "quadrature_order": 5,
+    "whiten_floor": 1e-05,
+    "device": "cuda",
+    "batch_points": 4096,
+    "starts": 8,
+    "maxiter": 500,
+    "regression_geomin_eps": 1e-06,
+    "fisher_geomin_eps": 0.01,
+    "fisher_trace_floor": 1e-10,
+    "n_knots": 5,
+    "n_bins": 4,
+    "gradient_rows": 1500,
+    "joint_gradient_rows": 500,
+    "coverage_lambda": 0.1,
+    "coverage_tau": 0.05,
+    "row_min_frac": 0.005,
+    "shape_knots": 6,
+    "shape_grid": 301,
+    "shape_effect_fraction": 0.08,
+    "shape_dominance": 0.55,
+    "fd_step": 0.2,
+    "jvol_p": 16,
+    "jvol_steps": 3000,
+    "jvol_lr": 0.02,
+    "jvol_condition_limit": 1000000,
+    "tag": "",
+    "smoke": false
+  },
+  "source_hashes": {
+    "__init__.py": "fe137af7c16535b6ffb69d54eda2edb2216a76cf22bb4371048aaead422ec909",
+    "config.json": "e0cb573f6a1efa25e3bf8bb9562204e3b5b1ff8c5abd0b1b99736505ba65be40",
+    "data.py": "1afe3982436202fa494a03c1f77f7aaaea3b2a08da0988b2f1e289b58aeab2ad",
+    "decoder.py": "9270d3563053d5957583b1269522487bccd279e8f006baa7200866448e1b06a2",
+    "entropy_reference.py": "c1dcdd583075ac5515c6b3539b76fc3c207314b7cc2a961d459c4e99babdb38d",
+    "evaluation.py": "4f49bf5f6fb50b00fc752a3420512e405c4996950f3d70a237a602d701528a76",
+    "fields.py": "86a1eda094946ab6db180a22031f5e73c6e7a146a2325b5f8f83359a7c015034",
+    "methods.py": "57aa12060b2278417bb1459bbc9c9a97831985af2bb1b7080f59a7b93e8a9820",
+    "optimization.py": "d97d429293bc4adc192955ce855137f399ac29bc1c08254ade40d4ec5c0fff4c",
+    "regression_reference.py": "fa139b37f908dfa46c0260b7b4d5be426f753ec82d969412d651ebca69d2d6b1",
+    "run.py": "3e24fc369f31e77edfaf4af2bfa476290e2e32f5af23a5105af484c6283556ab",
+    "shape_reference.py": "e0307ed808d8e8e7b8c4556d954bc9db0bf9f7afd6dd52a5be571c4d9cc61fc4",
+    "source_manifest.json": "3201166ca8ed033a80415de386043e0d9ea808a0bd245d939da219e27cf57caf",
+    "test_methods.py": "7ae9f26c076c9c869630df9b7ff25f50c13227b1cf430d13084f6b80f001a9de"
+  },
+  "latent_sha": "04ca2ecf3f956c1a24b9550da382bd1c374e9acbd262f884f6db40ee2c39963c",
+  "checkpoint_sha": "dcdf5270d8fff12f5ff4c2670ff7e2cd9b5b3d7ae3ed031ad278ed3469b54c36",
+  "dataset_sha": "6a7b7773300d6052f062b034a0f1733ca4a431b77935c97197a167b993b21b45"
+}
