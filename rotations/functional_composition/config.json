@@ -35,5 +35,16 @@
   "mdl_inner_validation_frac": 0.2,
   "mdl_min_delta_nats": 0.0002,
   "mdl_selection_trials": 64,
-  "mdl_code_multiplier": 1
+  "mdl_code_multiplier": 1,
+  "operator_audit_floors": [
+    0.01,
+    0.025,
+    0.05
+  ],
+  "operator_audit_noise_z": [
+    1.5,
+    2,
+    2.5,
+    3
+  ]
 }

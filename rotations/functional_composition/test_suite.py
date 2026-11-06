@@ -120,6 +120,8 @@ def test_only_own_package_end_to_end_and_truth_only_after_U(tmp_path):
     with open(folder/'functional__20_metrics.json') as f:
         result=json.load(f)
     assert len(result['best']['metrics'])==20
+    assert (folder/'functional__operator_stability.csv').is_file()
+    assert (folder/'functional__operator_modules.csv').is_file()
 
 
 def test_noise_calibrated_operator_uses_disjoint_fit_halves():
@@ -177,3 +179,18 @@ def test_all_ablation_directions_and_mdl_candidate_selector():
     assert len(ab['mdl'])==5
     assert all(np.allclose(r@r.T,np.eye(3),atol=1e-7)
                for r in ab['rotations'].values())
+
+
+
+def test_operator_noise_threshold_changes_active_module_count():
+    from rotations.functional_composition.operator_audit import audit
+    q,x,y,mask=binary_fake(n=110,k=3)
+    config=cfg(operator_audit_floors=[.015,.04],
+               operator_audit_noise_z=[1.0,2.0,3.0])
+    proxy=make_proxy(q,x,y,mask,config)
+    rows,modules=audit(proxy,{'identity':np.eye(3)},config)
+    assert len(rows)==6 and len(modules)>0
+    for floor in (.015,.04):
+        values=[r['hard_modules'] for r in rows if r['relative_floor']==floor]
+        assert values==sorted(values,reverse=True)
+    assert all(0<=r['half_support_jaccard']<=1 for r in rows)

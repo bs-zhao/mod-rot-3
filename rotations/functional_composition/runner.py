@@ -12,6 +12,7 @@ def main(argv=None):
         # produce diagnostics if fitted state exists in this process.
         from . import _LAST_FIT
         if _LAST_FIT is not None and (not (folder/'functional__20_metrics.json').is_file()
-                                      or not (folder/'functional__ablation_test.json').is_file()):
+                                      or not (folder/'functional__ablation_test.json').is_file()
+                                      or not (folder/'functional__operator_stability.csv').is_file()):
             postfit(folder,config)
     return folder

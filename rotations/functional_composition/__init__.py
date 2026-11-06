@@ -35,9 +35,11 @@ def postfit(folder,config):
         raise RuntimeError('No fitted response-profile proxy in this process')
     from .diagnostics import save_postfit
     from .ablation import save_ablations
+    from .operator_audit import save_operator_audit
     from pathlib import Path
     with np.load(Path(folder)/'rotation__matrix.npz',allow_pickle=False) as file:
         R=np.asarray(file['R'])
     proxy,objective,ablations=_LAST_FIT
     save_postfit(folder,proxy,objective,R,config)
     save_ablations(folder,proxy,ablations,R,config)
+    save_operator_audit(folder,proxy,ablations['rotations'],config)

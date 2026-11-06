@@ -145,3 +145,8 @@ is not the true CR3 generating function. Selecting a candidate using FIT
 predictive-MDL can overfit the candidate library, so TEST theta should only
 be used for final evaluation, not for changing weights. S5 Z contains
 each subject's already-observed Y and is not an unseen-trial forecast.
+
+
+### Operator08 uncertainty audit
+
+This suite now records `functional__operator_stability.csv` (hard-module counts and split-half overlap across uncertainty floors and SNR thresholds), `functional__operator_modules.csv` (per-term signal, half estimates, uncertainty and support), and `functional__operator_stability.png`. This **does not modify** the FIT rotation or infer theta from coefficients. MDL20 also saves `functional__mdl_candidate_decisions.csv` with each quadratic/cubic candidate's raw cross-entropy gain, code penalty, net gain and rejection reason. Tune only on analytic toys or independent FIT model-selection data; do not choose a cost weight by looking at CR3 TEST r².
