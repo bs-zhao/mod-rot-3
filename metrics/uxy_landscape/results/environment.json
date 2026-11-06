@@ -1,0 +1,14 @@
+{
+  "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+  "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+  "versions": {
+    "numpy": "2.2.6",
+    "scipy": "1.16.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "torch": "2.9.1+cu130",
+    "matplotlib": "3.10.5",
+    "threadpoolctl": "3.6.0"
+  },
+  "engine_freeze_commit": "1ffd2015e9203f023c57f6470b04a2ba65fd27f2"
+}
