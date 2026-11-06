@@ -54,3 +54,26 @@ def test_weight_audit_reconstructs_historical_primitives():
     q=np.zeros((len(g),3))
     assert np.isclose(j,contextual_jointdiag(proxy,a,q),atol=1e-12)
     assert np.isclose(f,fingerprint_and_drift(proxy,a,q)[0],atol=1e-12)
+
+
+def test_truth_free_loader_handles_column_responses(tmp_path,monkeypatch):
+    from types import SimpleNamespace
+    from . import data
+    monkeypatch.setattr(data,'ROOT',tmp_path)
+    base=tmp_path/'outputs'/'choice'/'CR3'
+    observed=base/'s1_generate'/'s1_generate__dataset.npz';observed.parent.mkdir(parents=True)
+    counts=np.full(12,5);rng=np.random.default_rng(17)
+    # A full dataset read would fail on this object truth field with allow_pickle=False.
+    np.savez(observed,trial_counts=counts,subject_index=np.repeat(np.arange(12),counts),
+             trial_index=np.tile(np.arange(5),12),x=rng.normal(size=(60,6)),
+             y=rng.integers(0,2,size=(60,1)),parameters=np.array([object()],dtype=object))
+    checkpoint=base/'s3_train'/'condition'/'repeat01'/'s3_train__checkpoint.pt'
+    checkpoint.parent.mkdir(parents=True);checkpoint.write_bytes(b'test checkpoint provenance')
+    latent=base/'s4_evaluate'/'condition'/'repeat01'/'s4_evaluate__latent.npz';latent.parent.mkdir(parents=True)
+    np.savez(latent,z=rng.normal(size=(12,8)),train_ids=np.arange(8),validation_ids=np.arange(8,10),test_ids=np.arange(10,12),
+             context_mode='all_observed_trials',dataset_sha256=data.sha256(observed),checkpoint_sha256=data.sha256(checkpoint))
+    args=SimpleNamespace(model='CR3',condition='condition',repeat=1,whiten_floor=1e-5,seed=31,fit_max_subjects=8)
+    source=data.load_frozen(args)
+    assert source['y_fit'].shape==(8,5)
+    assert 'dataset' not in source and 'theta' not in source and 'parameters' not in source
+    assert np.allclose(source['q_fit'],((source['z']-source['pca'].mean_)@source['W'].T)[source['chosen']])

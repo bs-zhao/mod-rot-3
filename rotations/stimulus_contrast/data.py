@@ -49,7 +49,8 @@ def load_frozen(args):
     x=np.zeros((n,t,d),np.float32);y=np.zeros((n,t),np.int64);mask=np.zeros((n,t),bool)
     offsets=np.r_[0,np.cumsum(counts)]
     for i,count in enumerate(counts):
-        sl=slice(offsets[i],offsets[i+1]);x[i,:count]=data.x[sl];y[i,:count]=data.y[sl];mask[i,:count]=True
+        sl=slice(offsets[i],offsets[i+1])
+        x[i,:count]=data.x[sl];y[i,:count]=np.asarray(data.y[sl]).reshape(-1);mask[i,:count]=True
     if not np.all(np.isin(y[mask],[0,1])):raise ValueError('Nonbinary observations')
     return dict(z=z,z_fit=z[chosen],q_fit=((z-pca.mean_)@w.T)[chosen],x_fit=x[chosen],y_fit=y[chosen],mask_fit=mask[chosen],
                 checkpoint_path=checkpoint,whiten_floor=args.whiten_floor,W=w,pca=pca,chosen=chosen,tr=train,val=val,te=test,
