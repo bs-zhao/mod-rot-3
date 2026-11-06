@@ -165,3 +165,9 @@ Each immutable run contains protocol/source/input hashes, design nodes/fields,
 A1 diagnostics, and one subfolder per method with mapping, starts, fit/evaluation.
 Combined comparison CSV and run paths are under
 `outputs/choice/historical_transfer/summary_<fingerprint>/`.
+
+## Complete u–theta correlation atlas
+
+[Zoomable vector PDF](figures/all_methods_four_models_signed_correlations.pdf), [full-resolution PNG](figures/all_methods_four_models_signed_correlations.png), [SVG](figures/all_methods_four_models_signed_correlations.svg).
+
+One figure contains all 272 signed TEST correlation matrices. Rows inside each panel are original u axes; columns are theta. Columns of panels group the four models under both coordinate representations. Black outlines use the saved TRAIN assignment; no signs or axes are changed. The plot audit verifies every one of 5,712 values against the saved correlation matrices, with zero difference. Reproduce with `python rotations/historical_transfer/plot_all_correlations.py`.
