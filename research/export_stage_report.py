@@ -49,6 +49,8 @@ def main():
             shutil.copy2(run/name,target/name)
         if (run/'oracle_structure_audit'/'summary.json').exists():
             shutil.copy2(run/'oracle_structure_audit'/'summary.json',target/'decoder_fidelity.json')
+        if (run/'profile_fidelity_audit.json').exists():
+            shutil.copy2(run/'profile_fidelity_audit.json',target/'profile_fidelity.json')
     write_csv(dest/'all_results.csv',rows);write_json(dest/'signed_correlations.json',details);write_json(dest/'provenance.json',manifest)
     fig,ax=plt.subplots(figsize=(10,4.7));positions=np.arange(4);width=.25
     for off,(name,label,color) in enumerate([('identity','PCA Identity','#68768a'),('contrast_logit','Stimulus contrast (rejected)','#d65b4b'),('supervised_reference','Supervised diagnostic','#3b8c78')]):
@@ -74,6 +76,14 @@ def main():
         base=ROOT/'outputs'/'choice'/m/'rotations'/'stimulus_contrast'
         shutil.copy2(base/'channel_audit_v1'/'comparison.csv',dest/f'{m}_channel_basis_audit.csv')
         shutil.copy2(base/'weight_audit_v2'/'comparison.csv',dest/f'{m}_weight_audit.csv')
+    fig,axes=plt.subplots(1,2,figsize=(10,4.5))
+    for ax,m in zip(axes,['C1','CR3']):
+        pairs=np.load(runs[m]/'profile_fidelity_loss_pairs.npz')['TEST_anchors_loss_pairs']
+        ax.scatter(pairs[:,1],pairs[:,0],s=18,alpha=.7)
+        limits=[float(pairs.min()),float(pairs.max())];ax.plot(limits,limits,c='gray',lw=1)
+        ax.set_xlabel('Frozen decoder raw-X contrast loss');ax.set_ylabel('Profile proxy raw-X contrast loss')
+        ax.set_title(f'{m}: same subjects, X and loss\nr={np.corrcoef(pairs.T)[0,1]:.3f} across 64 fixed rotations')
+    fig.tight_layout();fig.savefig(dest/'profile_objective_fidelity.png',dpi=160);plt.close(fig)
     print(json.dumps(dict(output=str(dest),source_runs={k:str(v) for k,v in runs.items()}),indent=2))
 
 
