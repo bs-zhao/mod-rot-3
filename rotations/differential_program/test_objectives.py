@@ -65,3 +65,28 @@ def test_x_projection_residual_cost_is_rotation_invariant():
     residual_rot=rotated-(phi@second).reshape(x,n,k)
     assert np.allclose(residual_rot,residual@a.T)
     assert np.isclose(np.sum(residual_rot**2),np.sum(residual**2))
+
+
+def test_function_symmetries_identify_additive_and_gain_roles():
+    from .symmetries import detect,fields
+    rng=np.random.default_rng(72);n=128;nx=64
+    theta=rng.normal(size=(n,4));x=rng.uniform(-1,1,(nx,3));phi=np.column_stack((np.ones(nx),x))
+    eta=theta@phi.T;g=np.broadcast_to(phi,(n,nx,4)).copy()
+    frame,count,reports=detect(eta,g)
+    assert count==1 and reports[0]['accepted']
+    assert abs(frame[0,0])>.999999
+    a=rng.uniform(.5,1.5,n);b=rng.uniform(-1.5,1.5,n);logx=np.linspace(-1,1,nx)
+    eta=a[:,None]*np.exp(b[:,None]*logx)
+    g=np.stack((eta/a[:,None],eta*logx),axis=-1)
+    _,_,gain=fields(eta,g);e,v=np.linalg.eigh(gain.mean(0))
+    assert e[0]<1e-14 and abs(v[0,0])>.99999
+
+
+def test_redundant_multiplicative_scale_is_not_unique_axis():
+    from .symmetries import detect
+    rng=np.random.default_rng(73);n,nx=128,64
+    a=rng.uniform(.5,1.5,n);b=rng.uniform(.5,1.5,n);x=rng.normal(size=nx)
+    eta=a[:,None]*b[:,None]*x
+    g=np.stack((b[:,None]*np.broadcast_to(x,(n,nx)),a[:,None]*np.broadcast_to(x,(n,nx))),axis=-1)
+    _,count,reports=detect(eta,g)
+    assert count==0

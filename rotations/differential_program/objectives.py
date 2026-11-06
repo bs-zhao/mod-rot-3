@@ -35,7 +35,7 @@ def sym_power(a,basis,degree):
 
 
 class ProgramObjective:
-    def __init__(self,blocks,k,d,h=.5,code_floor=.02):
+    def __init__(self,blocks,k,d,h=.5,code_floor=.02,hx=None):
         self.k,self.d,self.h=k,d,float(h)
         self.qbasis={r:torch.tensor(sym_basis(k,r)[1],dtype=torch.float64) for r in [1,2,3]}
         self.cov={};self.scales={};self.energy=0.;self.group_count=0
@@ -44,7 +44,7 @@ class ProgramObjective:
             bq=self.qbasis[r].numpy()
             raw=np.asarray(array,float).reshape(-1,k**r,d**s)
             packed=np.einsum('ap,nab,bt->npt',bq,raw,bs,optimize=True)
-            factor=h**(r+s)/(math.factorial(r)*math.factorial(s))
+            factor=h**r*(h if hx is None else hx)**s/(math.factorial(r)*math.factorial(s))
             packed*=factor
             cov=np.einsum('npx,nqx->xpq',packed,packed,optimize=True)/len(packed)
             self.cov[r,s]=torch.tensor(cov,dtype=torch.float64)

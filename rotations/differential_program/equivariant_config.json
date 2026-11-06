@@ -1,0 +1,17 @@
+{
+  "seed": 31,
+  "device": "cuda",
+  "anchor_subjects": 64,
+  "anchor_x": 48,
+  "batch_points": 1024,
+  "h": 0.5,
+  "code_floor": 0.02,
+  "starts": 4,
+  "maxiter": 180,
+  "primary": "equivariant_code",
+  "fit_max_subjects": 2500,
+  "whiten_floor": 0.00001,
+  "symmetry_relative_cap": 0.2,
+  "symmetry_gap_multiplier": 2.0,
+  "symmetry_activity_floor": 0.05
+}

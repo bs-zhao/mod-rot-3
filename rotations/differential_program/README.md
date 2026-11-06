@@ -73,6 +73,43 @@ Run `python rotations/differential_program/functional_run.py --model C1`.
 This path has its own fixed `functional_config.json`. Its primary is
 functional_code; the secondary functional_l1 is not selected by theta.
 
+## Function-error calibration, not theta-based weight tuning
+
+`calibrated_run.py` first selects the largest latent and stimulus perturbation
+radii on a fixed descending grid that achieve at most 1% relative Taylor effect
+error on both FIT calibration halves. It then uses hq^r hx^s/(r!s!) in the same
+module code. The same grid/cap/selection rule applies to every model. The
+orthogonal matrix remains constrained; this does not optimize latent scaling.
+The radius is frozen before A is fitted. A smaller X radius is a numerical
+validity correction, not evidence that parameter axes have become identified.
+
+## A further structural objective: output equivariance
+
+`symmetries.py` formalizes two functional null-space objectives using eta and
+G on actual common stimuli. Translation uses G_i-mean_X G_i. Gain uses
+G_i-beta_i eta where beta_i=<eta,G_i>/<eta,eta>, normalized by RMS eta.
+Minimize each residual relative to that direction's full derivative energy,
+using a generalized Rayleigh quotient. This prevents a weak direction from
+being mistaken for a symmetry merely because all its effects are small.
+The direction minimizing each quotient is a candidate globally additive or
+multiplicative effect. No parameter identity or stimulus flags are used.
+
+Accept only a unique, active direction with residual eigenvalue ratio <=0.2,
+eigengap exceeding twice the split-half operator uncertainty, and nontrivial
+gradient energy. A rank-deficient gain field alone cannot identify a unique
+axis: e.g. a*b*x has a whole ambiguous scale subspace and is rejected. These
+function-supported axes constrain a subsequent module-code search in
+`equivariant_run.py`. If no property is supported, the same procedure falls
+back to unconstrained module search. Accepted directions are fixed first;
+only their orthogonal complement is searched. The primary is
+`equivariant_code`, with the predeclared `equivariant_l1` ablation. Numerical
+thresholds and order of testing are identical across all benchmarks.
+
+The generalized quotient uses full derivative energy, not just a smallest
+ordinary covariance eigenvalue. A weakly active direction is not sufficient
+evidence for a functional symmetry. Tests include the nonidentifiable product
+counterexample and exact additive/multiplicative toy properties.
+
 ## Mathematical gates and numerical contract
 
 `python -m rotations.differential_program.toys` checks angle curves before
