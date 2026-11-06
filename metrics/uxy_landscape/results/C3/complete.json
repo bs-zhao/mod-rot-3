@@ -1,0 +1,24 @@
+{
+  "model": "C3",
+  "cases": 705,
+  "unique_cases": 673,
+  "historical_labels": 95,
+  "scalar_metrics": 70,
+  "axis_families": 25,
+  "invariant_max_range": {
+    "full_U_dcor_squared_control": 1.8041124150158794e-16,
+    "functional_linear_cv_r2_control": 0.0,
+    "functional_quadratic_cv_r2_control": 0.0,
+    "full_rbf_cv_r2_control": 0.0,
+    "proxy_hessian_energy_control": 1.3322676295501878e-15,
+    "proxy_gradient_energy_control": 2.220446049250313e-15,
+    "proxy_XU_energy_control": 5.329070518200751e-15,
+    "U_total_variance_control": 3.552713678800501e-15
+  },
+  "elapsed_seconds": 699.7168985999997,
+  "source_hashes": {
+    "latent": "c3a5bb8d65082ed9250bde6a17e6d61b2674d54d36f3d520783009404aafb012",
+    "checkpoint": "75c25b84a86c5928533ddaf6fb6b3e4ef117f5bf2c188067616d2efa3d11659e",
+    "dataset": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+  }
+}

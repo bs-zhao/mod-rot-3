@@ -8,6 +8,7 @@ TRAIN-linear reference from mixed coordinates and saved historical coordinates.
 ```powershell
 python metrics/uxy_landscape/run.py
 python metrics/uxy_landscape/run.py --workers 4
+python metrics/uxy_landscape/plot_comparisons.py --run outputs/metrics/uxy_landscape/run_HASH
 python metrics/uxy_landscape/run.py --models C1 CR3 --smoke --no-plots
 python -m pytest metrics/uxy_landscape/test_metrics.py -q
 ```
@@ -50,7 +51,7 @@ coordinates need not belong to the same subspace or orthogonal family as U*;
 they are comparison cases, not falsely described as pure rotations of U*.
 Models run in four bounded worker processes by default, each with one numerical
 thread. Case caches include fixed X/Y/subject hashes and input provenance is
-checked on resume. This uses no subagents and launches no rotation fitting.
+checked on resume. No rotation fitting is launched.
 
 ## Metric families
 
@@ -70,6 +71,7 @@ Raw per-axis statistics are retained. Axis RMS and axis entropy are two
 aggregates of each estimator, **not two independent sources of evidence**.
 Structural proxies likewise share one fitted function; their CV fidelity is
 reported beside them. The catalogue JSON gives actual counts and all names.
+The complete operational definitions are in [METRICS.md](METRICS.md).
 
 ### Estimation contracts
 
@@ -84,6 +86,9 @@ reported beside them. The catalogue JSON gives actual counts and all names.
 - GAM uses additive cubic B-splines. No claim of arbitrary interaction capture.
   CV partial/semipartial R² may be negative. Unlabeled spline knot fitting uses
   the descriptive sample; this is not prospective prediction validation.
+- Y centering/scaling is fixed on the full descriptive sample, before grouped
+  coefficient fitting. Thus these CV diagnostics are not a fully nested
+  preprocessing/prediction assessment; do not use them as fresh test estimates.
 - Continuous kNN CMI is marked NA for binary Y, never computed by artificial
   label jitter. Deterministic outcomes and high-dimensional conditioning may
   saturate or destabilize conditional estimators.
@@ -112,6 +117,10 @@ Under ignored `outputs/metrics/uxy_landscape/run_<fingerprint>/`:
 - Historical comparisons, including failed methods. No candidate is selected
   using parameter recovery; outcome-dependent rankings remain posthoc diagnostics.
 
+The optional postprocessing command adds historical-coordinate atlases, color
+keys for the plane scans, a cross-response landscape agreement heatmap, and
+four-model/five-response example curve grids. It changes no metric values.
+
 ## Primary formula references
 
 - [Chatterjee xi](https://arxiv.org/abs/1909.10140).
@@ -122,3 +131,13 @@ Under ignored `outputs/metrics/uxy_landscape/run_<fingerprint>/`:
 - [Frenzel–Pompe continuous CMI estimator, documented formula](https://jakobrunge.github.io/tigramite/_modules/tigramite/independence_tests/cmiknn.html).
 
 Formulas are implemented independently; no third-party source bodies are copied.
+
+## Completed experiment
+
+[Results and limitations](RESULTS.md), [all metric definitions](METRICS.md).
+
+- [Four-model / five-response module-code angle curves](figures/proxy_module_code__four_models_five_Y.png).
+- [Four-model / five-response CODEC angle curves](figures/codec_given_otherU_X__axis_rms__four_models_five_Y.png).
+- [Cross-response landscape agreement for all metrics](figures/response_landscape_agreement.png).
+- Per-model vector PDFs for every metric/response and all historical cases are in `figures/<MODEL>/`.
+- Compact evidence and reference-coordinate audits are in `results/`. Full scalar/axis arrays and portable UXY samples remain in the ignored run output, and in the user-facing export bundle.
