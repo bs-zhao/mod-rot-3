@@ -71,3 +71,7 @@ Its own folder contains `surrogate.py`, `metrics.py`, `mdl.py`, `optimizer.py`, 
 ## Stimulus-contrast covariance investigation
 
 [`stimulus_contrast/`](stimulus_contrast/README.md) contains a standalone frozen-decoder rotation and controlled diagnostics. Exact counterexamples reject it as a general recovery criterion; the source and fixed configuration are retained for reproducibility. See [`research/RESEARCH_LOG_2026-11-06.md`](../research/RESEARCH_LOG_2026-11-06.md) for evidence, including stimulus-basis dependence and surrogate fidelity.
+
+## Differential program and function-equivariant rotation
+
+[`differential_program/`](differential_program/README.md) investigates full pure/mixed derivative module code, axial recurrence and function-supported output shift/gain directions. Its `equivariant_run.py` fixes only supported functional axes and searches their orthogonal complement, with identical rules for C1/C2/C3/CR3. The candidate is frozen before a fresh CR3 NP training repetition; exploratory gains and limitations are documented in [`research/DIFFERENTIAL_OBJECTIVES_2026-11-06.md`](../research/DIFFERENTIAL_OBJECTIVES_2026-11-06.md). This is a research candidate, not a universal identifiability claim.
