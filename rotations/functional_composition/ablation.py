@@ -167,6 +167,22 @@ def save_ablations(folder, proxy, ablations, main_R, config):
     with (folder/'functional__ablation_comparison.csv').open('w',newline='',encoding='utf-8') as fh:
         writer=csv.DictWriter(fh,fieldnames=list(data[0]))
         writer.writeheader();writer.writerows(data)
+    # Per-candidate MDL audit: why did nonlinear degree-2/3 terms lose?
+    # This includes rejected candidates, rather than just the accepted trace.
+    mdl_decisions=[]
+    for name,mdi in ablations['mdl'].items():
+        for fold in mdi.get('folds',[]):
+            for decision in fold.get('module_decisions',[]):
+                mdl_decisions.append(dict(rotation_candidate=name,
+                                          forward_fold=fold['fold'],
+                                          prefix_subjects=fold['prefix_subjects'],
+                                          inner_validation_subjects=fold['inner_validation_subjects'],
+                                          nonlinear_term='*'.join('u'+str(i+1) for i in decision['term']),
+                                          **{k:v for k,v in decision.items() if k!='term'}))
+    if mdl_decisions:
+        with (folder/'functional__mdl_candidate_decisions.csv').open('w',newline='',encoding='utf-8') as fh:
+            w=csv.DictWriter(fh,fieldnames=list(mdl_decisions[0]))
+            w.writeheader();w.writerows(mdl_decisions)
     if ablations['objectives']:
         sweep=_sweep_ablation(proxy,ablations,config)
         with (folder/'functional__ablation_plane_curves.csv').open('w',newline='',encoding='utf-8') as fh:

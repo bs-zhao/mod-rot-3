@@ -152,6 +152,15 @@ def test_mdl20_is_nested_and_can_select_nonlinear_modules():
                for f in mdl['folds'])
     assert all(f['future_trials']>0 and f['selected_nonlinear_modules']<=2
                for f in mdl['folds'])
+    # Diagnose rejection mechanisms without changing the selection rule.
+    assert all('module_decisions' in fold and len(fold['module_decisions'])>0
+               for fold in mdl['folds'])
+    assert all(abs(d['delta_total_nats_per_trial']-
+                   (d['delta_ce_nats_per_trial']-d['delta_code_nats_per_trial']))<1e-10
+               for fold in mdl['folds'] for d in fold['module_decisions'])
+    assert all(d['status'] in ('selected','rejected_by_code','no_raw_ce_improvement',
+                              'below_min_gain','better_candidate_selected')
+               for fold in mdl['folds'] for d in fold['module_decisions'])
 
 
 def test_all_ablation_directions_and_mdl_candidate_selector():

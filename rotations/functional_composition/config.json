@@ -34,5 +34,6 @@
   "mdl_max_extra_modules": 5,
   "mdl_inner_validation_frac": 0.2,
   "mdl_min_delta_nats": 0.0002,
-  "mdl_selection_trials": 64
+  "mdl_selection_trials": 64,
+  "mdl_code_multiplier": 1
 }
