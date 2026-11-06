@@ -1,0 +1,10 @@
+{
+  "archive_sources_sha256": {
+    "rotation/rotation_common.py": "37e042c681b4dce5108d52a642df6ed266c31a738fbd54f6a3ee655ad009acb4",
+    "auto_factorization/auto_factor_common.py": "0266ce07f4ec5b75119a86a818c270df82d36293983195bd45240b6848b5ab65",
+    "auto_factorization/a2b_anchored_entropy_rotation.py": "5a61e67881346882f2e731e644dbcb883061434201a91d80f7b26a68956df88e",
+    "auto_factorization/a2c_functional_shape_refinement.py": "041afa9f36cdc1f41d4ab4e94bb4e41e5fc53673f3a5d1c5af18f8661912dec4"
+  },
+  "regression_repository_commit": "31864e32386a93b73e224810441803c2ada2f7f1",
+  "ddm_repository_commit": "2f5b1e921084c687ef01b3c0486b81920c429507"
+}
