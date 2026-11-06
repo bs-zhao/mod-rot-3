@@ -15,7 +15,7 @@ import torch
 from scipy.special import expit
 from rotations.stimulus_contrast.data import corr
 from rotations.stimulus_contrast.run import write_json
-from rotations.mlp_teacher_rotation.teacher import _restore
+from rotations.stimulus_contrast.frozen_decoder import _restore
 
 
 def evaluate_model(model,device,z,x,b):

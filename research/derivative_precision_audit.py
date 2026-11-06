@@ -7,7 +7,7 @@ import argparse
 import json
 import numpy as np
 import torch
-from rotations.mlp_teacher_rotation.teacher import _restore
+from rotations.stimulus_contrast.frozen_decoder import _restore
 from rotations.stimulus_contrast.run import write_json
 
 

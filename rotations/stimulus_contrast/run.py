@@ -19,7 +19,7 @@ from scipy.linalg import orthogonal_procrustes
 from scipy.optimize import linear_sum_assignment
 from rotations.stimulus_contrast.method import matrices, loss, optimize, from_angles
 from rotations.stimulus_contrast.data import load_frozen, corr, sha256
-from rotations.mlp_teacher_rotation.teacher import _restore, direct_fingerprints
+from rotations.stimulus_contrast.frozen_decoder import _restore, direct_fingerprints
 
 HERE = Path(__file__).resolve().parent
 
@@ -193,8 +193,6 @@ def main():
              git_head=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),
              git_status=subprocess.check_output(['git','status','--short'],cwd=ROOT,text=True))
     env['source_sha256']={str(f.relative_to(ROOT)):sha256(f) for f in sorted(HERE.glob('*.py'))}
-    teacher_file=ROOT/'rotations'/'mlp_teacher_rotation'/'teacher.py'
-    env['source_sha256'][str(teacher_file.relative_to(ROOT))]=sha256(teacher_file)
     write_json(folder/'fit.json',dict(**payload,source_dataset_sha=source['dataset_sha'],cache=cache_used,
                                     fits=fits,anchor_stability=stability,numerical_audit=audit,environment=env,
                                     elapsed_fit_seconds=time.perf_counter()-started))

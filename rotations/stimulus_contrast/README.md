@@ -1,5 +1,9 @@
 # Stimulus-contrast covariance rotation
 
+**Research status: rejected as a general parameter recovery criterion.** Exact
+linear and power-function counterexamples prefer mixed coordinates. The method
+is retained for reproducibility. See the dated research log under `research/`.
+
 Exploratory frozen-decoder research, primary fixed before new theta evaluation:
 `contrast_logit`. No mechanism flags, parameter labels, or true theta enter fit.
 The same objective/configuration applies to every benchmark.
@@ -14,11 +18,11 @@ The denominator is rotation invariant; off-diagonal energy is not. Constant
 or isotropic context covariance is unidentifiable. A bilinear interaction
 with isotropic subject states is a counterexample, not a recovery theorem.
 
-This suite has its own truth-free verified NP/PCA loader. It uses existing
-`mlp_teacher_rotation.teacher.direct_fingerprints` for frozen decoder AD,
-with explicit dependency rather than duplicating that read utility.
-It never launches another rotation suite. Its optimization and reporting are
-local. Existing cached derivative arrays are reused only after matching
+This suite has its own truth-free verified NP/PCA loader and local frozen
+decoder AD utilities, copied with attribution from the historical teacher.
+It never imports or launches another rotation suite during fitting.
+Its optimization and reporting are local. Historical diagnostic audit scripts
+can compare old results. Existing cached derivative arrays are reused after matching
 latent/checkpoint hashes, PCA tangent vectors, FIT subject IDs and config.
 
 Column convention: q=W(z-mu), u=Aq; row convention U=Q A^T.

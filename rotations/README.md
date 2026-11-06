@@ -67,3 +67,7 @@ Its own folder contains `surrogate.py`, `metrics.py`, `mdl.py`, `optimizer.py`, 
 ## Effect fingerprint rank suite
 
 [`effect_fingerprint/`](effect_fingerprint/README.md) is an independent full experiment to validate metric 11 under multiple rank definitions, channel metrics and FIT-only resampling. It has its own run.py, surrogate, loss, optimizer, diagnostics and tests. No other rotation suite is executed.
+
+## Stimulus-contrast covariance investigation
+
+[`stimulus_contrast/`](stimulus_contrast/README.md) contains a standalone frozen-decoder rotation and controlled diagnostics. Exact counterexamples reject it as a general recovery criterion; the source and fixed configuration are retained for reproducibility. See [`research/RESEARCH_LOG_2026-11-06.md`](../research/RESEARCH_LOG_2026-11-06.md) for evidence, including stimulus-basis dependence and surrogate fidelity.
