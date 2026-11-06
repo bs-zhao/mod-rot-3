@@ -55,6 +55,11 @@ def main():
     for key,(run,fit,evaluation) in cases.items():
         manifest[key]=dict(path=str(run),fit=fit,complete=json.loads((run/'complete.json').read_text()),frozen_source_match=True)
         details[key]=evaluation;target=dest/'details'/key;target.mkdir(parents=True,exist_ok=True)
+        training=ROOT/'outputs/choice'/fit['model']/'s3_train'/fit['condition']/f"repeat{fit['repeat']:02d}"/'s3_train__summary.json'
+        manifest[key]['np_training']=json.loads(training.read_text())
+        shutil.copy2(training,target/'np_training_summary.json')
+        learning=ROOT/'outputs/choice'/fit['model']/'s3_evaluate'/fit['condition']/f"repeat{fit['repeat']:02d}"/'s3_evaluate__learning_curves.png'
+        if learning.exists():shutil.copy2(learning,target/'np_learning_curves.png')
         for filename in ['fit.json','evaluation.json','comparison.csv','complete.json','mapping.npz','rotations.npz','initializations.npz','supervised_reference.npz','supervised_angle_curves.csv','identity__r2.png','equivariant_code__r2.png','equivariant_l1__r2.png','supervised_reference__r2.png','finite_equivariance_audit.json','bootstrap_symmetries.json']:
             if (run/filename).exists():shutil.copy2(run/filename,target/filename)
         for name,result in evaluation.items():
@@ -112,6 +117,15 @@ def main():
             ax.plot(np.arange(len(item['eigenvalues']))+1,item['eigenvalues'],'o-',label=item['property']+(' accepted' if item['accepted'] else ' rejected'))
         ax.set_title(model);ax.set_xlabel('Generalized eigenvalue rank');ax.set_ylabel('Relative functional residual');ax.set_ylim(0,1.08);ax.legend(fontsize=8,frameon=False)
     fig.tight_layout();fig.savefig(dest/'functional_role_spectra.png',dpi=160);plt.close(fig)
+    fig,axes=plt.subplots(2,2,figsize=(10,7.5))
+    for ax,model in zip(axes.flat,MODELS):
+        run=cases[f'{model}_repeat01_anchor31'][0]
+        audit=json.loads((run/'finite_equivariance_audit.json').read_text())
+        values=audit['rows'];ax.plot([r['step'] for r in values],[100*r['weighted_residual_fraction'] for r in values],'o-')
+        ax.set_title(model+' | '+values[0]['property']);ax.set_xlabel('Finite q displacement');ax.set_ylabel('Non-equivariant change energy (%)')
+        ax.set_ylim(0,max(2,1.25*max(100*r['weighted_residual_fraction'] for r in values)))
+    fig.suptitle('Held-out subjects and new actual X | no theta in audit',fontsize=12)
+    fig.tight_layout();fig.savefig(dest/'finite_functional_roles.png',dpi=160);plt.close(fig)
     toy,curves=run_toys();write_json(dest/'analytic_gates.json',toy);csv_rows(dest/'analytic_angle_curves.csv',curves)
     fig,axes=plt.subplots(1,3,figsize=(12,3.8))
     for ax,name in zip(axes,['power','bilinear','linear_stimulus']):
@@ -126,6 +140,15 @@ def main():
             base=evaluation['identity']['parameter_r2'][name]
             trades.append(dict(case=key,parameter=name,identity_r2=base,primary_r2=value,change=value-base,supervised_reference=evaluation['supervised_reference']['parameter_r2'][name]))
     csv_rows(dest/'CR3_parameter_tradeoffs.csv',trades)
+    if independent:
+        fig,axes=plt.subplots(1,2,figsize=(12,4.5))
+        for ax,key,title in zip(axes,['CR3_repeat01_anchor31','CR3_repeat02_anchor31'],['Original NP','New NP seed']):
+            ev=cases[key][2];names=ev['equivariant_code']['parameter_names'];positions=np.arange(len(names))
+            for offset,name,color in [(-.16,'identity','#6d7c91'),(.16,'equivariant_code','#237e70')]:
+                vals=[ev[name]['parameter_r2'][p] for p in names];bars=ax.bar(positions+offset,vals,.32,label=name,color=color);ax.bar_label(bars,fmt='%.2f',fontsize=8,padding=2)
+            ax.scatter(positions,[ev['supervised_reference']['parameter_r2'][p] for p in names],marker='D',s=24,c='#c3984e',label='supervised reference')
+            ax.set_xticks(positions,names,rotation=10);ax.set_ylim(0,1.05);ax.set_title(title);ax.set_ylabel('TRAIN-matched TEST r²')
+        axes[0].legend(fontsize=8,frameon=False);fig.tight_layout();fig.savefig(dest/'CR3_parameter_tradeoffs.png',dpi=160);plt.close(fig)
     table='\n'.join(f"| {m} | {primary[m]['identity']['mean_r2']:.3f} | {primary[m]['equivariant_code']['mean_r2']:.3f} | {cases[m+'_repeat01_anchor47'][2]['equivariant_code']['mean_r2']:.3f} |" for m in MODELS)
     validation='独立训练复核尚未完成；本预览不是最终交付。'
     if independent:

@@ -1,4 +1,4 @@
-# Differential program rotation: three explicit hypotheses
+# Differential program rotation: objective research suite
 
 This independent suite fits only frozen decoder fields at NP TRAIN anchors.
 No true theta or mechanism labels enter the losses, basis selection, stopping
