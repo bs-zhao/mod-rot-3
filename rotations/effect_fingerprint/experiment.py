@@ -70,7 +70,13 @@ def cli(description: str, argv=None) -> tuple[argparse.Namespace, dict]:
         try:
             config[key] = json.loads(raw)
         except json.JSONDecodeError:
-            parser.error(f"Expected a valid JSON value for {key}: {raw}")
+            # On Windows CMD, quotes in JSON strings are often stripped.
+            # Allow plain words ONLY for existing string-valued settings;
+            # keep strict JSON for numbers, lists, booleans and objects.
+            if isinstance(config[key],str) and raw.strip():
+                config[key] = raw.strip()
+            else:
+                parser.error(f"Expected valid JSON for {key}: {raw}")
     return args, config
 
 
