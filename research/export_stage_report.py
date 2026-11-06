@@ -45,7 +45,7 @@ def main():
                 **{k:report[k] for k in ('train_matched_test_mean_r2','test_optimal_mean_r2','min_r2','offtarget_mean_r2','offtarget_max_abs_r','contrast_loss')},
                 parameter_r2=json.dumps(report['parameter_r2']),source_run=str(run)))
         target=dest/'details'/model;target.mkdir(parents=True,exist_ok=True)
-        for name in ['evaluation.json','fit.json','comparison.csv','reference_angle_curves.csv','reference_angle_curves.png','contrast_logit__r2.png','identity__r2.png','supervised_reference__r2.png']:
+        for name in ['evaluation.json','fit.json','complete.json','comparison.csv','mapping.npz','rotations.npz','gradients.npz','reference_angle_curves.csv','reference_angle_curves.png','contrast_logit__r2.png','identity__r2.png','supervised_reference__r2.png']:
             shutil.copy2(run/name,target/name)
         if (run/'oracle_structure_audit'/'summary.json').exists():
             shutil.copy2(run/'oracle_structure_audit'/'summary.json',target/'decoder_fidelity.json')
@@ -107,7 +107,7 @@ def main():
 
 ## 实现核验与适用范围
 
-- 列约定 q=W(z−μ)、u=Aq；行实现 U=Q Aᵀ。W 包含 TRAIN PCA 与白化，A 是该空间的正交矩阵。原始8维 latent 的剩余部分保留，完整预测分布等价；截断误差单列。
+- 列约定 q=W(z−μ)、u=Aq；行实现 U=Q Aᵀ。W 包含 TRAIN PCA 与白化，A 是该空间的正交矩阵。C1/C2/CR3 取4维，C3取6维；原始8维 latent 的剩余部分保留，完整预测分布等价；截断误差单列。
 - 正交性、矩阵方向、预测分布、自动微分/有限差分检查均已执行。弱轴 float32 差分异常另用 float64 排查，不能误判为 AD 错误。8 项相关测试通过。
 - 当前结果是探索性。C3 是本次补齐的首次训练；CR3 不同 beta 属于条件敏感性检查，均不能替代新数据或独立 NP seed 验证。没有声称四模型共同成功或独立重复成功。
 - 方法代码、配置、必要研究记录已提交到研究分支；实验输出与 checkpoint 保留在本机 ignored outputs，原有未跟踪 `outputs.zip` 未改动。
@@ -120,6 +120,7 @@ def main():
 - `profile_objective_fidelity.png`：代理函数与原 decoder 的同定义 loss 比较。
 - `all_results.csv`、`signed_correlations.json`：全部预定候选、逐参数与交叉相关。
 - `provenance.json`：实际输出路径、环境、种子、代码版本与源文件哈希。
+- `details/<模型>/mapping.npz`、`rotations.npz`、`gradients.npz`：完整映射、预定旋转及可复用梯度；大数据和 checkpoint 仍在原项目输出目录。
 - `研究记录.md`：假设、尝试、失败、数值追查、下一步决定。
 
 下一轮先要求目标通过线性参数函数和幂函数反例，再研究有明确刺激表示定义、同时控制代理误差的功能描述复杂度；不继续用同一 TEST 挑最优权重或刺激基。
