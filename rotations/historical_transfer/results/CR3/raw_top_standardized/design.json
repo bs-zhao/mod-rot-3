@@ -1,0 +1,19 @@
+{
+  "integration": {
+    "mode": "exact_empirical_shared_bank",
+    "n_nodes": 500,
+    "continuous_quadrature_applicable": false,
+    "reason": "Discrete shared observed design; preserve joint constraints"
+  },
+  "choice_components": [
+    "choice"
+  ],
+  "rt_components_applicable": false,
+  "regression_subjects": 128,
+  "regression_rows": 5120,
+  "fisher_observed_rows": 64000,
+  "finite_difference_step": 0.2,
+  "finite_difference_relative_error": 0.0016676491946623331,
+  "preprocessing_train_only": true,
+  "theta_used_for_fit": false
+}

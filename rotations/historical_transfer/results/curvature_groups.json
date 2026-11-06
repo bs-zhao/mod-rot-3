@@ -1,0 +1,98 @@
+[
+  {
+    "model": "C1",
+    "representation": "pca_whitened",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C1",
+    "representation": "pca_whitened",
+    "method": "logit__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C1",
+    "representation": "raw_top_standardized",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C1",
+    "representation": "raw_top_standardized",
+    "method": "logit__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C2",
+    "representation": "pca_whitened",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C2",
+    "representation": "pca_whitened",
+    "method": "logit__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C2",
+    "representation": "raw_top_standardized",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C2",
+    "representation": "raw_top_standardized",
+    "method": "logit__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C3",
+    "representation": "pca_whitened",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C3",
+    "representation": "pca_whitened",
+    "method": "logit__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C3",
+    "representation": "raw_top_standardized",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "C3",
+    "representation": "raw_top_standardized",
+    "method": "logit__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "CR3",
+    "representation": "pca_whitened",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "CR3",
+    "representation": "pca_whitened",
+    "method": "logit__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "CR3",
+    "representation": "raw_top_standardized",
+    "method": "probability__functional_shape",
+    "groups": {}
+  },
+  {
+    "model": "CR3",
+    "representation": "raw_top_standardized",
+    "method": "logit__functional_shape",
+    "groups": {}
+  }
+]

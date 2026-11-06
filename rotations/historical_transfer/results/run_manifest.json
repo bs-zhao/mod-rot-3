@@ -1,0 +1,60 @@
+{
+  "config": {
+    "seed": 31,
+    "condition": "beta0p0005_lambda0_ctx0p25to0p8_L8",
+    "representations": [
+      "pca_whitened",
+      "raw_top_standardized"
+    ],
+    "rotation_dimensions": {
+      "C1": 4,
+      "C2": 4,
+      "C3": 6,
+      "CR3": 4
+    },
+    "fit_max_subjects": 128,
+    "trials_per_subject": 40,
+    "common_x": 64,
+    "quadrature_order": 5,
+    "whiten_floor": 1e-05,
+    "device": "cuda",
+    "batch_points": 4096,
+    "starts": 8,
+    "maxiter": 500,
+    "regression_geomin_eps": 1e-06,
+    "fisher_geomin_eps": 0.01,
+    "fisher_trace_floor": 1e-10,
+    "n_knots": 5,
+    "n_bins": 4,
+    "gradient_rows": 1500,
+    "joint_gradient_rows": 500,
+    "coverage_lambda": 0.1,
+    "coverage_tau": 0.05,
+    "row_min_frac": 0.005,
+    "shape_knots": 6,
+    "shape_grid": 301,
+    "shape_effect_fraction": 0.08,
+    "shape_dominance": 0.55,
+    "fd_step": 0.2,
+    "jvol_p": 16,
+    "jvol_steps": 3000,
+    "jvol_lr": 0.02,
+    "jvol_condition_limit": 1000000,
+    "tag": "",
+    "smoke": false
+  },
+  "runs": [
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\C1\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\pca_whitened__d331d392bd878dd0",
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\C1\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\raw_top_standardized__8113b329c103351e",
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\C2\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\pca_whitened__4687ac9a18730a0e",
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\C2\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\raw_top_standardized__54e58562d52f589c",
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\C3\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\pca_whitened__cce58709e2fad049",
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\C3\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\raw_top_standardized__56ad1da8106b11fa",
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\CR3\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\pca_whitened__fb6ef5c8a12c026f",
+    "D:\\Projects\\mod-rot-3\\outputs\\choice\\CR3\\rotations\\historical_transfer\\beta0p0005_lambda0_ctx0p25to0p8_L8\\repeat01\\raw_top_standardized__6975c6ba5fc04a6b"
+  ],
+  "git_head": "10aa99f10f43e2297984143eb83aa77d6e8b9802",
+  "python": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+  "torch": "2.9.1+cu130",
+  "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU"
+}

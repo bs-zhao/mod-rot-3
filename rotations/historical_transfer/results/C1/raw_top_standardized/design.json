@@ -1,0 +1,32 @@
+{
+  "integration": {
+    "mode": "tensor_gauss_legendre_product_uniform_fit_bounds",
+    "n_nodes": 125,
+    "bounds": [
+      [
+        -0.9999693036079407,
+        -0.9999237656593323,
+        -0.9999446868896484
+      ],
+      [
+        0.9999938011169434,
+        0.999966561794281,
+        0.9999874830245972
+      ]
+    ],
+    "order": 5,
+    "continuous_quadrature_applicable": true,
+    "assumption": "Product-uniform measure is an explicit integration control, not inferred universally"
+  },
+  "choice_components": [
+    "choice"
+  ],
+  "rt_components_applicable": false,
+  "regression_subjects": 128,
+  "regression_rows": 5120,
+  "fisher_observed_rows": 51115,
+  "finite_difference_step": 0.2,
+  "finite_difference_relative_error": 0.000538285346224881,
+  "preprocessing_train_only": true,
+  "theta_used_for_fit": false
+}

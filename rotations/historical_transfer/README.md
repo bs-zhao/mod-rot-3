@@ -6,6 +6,9 @@ loads frozen full-observed-trial Z, observed X/Y and the trained decoder, fits a
 historical attempts, persists every transform, and only then reads simulation
 parameters for evaluation.
 
+The completed four-model study, including negative results and all comparison
+tables, is in [RESULTS.md](RESULTS.md). Compact numerical evidence is in `results/`.
+
 ```powershell
 python rotations/historical_transfer/run.py
 python rotations/historical_transfer/run.py --models C1 C2 C3 CR3 --representations pca_whitened
@@ -86,10 +89,17 @@ not rotation attempts and are not rerun.
    For CR3 the shared observed lottery bank is discrete and constrained;
    integration is the exact uniform sum over its unique joint rows. A fictitious
    continuous rectangle is never used for CR3. Details/nodes/weights are saved.
+   With the complete common CR3 bank and equal trial counts, integrated-X and
+   observed-X also define the same empirical objective; separate optimizer seeds
+   may expose local-optimum variation, not new information or independent evidence.
 3. **Two coordinate systems are fully compared.** `pca_whitened` is the current
    project's convention; `raw_top_standardized` is the historical DDM convention.
    Selection, PCA and scale estimates use TRAIN only. All gradients use original
    subject Z with the complete residual preserved. K is fixed by configuration.
+   The fingerprint SVD/Varimax is therefore fitted inside each controlled K-space;
+   the old script's additional full-native-Z to top-K SVD truncation is not a
+   third subspace-selection experiment here. This isolates objectives within a
+   fixed coordinate family rather than claiming a byte-for-byte pipeline rerun.
 4. **JVolmax is originally oblique.** Its result is labeled invertible-oblique;
    orthogonality is not asserted. The separately optimized orthogonal version is
    an adaptation, not a replacement. Both use the exact inverse.
