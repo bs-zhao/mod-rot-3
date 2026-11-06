@@ -1,0 +1,42 @@
+{
+  "primary": "equivariant_code",
+  "status": "frozen before viewing repeat02 NP outcomes",
+  "validation_protocol": "CR3 fresh NP training repeat02, same data and subject splits; no theta-based candidate selection or threshold changes",
+  "config": {
+    "seed": 31,
+    "device": "cuda",
+    "anchor_subjects": 64,
+    "anchor_x": 48,
+    "batch_points": 1024,
+    "h": 0.5,
+    "code_floor": 0.02,
+    "starts": 4,
+    "maxiter": 180,
+    "primary": "equivariant_code",
+    "fit_max_subjects": 2500,
+    "whiten_floor": 1e-05,
+    "symmetry_relative_cap": 0.2,
+    "symmetry_gap_multiplier": 2.0,
+    "symmetry_activity_floor": 0.05
+  },
+  "source_sha256": {
+    "rotations\\differential_program\\__init__.py": "2785c3ba68c48dc8de292297c549640b0a158d0e6df208c966cee9a707b1d6cb",
+    "rotations\\differential_program\\calibrated_run.py": "28a6afc324aecc175ebd91f0bec050477cef5ba7c4eaeb6aa961d34ff08593bd",
+    "rotations\\differential_program\\calibration.py": "86ce4860b94a9f6df0cfdc5e7723cd26cf2b170aa1291ca0b3f6d11d4f90538e",
+    "rotations\\differential_program\\data.py": "0392883d2ff076fec1be40460d8834f73391b50fed4112bbdd5cbd5b857d168a",
+    "rotations\\differential_program\\equivariant_run.py": "3b30f2eb9126cad47f7a931664438cc2934bc6da16360c376a8e80b59edef586",
+    "rotations\\differential_program\\frozen_decoder.py": "99040f681dbaa3d5b939ab5c6850a4d91a10532e00d77141b9899bf3dadfff7b",
+    "rotations\\differential_program\\functional.py": "6efec7cc2e9cceb93383f3ec424e685f7e66b56baf3454f163afdd810e302e0d",
+    "rotations\\differential_program\\functional_run.py": "1202909c3a551eb1469d3325f63803f4ea93d7fa6d6a77d3b967ce94afc28fc7",
+    "rotations\\differential_program\\jets.py": "5a627c56d9a46048edf5375d4d8b7368b6919c7c7a059ed7048fb5bdce016864",
+    "rotations\\differential_program\\objectives.py": "25da2c6e31a48315fd6d1a5169651d454195aaa1b52d1d721c7a555370eba9d8",
+    "rotations\\differential_program\\run.py": "7aa0ad3c67f206fdaa06e456dbf018a2a2ba0f7d1abaed59a25f6711daa43381",
+    "rotations\\differential_program\\symmetries.py": "33acfa51133ed4885c362e3b5e20a8a1a55dd0163cbfc28b3699c3215c568d36",
+    "rotations\\differential_program\\test_objectives.py": "ffe09f79b00f54cb98c54c76075f7d7c1cb06f800f4c398563da37ab39de1598",
+    "rotations\\differential_program\\toys.py": "ae6f8cc1a094bd8fc5288ee0df45a0fecd9a860e8753e7b2e255f4ea2e0dc155"
+  },
+  "training_environment": {
+    "CUBLAS_WORKSPACE_CONFIG": ":4096:8"
+  },
+  "restriction": "Report all prespecified candidates; the primary remains equivariant_code even if an ablation scores higher."
+}

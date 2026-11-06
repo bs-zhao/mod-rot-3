@@ -1,0 +1,17 @@
+{
+  "seed": 31,
+  "device": "cuda",
+  "anchor_subjects": 64,
+  "fit_x": 320,
+  "outer_x": 96,
+  "batch_points": 1024,
+  "h": 0.5,
+  "code_floor": 0.02,
+  "starts": 4,
+  "maxiter": 180,
+  "primary": "functional_code",
+  "degrees": [2, 3, 4],
+  "ridges": [0.00001, 0.001, 0.1, 10.0],
+  "fit_max_subjects": 2500,
+  "whiten_floor": 0.00001
+}

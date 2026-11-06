@@ -1,0 +1,15 @@
+{
+  "seed": 31,
+  "device": "cuda",
+  "anchor_subjects": 64,
+  "anchor_x": 48,
+  "batch_points": 1024,
+  "h": 0.5,
+  "code_floor": 0.02,
+  "starts": 4,
+  "maxiter": 180,
+  "primary": "module_code",
+  "candidates": ["module_code", "group_l1", "recurrence"],
+  "fit_max_subjects": 2500,
+  "whiten_floor": 0.00001
+}

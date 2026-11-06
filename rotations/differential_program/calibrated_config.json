@@ -1,0 +1,17 @@
+{
+  "seed": 31,
+  "device": "cuda",
+  "anchor_subjects": 64,
+  "anchor_x": 48,
+  "batch_points": 1024,
+  "fit_max_subjects": 2500,
+  "whiten_floor": 0.00001,
+  "code_floor": 0.02,
+  "starts": 4,
+  "maxiter": 180,
+  "primary": "calibrated_code",
+  "error_cap": 0.01,
+  "calibration_points": 1024,
+  "hq_grid": [0.5, 0.25, 0.125],
+  "hx_grid": [0.5, 0.25, 0.125, 0.0625, 0.03125, 0.015625, 0.0078125, 0.00390625, 0.001953125]
+}
