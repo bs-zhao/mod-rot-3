@@ -74,15 +74,19 @@ def direct_fingerprints(model, device, source, config):
     mask = np.asarray(source["mask_fit"], bool)
     n, k = len(z), int(source["rotation_dim"])
     ns = min(n, int(config["direct_anchor_subjects"]))
-    nx = min(int(mask.sum()), int(config["direct_anchor_x"]))
+    # For CR3's shared fixed bank, sample unique trial rows from ONE subject.
+    # For independently generated C1/C2/C3 X, pool FIT observations instead.
+    fixed = bool(n > 1 and np.array_equal(mask[0],mask[1]) and
+                 np.array_equal(x[0,mask[0]],x[1,mask[1]]))
+    pool = x[0,mask[0]] if fixed else x[mask]
+    nx = min(len(pool), int(config["direct_anchor_x"]))
     if ns < 8 or nx < 4:
         raise ValueError("Direct fingerprint anchors require >=8 subjects and >=4 X")
     rng = np.random.default_rng(int(config["seed"]) + 773)
     subjects = np.sort(rng.choice(n, ns, replace=False))
-    xflat = x[mask]
-    trial_ids = np.sort(rng.choice(len(xflat), nx, replace=False))
-    common_x = np.asarray(xflat[trial_ids], np.float32)
-    del xflat
+    trial_ids = np.sort(rng.choice(len(pool), nx, replace=False))
+    common_x = np.asarray(pool[trial_ids], np.float32)
+    del pool
     pca = source["pca"]
     # The whitening floor must match the original rotation data loader.
     scales = np.sqrt(np.maximum(np.asarray(pca.explained_variance_[:k]),
@@ -114,7 +118,8 @@ def direct_fingerprints(model, device, source, config):
         raise RuntimeError("Non-finite frozen decoder derivatives")
     return dict(probability=gp, logit=gl, common_x=common_x,
                 anchor_fit_subject_ids=subjects, dz_dq=directions,
-                differentiation="torch.func.jvp; original Z with intact PCA residual")
+                differentiation="torch.func.jvp; original Z with intact PCA residual",
+                anchor_pool_mode=("shared_fixed_bank" if fixed else "pooled_fit_x"))
 
 
 def build_teacher(source, config):
