@@ -1,0 +1,26 @@
+{
+  "method_labels": 34,
+  "models": [
+    "C1",
+    "C2",
+    "C3",
+    "CR3"
+  ],
+  "representations": [
+    "pca_whitened",
+    "raw_top_standardized"
+  ],
+  "matrices": 272,
+  "cells": 5712,
+  "color_limits": [
+    -1,
+    1
+  ],
+  "statistic": "signed TEST Pearson correlation",
+  "row_axis": "original u index",
+  "column_axis": "theta parameter",
+  "axis_reordering": false,
+  "sign_flips": false,
+  "black_outline": "persisted TRAIN Hungarian matching",
+  "maximum_difference_from_saved_correlations": 0.0
+}

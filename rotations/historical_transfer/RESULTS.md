@@ -126,3 +126,9 @@ CR3 的一项改善来自另一个坐标/变换族：原始高方差坐标标准
 完整原始 gradient fields、所有 U 和重启矩阵仍在本机各模型的 `outputs/choice/<MODEL>/rotations/historical_transfer/`。本交付包附代码、全部结果、变换矩阵、协议与审计；不重复打包原始训练数据或 checkpoint。`运行来源.json` 给出每一组原始目录。
 
 本轮是已有冻结模型上的方法移植比较，不是独立训练重复，也未因观察恢复结果而调参或挑选新主方法。跨方法的差异是探索性比较；具体结论应结合单参数与非目标相关。
+
+## 全方法、四模型 u–theta 相关总图
+
+[矢量 PDF](figures/all_methods_four_models_signed_correlations.pdf) · [高清 PNG](figures/all_methods_four_models_signed_correlations.png) · [SVG](figures/all_methods_four_models_signed_correlations.svg)。
+
+同一张图包含全部 272 个矩阵、5712 个有符号 TEST Pearson r；纵轴为原始 u 序号，横轴为 theta，统一色标 [-1,1]。左右区分两套坐标，每套含 C1/C2/C3/CR3。黑框标记 TRAIN 匹配，不重排坐标、不翻转符号，逐值核对与保存结果完全一致。
