@@ -7,6 +7,7 @@ from pathlib import Path
 import numpy as np
 from . import metrics
 from .experiment import evaluate_after_fit
+from .u_correlations import save_u_correlation_audit
 
 
 def _jsonable(obj):
@@ -86,6 +87,9 @@ def save_diagnostics(folder, bank, rotations, optimizers, teacher_info, config):
         np.savez_compressed(sub/"rotation__U.npz",U=U,train_ids=train,
                             validation_ids=validation,test_ids=test)
         paths[name]=(sub,U)
+        save_u_correlation_audit(
+            sub,U,train,validation,test,
+            make_plots=bool(config.get("make_plots",True)))
     np.savez_compressed(folder/"teacher__candidate_rotations.npz",
                         **{("R_"+name):R for name,R in rotations.items()})
 

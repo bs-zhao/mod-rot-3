@@ -100,10 +100,44 @@ calculation, use `--set full_mdl=true` (substantially more expensive).
 * `candidate__<name>/rotation__matrix.npz`, `rotation__U.npz`,
   `rotation__test_evaluation.json`, `rotation__test_corr2.png` — independent
   per-candidate transforms; TEST labels are read **after** saving all R/U.
+* `rotation__test_u_corr.png` — signed U-to-U Pearson correlation heatmap
+  for TEST subjects, alongside the existing `rotation__test_corr2.png`
+  (squared TEST theta-to-U correlations).
+* `rotation__u_corr_by_split.png` — four U-to-U heatmaps
+  (TRAIN, VALIDATION, TEST, ALL).
+* `rotation__u_correlations_{train,validation,test,all}.csv` and
+  `rotation__u_correlations.json` — exact signed U-to-U correlation
+  matrices and off-diagonal summary statistics.
+* `rotation__test_u_pairwise_scatter.png` — scatterplot matrix of all
+  unordered TEST U_i versus U_j pairs with diagonal marginal histograms.
+* `rotation__test_theta_u_pairwise_scatter.png` — every TEST theta_i versus
+  U_j scatterplot, showing signed Pearson r, r² and highlighted Hungarian
+  matches. **TEST theta is used only after R and U are saved.**
+* All these files are also written independently under each
+  `candidate__<name>/` folder (unless plots were disabled).
 * `teacher__candidate_comparison.csv/png` — descriptive TEST results for
   every candidate alongside identity.
 * `teacher__all_metric_scores.csv`, `teacher__20_diagnostics.json`,
   `teacher__plane_curves.csv`, `teacher__summary.json`.
+
+## Create new plots from existing runs (NO refitting)
+
+Updating plotting code changes the rotation-suite fingerprint, so rerunning
+`run.py` would fit the expensive candidate objectives again. To create the
+new U-U and theta-U heatmaps/scatter matrices from **already saved** U arrays
+instead, run the independent post-hoc tool:
+
+```cmd
+python rotations/mlp_teacher_rotation/plot_existing.py --model CR3 --condition beta0p0005_lambda0_ctx0p25to0p8_L8
+```
+
+This searches all existing `run_*` folders for that condition and updates
+plots/CSV in the root and every `candidate__<name>/` folder. Alternatively,
+provide a specific existing folder using `--run-dir "D:\\...\\run_<hash>"`.
+This operation only reads `rotation__U.npz`, FIT metadata, and (if available)
+previously saved TEST truths. **No rotation, decoder or proxy is refit**.
+If the run was created with `--no-evaluate`, U-U plots are produced but
+theta-U TEST scatter plots are unavailable.
 
 ## Scientific interpretation / checks
 
@@ -122,3 +156,10 @@ calculation, use `--set full_mdl=true` (substantially more expensive).
   must be verified using fresh NP trainings and independent generated data.
 * Neither a small structural loss nor high in-sample/TEST parameter
   correlations establishes general latent identifiability.
+
+The new per-axis Pearson plots are *descriptive only*. Since U is obtained
+by orthogonally rotating TRAIN PCA-whitened coordinates, TRAIN U coordinates
+are nearly uncorrelated **by construction**; this does not establish
+statistical independence or parameter identifiability. TEST-only correlation
+and scatter plots can show distributional differences, but never enter
+FIT rotation selection.

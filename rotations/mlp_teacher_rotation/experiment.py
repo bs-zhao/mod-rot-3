@@ -18,6 +18,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import linear_sum_assignment
 from sklearn.decomposition import PCA
+from .u_correlations import (save_u_correlation_audit, u_pearson_correlation,
+                             save_theta_u_pairwise_scatter)
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]  # repo root: /rotations/<this_package>/experiment.py
@@ -202,7 +204,8 @@ def evaluate_after_fit(theta, U, test, folder: Path, model: str, package: str) -
                                 for i, n in enumerate(names)},
                   max_offtarget_abs_r=float(np.abs(c[off]).max()) if off.any() else 0.0,
                   mean_offtarget_r2=float(np.mean(c[off] ** 2)) if off.any() else 0.0,
-                  matching=match, theta_axis_corr=c.tolist())
+                  matching=match, theta_axis_corr=c.tolist(),
+                  test_u_axis_corr=u_pearson_correlation(np.asarray(U)[test]).tolist())
     (folder / "rotation__test_evaluation.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     fig, ax = plt.subplots(figsize=(max(6, c.shape[1] * .8), max(4, c.shape[0] * .8)))
     im = ax.imshow(c ** 2, cmap="Blues", vmin=0, vmax=1)
@@ -221,6 +224,9 @@ def evaluate_after_fit(theta, U, test, folder: Path, model: str, package: str) -
     fig.tight_layout()
     fig.savefig(folder / "rotation__test_corr2.png", dpi=170)
     plt.close(fig)
+    save_theta_u_pairwise_scatter(
+        folder,np.asarray(theta)[test],np.asarray(U)[test],
+        names,corr_matrix=c,matching=match)
     return report
 
 
@@ -274,6 +280,10 @@ def execute(args, config: dict, fit: Callable, source: dict | None = None) -> Pa
                         package=np.array(PACKAGE))
     np.savez_compressed(folder / "rotation__U.npz", U=U, train_ids=source["tr"],
                         validation_ids=source["val"], test_ids=source["te"])
+    # Descriptive U-U audits use saved U, never theta or decoder gradients.
+    save_u_correlation_audit(
+        folder,U,source["tr"],source["val"],source["te"],
+        make_plots=bool(config.get("make_plots",True)))
     if extra:
         if any(np.asarray(value).dtype == object for value in extra.values()):
             raise ValueError("Method diagnostics must not contain object arrays")
