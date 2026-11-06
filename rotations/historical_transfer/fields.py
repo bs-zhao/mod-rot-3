@@ -14,7 +14,7 @@ def representation(source, name, k, floor):
         detail = dict(kind=name, eigenvalues=source['pca'].explained_variance_.tolist())
     elif name == 'raw_top_standardized':
         idx = np.argsort(np.var(z[tr],axis=0))[::-1][:k]
-        scale = np.maximum(np.std(z[tr,idx],axis=0), np.sqrt(floor))
+        scale = np.maximum(np.std(z[np.ix_(tr,idx)],axis=0), np.sqrt(floor))
         mu = z[tr].mean(0)
         w = np.zeros((k,z.shape[1]))
         w[np.arange(k),idx] = 1/scale

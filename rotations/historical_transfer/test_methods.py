@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from .optimization import RowObjective, jvol_score, rotation, optimize
 from .entropy_reference import entropy_and_coverage
-from .fields import fisher_rows
+from .fields import fisher_rows, representation
 from .shape_reference import curvature_refinement_rotation
 
 
@@ -70,3 +70,16 @@ def test_rotation_objective_autodiff_matches_finite_difference():
         d=np.zeros(6);d[i]=step
         fd.append((float(score(rotation(v.detach()+torch.tensor(d),4)))-float(score(rotation(v.detach()-torch.tensor(d),4))))/(2*step))
     np.testing.assert_allclose(v.grad.numpy(),fd,rtol=1e-5,atol=1e-8)
+
+
+def test_raw_coordinate_selection_and_scaling_use_train_only():
+    rng=np.random.default_rng(19);z=rng.normal(size=(23,8))*.01
+    z[:17,2]*=400;z[:17,5]*=200
+    z[17:,0]*=1000000  # TEST variance must not change selected axes or TRAIN scales.
+    tr=np.arange(17)
+    s=representation(dict(z=z,tr=tr), 'raw_top_standardized',2,1e-5)
+    assert set(s['representation']['selected_indices'])=={2,5}
+    assert s['q'].shape==(23,2)
+    np.testing.assert_allclose(s['q'][tr].mean(0),0.,atol=1e-12)
+    np.testing.assert_allclose(s['q'][tr].std(0),1.,atol=1e-12)
+    np.testing.assert_allclose(s['W']@s['B'],np.eye(2),atol=1e-12)
