@@ -84,6 +84,48 @@ def main():
         ax.set_xlabel('Frozen decoder raw-X contrast loss');ax.set_ylabel('Profile proxy raw-X contrast loss')
         ax.set_title(f'{m}: same subjects, X and loss\nr={np.corrcoef(pairs.T)[0,1]:.3f} across 64 fixed rotations')
     fig.tight_layout();fig.savefig(dest/'profile_objective_fidelity.png',dpi=160);plt.close(fig)
+    table='\n'.join('| '+m+' | '+' | '.join(f"{details[m][name]['train_matched_test_mean_r2']:.3f}" for name in ['identity','contrast_logit','supervised_reference'])+' |' for m in models)
+    text=f'''# 旋转研究阶段总结 · 2026-11-06
+
+**尚未得到四模型共同成功的新旋转方法。本阶段形成了可复查的否定结果，并区分了目标设计、刺激表示和代理函数保真度问题。**
+
+已实际运行新方法 stimulus-contrast covariance rotation：利用冻结 decoder 对白化 PCA 坐标的 logit 梯度，扣除所有刺激共有的二阶矩，再做正交联合对角化。四个模型采用同一损失、配置及选择规则，没有使用真实参数选择旋转、权重或条件。
+
+| 模型 | PCA Identity | 新方法 | 监督正交参考（仅诊断） |
+|---|---:|---:|---:|
+{table}
+
+表中为 Pearson 平均匹配 r²；在 TRAIN 确定配对，再应用到 TEST。TEST 自身最优匹配另列于 `all_results.csv`。每参数结果、交叉载荷和完整有符号矩阵见 `signed_correlations.json` 及 `details/`，不能只按均值判断。
+
+## 三项决定性发现
+
+1. **目标本身可以偏好错误坐标。** 对完全正确的 C1 解析函数，真实轴 loss 为 5/6，四轴均匀混合后反而降到 13/24；指定的幂函数 toy 也偏好约45°错误混合。六次初始化在已检验模型上得到相同错误优点，不能通过增加优化步数解决。新候选已否定。
+2. **刺激表示改变了 JointDiag 的含义。** 保持同一 C1 profile 函数不变，仅正交改写刺激特征基，恢复可从约0.943降到0.391。它是特定刺激基下的简单性假设；原始 trial 与投影特征通道不能混作同一指标。
+3. **profile R²接近1仍可能损失结构。** CR3 历史系数 profile R²约0.9997，但相同 TEST 被试和 X 上，逐刺激概率 R²约0.853，概率梯度相对误差约50%，同一定义的 raw-X 旋转 loss 相关约0.852。这个比较直接针对冻结 decoder，没有真实参数坐标换算误差。
+
+旧自适应组合的归一化另经重现核实：改为 Identity 等贡献可使 CR3 从约0.388升至0.470，仍低于 Identity 0.484，未解决主问题。
+
+## 实现核验与适用范围
+
+- 列约定 q=W(z−μ)、u=Aq；行实现 U=Q Aᵀ。W 包含 TRAIN PCA 与白化，A 是该空间的正交矩阵。原始8维 latent 的剩余部分保留，完整预测分布等价；截断误差单列。
+- 正交性、矩阵方向、预测分布、自动微分/有限差分检查均已执行。弱轴 float32 差分异常另用 float64 排查，不能误判为 AD 错误。8 项相关测试通过。
+- 当前结果是探索性。C3 是本次补齐的首次训练；CR3 不同 beta 属于条件敏感性检查，均不能替代新数据或独立 NP seed 验证。没有声称四模型共同成功或独立重复成功。
+- 方法代码、配置、必要研究记录已提交到研究分支；实验输出与 checkpoint 保留在本机 ignored outputs，原有未跟踪 `outputs.zip` 未改动。
+
+## 查看文件
+
+- `stage_summary.png`：四模型比较。
+- `all_model_heatmaps.png`：Identity、新方法、监督参考的完整 r²热力图。
+- `toy_counterexamples.png`：解析反例与角度—loss 曲线。
+- `profile_objective_fidelity.png`：代理函数与原 decoder 的同定义 loss 比较。
+- `all_results.csv`、`signed_correlations.json`：全部预定候选、逐参数与交叉相关。
+- `provenance.json`：实际输出路径、环境、种子、代码版本与源文件哈希。
+- `研究记录.md`：假设、尝试、失败、数值追查、下一步决定。
+
+下一轮先要求目标通过线性参数函数和幂函数反例，再研究有明确刺激表示定义、同时控制代理误差的功能描述复杂度；不继续用同一 TEST 挑最优权重或刺激基。
+'''
+    (dest/'阶段总结.md').write_text(text,encoding='utf-8')
+    shutil.copy2(ROOT/'research'/'RESEARCH_LOG_2026-11-06.md',dest/'研究记录.md')
     print(json.dumps(dict(output=str(dest),source_runs={k:str(v) for k,v in runs.items()}),indent=2))
 
 
