@@ -7,7 +7,7 @@ Each experiment is its **own runnable Python file**, with actual stage logic in 
 | 1 | `np/s1_generate.py` | Exact C1/C2/C3/CR3 simulator, theta/X sampling and binary choice Y | None; CR3 will prepare original design bank |
 | 2 | `np/s2_precheck.py` | Original validity, identification and CR3 FOSD checks | S1 dataset |
 | 3 | `np/s3_train.py` | Train original NP; choose beta, lambda, latent dimension, optimizer hyperparameters | S2 qualification |
-| 4 | `np/s4_evaluate.py` | Saved NP validation/test accuracy, CE, KL and learning curves | S3 checkpoint |
+| 4 | `np/s4_evaluate.py` | Saved NP validation/test accuracy, CE, KL, learning curves; if S5 exists, also posterior-Z histograms, per-axis variance and KL | S3 checkpoint; S5 optional for Z diagnostics |
 | 5 | `np/s5_extract_z.py` | Encode every subject using **ALL observed trials**, save frozen posterior-mean Z | S3 checkpoint and S1 dataset |
 | 6 | `np/s6_pca.py` | TRAIN-only PCA of Z; explained variance and correlations | S5 Z |
 | 7 | `np/s7_regression.py` | Full-Z and top-k-PC Ridge regression to simulator theta; validation-selected alpha; held-out test | S5 Z and S6 PCA |
@@ -29,3 +29,43 @@ Training-dependent steps must use matching `--beta`, `--lambda-sparse`, `--laten
 **Code organization**: `np/src/modlearn_rot/` contains frozen upstream simulator/NP/training mathematics. `np/src/modrot3/pipeline.py` contains only shared paths/data adaptation/provenance functions; `np/src/modrot3/analysis.py` contains only shared numerical analysis utilities. Each step's actual implementation lives in its corresponding `np/sN_*.py` file.
 
 All data, checkpoints, figures, and parameter recovery CSV/JSON files are under **root-level `outputs/choice/<MODEL>/`**, excluded by `.gitignore`. In particular the rotation platform consumes the unchanged `s4_evaluate__latent.npz` file from S5. Neither S6 nor S7 alters that file. True theta is never used for NP training, Z extraction, or fitting rotations.
+### Inspecting posterior Z distributions in S4
+
+S4 keeps its original checkpoint metrics and plots, and **optionally** adds
+all-subject latent diagnostics when matching S5 frozen Z is already available.
+The original S4-before-S5 order still works: S4 prints a clear skip notice
+when S5 does not exist. After S5, simply rerun S4 (no retraining):
+
+```cmd
+python np/s5_extract_z.py --model CR3 --beta 0.0005 --latent-dim 8
+python np/s4_evaluate.py --model CR3 --beta 0.0005 --latent-dim 8
+```
+
+New files are next to the existing S4 results under
+`outputs/choice/<MODEL>/s3_evaluate/<CONDITION>/repeat01/`:
+
+* `s3_evaluate__z_dimension_histograms.png`: original-coordinate posterior-mean
+  histograms for every Z axis; all subjects plus TRAIN/VAL/TEST outlines.
+* `s3_evaluate__z_dimension_stats.csv` and
+  `s3_evaluate__z_diagnostics.json`: mean, standard deviation, between-subject
+  variance (population ddof=0), min/max, 1/5/25/50/75/95/99 percentiles,
+  mean absolute value, mean/median posterior variance, exact per-axis Gaussian
+  KL, and aggregate posterior variance.
+* `s3_evaluate__z_variance_and_kl.png`: between-subject posterior-mean
+  variance, mean conditional posterior variance and axis-wise KL.
+* `s3_evaluate__z_correlation_heatmap.png`: labeled Pearson-r heatmaps of
+  original posterior-mean Z dimensions for ALL subjects and TRAIN subjects.
+* `s3_evaluate__z_correlations_{all,train,validation,test}.csv`: all four
+  splits' exact numeric Z-by-Z Pearson correlation matrices, with labeled rows
+  and columns. The corresponding numeric matrices are also in
+  `s3_evaluate__z_diagnostics.json`.
+* `s3_evaluate__z_pca_spectrum.png`: **TRAIN-only** posterior-mean PCA absolute
+  eigenvalues, variance ratios and participation-ratio effective dimension.
+
+The `z` column is the S5 **posterior mean**, not a draw from the posterior.
+A small variance of posterior means alone does **not** prove posterior
+collapse. The per-axis diagonal-Gaussian KL is calculated directly as
+`0.5 * mean(mu**2 + exp(logvar) - 1 - logvar)`. The plots use the S5 all-
+observed-trials inference regime, whereas the training KL was measured on
+random context masks. S5 must agree with S3's checkpoint hash, dataset hash,
+latent dimension and subject splits; no theta is accessed.
