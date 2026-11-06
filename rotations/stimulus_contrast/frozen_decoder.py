@@ -90,6 +90,3 @@ def direct_fingerprints(model, device, source, config):
                 anchor_fit_subject_ids=subjects, dz_dq=directions,
                 differentiation="torch.func.jvp; original Z with intact PCA residual",
                 anchor_pool_mode=("shared_fixed_bank" if fixed else "pooled_fit_x"))
-
-
-
