@@ -6,7 +6,9 @@ sys.path.insert(0, str(NP_ROOT / 'src'))
 """S7: Held-out linear Ridge recovery from full Z and PCA projections.
 
 PCA must be run in S6 first. TRAIN standardizes; VALIDATION selects ridge
-regularization; TEST is reported once per predeclared PCA dimension.
+regularization; TEST is reported once per predeclared PCA dimension. An additional
+analysis uses only PCs whose individual TRAIN explained-variance ratio exceeds
+a configurable threshold (default 0.10).
 """
 import json
 import numpy as np
@@ -17,6 +19,32 @@ from modrot3.cli import parse_args
 from modrot3.pipeline import stage_folder, train_path, condition, sha256
 from modrot3.analysis import (load_frozen, ridge_probe, param_names, corr,
                               write_rows, plot_corr)
+
+
+def configure_s7_parser(parser):
+    parser.add_argument('--pca-threshold', '--pca-variance-threshold',
+                        dest='pca_threshold', type=float, default=0.10,
+                        help='Retain only PCA components with individual TRAIN '
+                             'explained_variance_ratio strictly greater than '
+                             'this threshold (default: 0.10). S7 only.')
+
+
+def select_pcs_above_threshold(explained_variance_ratio, threshold=0.10):
+    """1-based PC indices are for reporting; returned integer indices are 0-based."""
+    ratio = np.asarray(explained_variance_ratio, dtype=float)
+    threshold = float(threshold)
+    if not np.isfinite(threshold) or not 0 <= threshold < 1:
+        raise ValueError('--pca-threshold must be finite and in [0, 1)')
+    if ratio.ndim != 1 or not len(ratio) or not np.all(np.isfinite(ratio)):
+        raise ValueError('Invalid PCA explained-variance ratios')
+    if np.any(ratio < 0):
+        raise ValueError('PCA explained-variance ratios must be nonnegative')
+    selected = np.flatnonzero(ratio > threshold)
+    if not len(selected):
+        raise ValueError(
+            f'No PCA component has individual explained variance ratio '
+            f'> {threshold:g}; lower --pca-threshold')
+    return selected
 
 
 def regression_report(args):
@@ -41,7 +69,39 @@ def regression_report(args):
     if components.shape!=z.shape or pca_weights.shape!=(z.shape[1],z.shape[1]):
         raise RuntimeError('PCA dimension mismatch')
     names=param_names(args.model)
+    threshold=float(getattr(args,'pca_threshold',0.10))
+    retained=select_pcs_above_threshold(explained,threshold)
+    selected_pc_names=[f'PC{i+1}' for i in retained]
+    explained_retained=explained[retained]
     full=ridge_probe(z,theta,tr,va,te)
+    filtered=ridge_probe(components[:,retained],theta,tr,va,te)
+    filtered_summary=dict(
+        threshold=threshold,
+        criterion='individual TRAIN explained_variance_ratio > threshold (strict)',
+        retained_pc_count=int(len(retained)),
+        retained_pc_indices_1based=(retained+1).tolist(),
+        retained_pc_names=selected_pc_names,
+        retained_explained_variance_ratio=explained_retained.tolist(),
+        retained_variance_fraction=float(np.sum(explained_retained)),
+        test_r2=filtered['test_r2'],
+        mean_test_r2=float(np.mean(filtered['test_r2'])),
+        min_test_r2=float(np.min(filtered['test_r2'])),
+        test_pearson_r=filtered['test_pearson_r'],
+        test_rmse=filtered['test_rmse'],
+        validation_r2=filtered['validation_r2'],
+        selected_ridge_alpha=filtered['selected_ridge_alpha'],
+        fitting_policy='TRAIN standardization, VALIDATION alpha, FIT+VAL refit, TEST scores',
+    )
+    filtered_rows=[
+        dict(parameter=name,pca_threshold=threshold,
+             retained_pc_count=len(retained),retained_pcs=','.join(selected_pc_names),
+             selected_variance_fraction=float(np.sum(explained_retained)),
+             test_r2=filtered['test_r2'][j],
+             test_pearson_r=filtered['test_pearson_r'][j],
+             test_rmse=filtered['test_rmse'][j],
+             validation_r2=filtered['validation_r2'][j],
+             selected_ridge_alpha=filtered['selected_ridge_alpha'][j])
+        for j,name in enumerate(names)]
     curve=[]
     for k in range(1,z.shape[1]+1):
         metrics=ridge_probe(components[:,:k],theta,tr,va,te)
@@ -56,12 +116,22 @@ def regression_report(args):
              for j,name in enumerate(names)]
     write_rows(folder/'s12__full_z_ridge.csv',results)
     write_rows(folder/'s12__pca_ridge_curve.csv',curve)
+    write_rows(folder/'s12__pca_threshold_ridge.csv',filtered_rows)
+    (folder/'s12__pca_threshold_ridge.json').write_text(
+        json.dumps(filtered_summary,indent=2),encoding='utf-8')
+    np.savez_compressed(folder/'s12__pca_threshold_predictions.npz',
+        test_ids=te,theta_true=theta[te],
+        theta_threshold_pca_pred=filtered['theta_linear_pred'],
+        pca_threshold=np.asarray(threshold),
+        retained_pc_indices_1based=retained+1,
+        retained_explained_variance_ratio=explained_retained)
     s4=stage_folder(args,'s4_evaluate')
     s4.mkdir(parents=True,exist_ok=True)
     (s4/'s4_evaluate__summary.json').write_text(json.dumps(dict(
         model=args.model,latent_dim=args.latent_dim,
         latent_is='encoder posterior mean using ALL observed trials',
         parameter_names=names,results=results,
+        pca_variance_threshold_ridge=filtered_summary,
         source_checkpoint_sha256=sha256(train_path(args))),indent=2),encoding='utf-8')
     np.savez_compressed(s4/'s4_evaluate__linear_predictions.npz',test_ids=te,
         theta_true=theta[te],theta_linear_pred=full['theta_linear_pred'])
@@ -80,6 +150,7 @@ def regression_report(args):
             ridge_alpha=full['selected_ridge_alpha'],
             selected_ridge_alpha=full['selected_ridge_alpha']),
         pca_k_ridge=curve,
+        pca_variance_threshold_ridge=filtered_summary,
         evaluation_policy='TRAIN PCA; TRAIN standardization; VAL ridge alpha; FIT+VAL refit; TEST scores')
     (folder/'s12__diagnostics.json').write_text(json.dumps(diagnostics,indent=2),encoding='utf-8')
     fig,axes=plt.subplots(1,2,figsize=(12,4.5))
@@ -100,10 +171,35 @@ def regression_report(args):
         axs[0,j].set_title(f'{name}: TEST R²={full["test_r2"][j]:.3f}')
         axs[0,j].set_xlabel('True theta');axs[0,j].set_ylabel('Linear prediction')
     fig.tight_layout();fig.savefig(folder/'s12__ridge_scatter.png',dpi=180);plt.close(fig)
+    # A separate plot preserves the original full-Z and PCA-k figures.
+    fig,axs=plt.subplots(1,len(names),figsize=(3.1*len(names),3.3),squeeze=False)
+    for j,name in enumerate(names):
+        axs[0,j].scatter(theta[te,j],filtered['theta_linear_pred'][:,j],
+                         s=6,alpha=.28)
+        axs[0,j].set_title(f'{name}: TEST R²={filtered["test_r2"][j]:.3f}')
+        axs[0,j].set_xlabel('True theta')
+        axs[0,j].set_ylabel('Threshold PCA prediction')
+    fig.suptitle(f'{args.model}: {len(retained)} PCs with individual variance > {threshold:g}')
+    fig.tight_layout()
+    fig.savefig(folder/'s12__pca_threshold_scatter.png',dpi=180)
+    plt.close(fig)
     print(f'{args.model} complete TEST full-Z Ridge r²:',
           ', '.join(f'{p}={q:.4f}' for p,q in zip(names,full['test_r2'])))
+    print(f'PCA individual explained-variance threshold: > {threshold:g}')
+    print(f'Retained PCA components: {len(retained)} / {len(explained)} '
+          f'({", ".join(selected_pc_names)}); '
+          f'variance explained: {100*np.sum(explained_retained):.2f}%')
+    print(f'Thresholded-PCA TEST mean r²: {np.mean(filtered["test_r2"]):.4f}')
+    for j,name in enumerate(names):
+        print(f'  {name}: TEST r²={filtered["test_r2"][j]:.4f}, '
+              f'r={filtered["test_pearson_r"][j]:+.4f}, '
+              f'RMSE={filtered["test_rmse"][j]:.4f}, '
+              f'VAL r²={filtered["validation_r2"][j]:.4f}, '
+              f'ridge alpha={filtered["selected_ridge_alpha"][j]:g}')
+    print('Thresholded-PCA regression CSV:', folder/'s12__pca_threshold_ridge.csv')
     print('Regression results:', folder)
 
 
 if __name__ == '__main__':
-    regression_report(parse_args('S7: held-out linear parameter regression on Z and PCA'))
+    regression_report(parse_args('S7: held-out linear parameter regression on Z and PCA',
+                                 configure_parser=configure_s7_parser))
