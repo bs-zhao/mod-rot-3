@@ -56,3 +56,18 @@ The TEST theta audit follows R/U persistence and does not enter optimization.
 In-sample FIT surrogate gradients are NOT exact CR3 derivatives; S5 latent Z
 was computed using all trials per subject, so this is not unseen-trial generalization.
 This is a research experiment, not a universally identifiable parameter estimator.
+
+
+## Compare two independent beta runs (does not refit or search R)
+
+After running this same suite separately for two NP conditions:
+
+    python rotations/effect_fingerprint/compare.py --model CR3 --conditions beta0p0001_lambda0_ctx0p25to0p8_L8 beta0p0005_lambda0_ctx0p25to0p8_L8
+
+This script first aligns axes by permutation and sign on NP TRAIN subjects,
+then reports held-out TEST-subject axis correlation. It never searches another
+rotation and it never uses TEST theta to define the alignment. The saved TEST
+theta r² in the completed runs is copied for descriptive comparison only.
+
+If you have multiple completed runs for one condition, pass --runs with
+the exact run folders rather than silently choosing whichever finished last.

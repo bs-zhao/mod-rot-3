@@ -125,3 +125,38 @@ def test_end_to_end_truth_is_postfit_only(tmp_path):
     assert (path/"rotation__test_evaluation.json").is_file()
     with np.load(path/"rotation__matrix.npz") as f:
         assert np.allclose(f["R"]@f["R"].T,np.eye(4),atol=1e-7)
+
+
+
+def test_stress_retrains_only_fit_subjects():
+    from .stability import stress_runs
+    q,x,y,mask=data(n=90,k=3)
+    config=cfg(stress_subject_counts=[64],stress_seeds=[12],
+               stress_rank_metrics=["participation"],stress_channel_modes=["raw"],
+               stress_starts=1,stress_maxiter=2)
+    proxy=make_proxy(q,x,y,mask,config)
+    results=stress_runs(proxy,(q,x,y,mask),np.eye(3),config)
+    assert len(results)==1
+    record=results[0]
+    assert record["subjects"]==64
+    assert 0<=record["alignment"]["mean_abs_axis_cos"]<=1
+    assert np.allclose(record["R"]@record["R"].T,np.eye(3),atol=1e-7)
+
+
+def test_cross_beta_comparison_aligns_axes_on_train_only(tmp_path):
+    from .compare import compare_pair
+    rng=np.random.default_rng(111)
+    ua=rng.normal(size=(120,4))
+    ub=ua[:,[2,0,3,1]]*np.array([-1,1,-1,1])
+    ub+=rng.normal(0,.005,size=ub.shape)
+    common=dict(source_sha="same",train=np.arange(80),
+                test=np.arange(80,120),matched_mean_r2=.55)
+    a=dict(common,U=ua,folder=tmp_path/"a")
+    b=dict(common,U=ub,folder=tmp_path/"b")
+    result=compare_pair(a,b)
+    assert result["train_axis_mean_abs_corr"]>.999
+    assert result["heldout_test_axis_mean_signed_corr"]>.999
+    b["source_sha"]="other"
+    import pytest
+    with pytest.raises(ValueError,match="Different S1"):
+        compare_pair(a,b)
