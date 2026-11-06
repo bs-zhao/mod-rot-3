@@ -165,7 +165,7 @@ def test_cross_beta_comparison_aligns_axes_on_train_only(tmp_path):
 
 def test_windows_plain_string_config_override():
     from .experiment import cli
-    _,c=cli(["--model","CR3","--condition","synthetic",
+    _,c=cli("Windows string enum override",["--model","CR3","--condition","synthetic",
              "--set","rank_metric=participation",
              "--set","channel_mode=unitvar"])
     assert c["rank_metric"]=="participation"
