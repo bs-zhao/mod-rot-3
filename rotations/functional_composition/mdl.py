@@ -94,6 +94,9 @@ def prequential_mdl(proxy,R,config):
     min_gain=float(config.get('mdl_min_delta_nats',.0002))
     if min_gain<0:raise ValueError('mdl_min_delta_nats must be >=0')
     ridge=float(config['surrogate_ridge'])
+    code_multiplier=float(config.get('mdl_code_multiplier',1.))
+    if not np.isfinite(code_multiplier) or code_multiplier<0:
+        raise ValueError('mdl_code_multiplier must be finite and >=0')
     # Smaller fixed, X-only trial grid for repeated nested module selection;
     # future-subject evaluation uses ALL observed trials.
     nt=int(config.get('mdl_selection_trials',64))
@@ -132,23 +135,50 @@ def prequential_mdl(proxy,R,config):
             n,obs=_binary_nll(p,phi_select[inner_val],
                                y_select[inner_val],mask_select[inner_val])
             code=_module_code(len(column_ids)-len(linear),n_nonlin,
-                              len(inner_fit),proxy.channels,k)
-            return n/max(obs,1)+code/max(obs,1)
+                              len(inner_fit),proxy.channels,k)*code_multiplier
+            ce=n/max(obs,1)
+            cost=code/max(obs,1)
+            return dict(objective=float(ce+cost),cross_entropy=float(ce),
+                        model_code=float(cost),observed_trials=int(obs))
         current=inner_score(chosen)
         selected_trace=[]
-        for _ in range(max_extra):
+        decisions=[]
+        for iteration in range(max_extra):
             scores=[]
             for col in available:
                 value=inner_score(chosen+[col])
-                scores.append((value,col))
+                scores.append((value['objective'],col,value))
             if not scores:break
-            next_score,col=min(scores,key=lambda x:(x[0],x[1]))
-            if current-next_score<=min_gain:break
+            next_score,col,next_value=min(scores,key=lambda x:(x[0],x[1]))
+            success=(current['objective']-next_score)>min_gain
+            for score,candidate,value in scores:
+                ce_gain=current['cross_entropy']-value['cross_entropy']
+                code_increase=value['model_code']-current['model_code']
+                net=ce_gain-code_increase
+                status=('selected' if success and candidate==col else
+                        'no_raw_ce_improvement' if ce_gain<=0 else
+                        'rejected_by_code' if net<=0 else
+                        'below_min_gain' if net<=min_gain else
+                        'better_candidate_selected')
+                decisions.append(dict(iteration=iteration+1,
+                                      term=list(all_terms[candidate]),
+                                      delta_ce_nats_per_trial=float(ce_gain),
+                                      delta_code_nats_per_trial=float(code_increase),
+                                      delta_total_nats_per_trial=float(net),
+                                      candidate_ce_nats_per_trial=value['cross_entropy'],
+                                      candidate_code_nats_per_trial=value['model_code'],
+                                      status=status))
+            if not success:break
             chosen.append(col)
             available.remove(col)
             selected_trace.append(dict(term=list(all_terms[col]),
-                                       validation_mdl_improvement_nats_per_trial=float(current-next_score)))
-            current=next_score
+                                       validation_ce_gain_nats_per_trial=float(
+                                           current['cross_entropy']-next_value['cross_entropy']),
+                                       validation_code_increase_nats_per_trial=float(
+                                           next_value['model_code']-current['model_code']),
+                                       validation_mdl_improvement_nats_per_trial=float(
+                                           current['objective']-next_score)))
+            current=next_value
         chosen_terms=[all_terms[j] for j in chosen]
         fitted=_fit_profile_ridge(V[:,chosen],H,np.arange(start),ridge)
         future_profiles=V[future][:,chosen]@fitted
@@ -156,7 +186,7 @@ def prequential_mdl(proxy,R,config):
         linear_fit=_fit_profile_ridge(V[:,:len(linear)],H,np.arange(start),ridge)
         linear_profiles=V[future,:len(linear)]@linear_fit
         linear_nll,_=_binary_nll(linear_profiles,phi[future],Y[future],mask[future])
-        code=_module_code(len(chosen)-len(linear),n_nonlin,start,proxy.channels,k)
+        code=_module_code(len(chosen)-len(linear),n_nonlin,start,proxy.channels,k)*code_multiplier
         future_nll+=nll
         future_linear_nll+=linear_nll
         future_trials+=obs
@@ -170,6 +200,10 @@ def prequential_mdl(proxy,R,config):
                             selected_nonlinear_terms=[list(t) for t in chosen_terms[len(linear):]],
                             inner_fit_candidate_pool=[list(all_terms[int(i)]) for i in candidate_idx],
                             nonlinear_greedy_trace=selected_trace,
+                            module_decisions=decisions,
+                            rejected_due_to_code=sum(d['status']=='rejected_by_code' for d in decisions),
+                            rejected_due_to_no_gain=sum(d['status']=='no_raw_ce_improvement' for d in decisions),
+                            code_multiplier=code_multiplier,
                             future_nats_per_trial=float(nll/max(obs,1)),
                             future_linear_only_nats_per_trial=float(linear_nll/max(obs,1)),
                             structural_code_nats=float(code)))
@@ -187,5 +221,6 @@ def prequential_mdl(proxy,R,config):
                 selected_nonlinear_module_count=len(final_terms)-(k+1),
                 selected_monomials=[list(v) for v in final_terms],
                 candidate_dictionary=[list(v) for v in all_terms[len(linear):]],
+                code_multiplier=code_multiplier,
                 folds=details,
                 caution='Nested subject-forward sparse polynomial Bernoulli predictive-code approximation, not universal MDL; Z encodes all observed Y')
