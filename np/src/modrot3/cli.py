@@ -8,7 +8,7 @@ import argparse
 MODELS = ('C1','C2','C3','CR3')
 
 
-def parse_args(description: str, argv=None):
+def parse_args(description: str, argv=None, *, configure_parser=None):
     p = argparse.ArgumentParser(description=description)
     p.add_argument('--model', choices=MODELS, default='CR3')
     p.add_argument('--beta', type=float, default=0.0)
@@ -36,6 +36,8 @@ def parse_args(description: str, argv=None):
     p.add_argument('--oracle-precheck', action='store_true')
     p.add_argument('--oracle-subjects', type=int, default=100)
     p.add_argument('--oracle-starts', type=int, default=4)
+    if configure_parser is not None:
+        configure_parser(p)
     args = p.parse_args(argv)
     if args.data_seed is None:
         args.data_seed = 20261028 if args.model == 'CR3' else 20261006
