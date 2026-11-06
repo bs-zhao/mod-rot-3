@@ -160,3 +160,13 @@ def test_cross_beta_comparison_aligns_axes_on_train_only(tmp_path):
     import pytest
     with pytest.raises(ValueError,match="Different S1"):
         compare_pair(a,b)
+
+
+
+def test_windows_plain_string_config_override():
+    from .experiment import cli
+    _,c=cli(["--model","CR3","--condition","synthetic",
+             "--set","rank_metric=participation",
+             "--set","channel_mode=unitvar"])
+    assert c["rank_metric"]=="participation"
+    assert c["channel_mode"]=="unitvar"

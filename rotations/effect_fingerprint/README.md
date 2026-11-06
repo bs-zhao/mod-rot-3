@@ -18,7 +18,7 @@ Run one CR3 rotation without changing NP:
 
 Vary effective-rank definition or stimulus-channel metric:
 
-    python rotations/effect_fingerprint/run.py --model CR3 --condition beta0p0005_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --set rank_metric="participation" --set channel_mode="unitvar"
+    python rotations/effect_fingerprint/run.py --model CR3 --condition beta0p0005_lambda0_ctx0p25to0p8_L8 --rotation-dim 4 --set rank_metric=participation --set channel_mode=unitvar
 
 Test across independent FIT sample sizes, surrogate refits, optimizer seeds
 and different rank/channel definitions (opt-in; many expensive fits):
