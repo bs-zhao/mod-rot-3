@@ -295,9 +295,9 @@ A(\varphi)=R(\varphi)A_*.
 定义：
 
 \[
-L_{m,y,h,q,k}(\varphi)
+L_{m,y,h,e,q,k}(\varphi)
 =S_k\left(\operatorname{Aggregate}_q[
-H_{m,y,h}(U_\varphi,X)]\right),
+\widehat H_{m,y,h,e}(U_\varphi,X)]\right),
 \]
 
 其中 m=生成模型，y=logit/p/choice，h=解析/formula-Y/NN-Y Hessian 来源，**e=作用于数值 B/C 路径的 Hessian 估计器**，q=积分/局部保留方式，k=简单性指标，**旋转角度 φ 是自变量，损失 L 是因变量**。完整下标应为 (L_{m,y,h,e,q,k}(arphi))；仅当固定一个估计器时才可省略 e。
