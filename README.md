@@ -6,6 +6,8 @@
 
 **Hessian estimator methods:** [readmes/HESSIAN_FROM_ZXY_METHODS.md](readmes/HESSIAN_FROM_ZXY_METHODS.md) — 独立统计/数值算法维度，E01–E14 14 类方法与 15 项原始文献、目标量、局限及已有实现对照。
 
+**Independent integration & matrix-statistics dimensions:** [Q: integration and averaging](readmes/HESSIAN_INTEGRATION_AND_AVERAGING.md) · [a: Hessian → numeric matrix metrics M01–M20](readmes/HESSIAN_TO_MATRIX_METRICS.md). Both are distinct from downstream scalar simplicity k.
+
 The two independent parts of the project are:
 
 - [np/](np/README.md): **seven manually executed stages** for C1/C2/C3/CR3
