@@ -9,7 +9,6 @@ from __future__ import annotations
 import argparse
 import csv
 import hashlib
-import importlib.util
 import json
 import sys
 from pathlib import Path
@@ -20,18 +19,16 @@ from scipy.special import expit
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
-PREVIOUS = ROOT / "math" / "cr3_hessian_expectation"
-sys.path.insert(0, str(PREVIOUS))
+
 sys.path.insert(0, str(ROOT / "np" / "src"))
 
 from data_only import TensorPolynomial
 from modlearn_rot.nn.np.point.discrete import DiscreteNPConfig, DiscreteNeuralProcess
 from modlearn_rot.training.continuous import load_checkpoint
 
-_spec = importlib.util.spec_from_file_location(
-    "_previous_cr3_hessian_protocol", PREVIOUS / "run.py")
-previous = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(previous)
+# Local copies preserve the exact original mathematical estimators while
+# keeping each math experiment independent of all other math folders.
+import reference_protocol as previous
 
 CONDITION = "beta5em05_lambda0_ctx0p25to0p8_L4"
 DEFAULT_DATA = ROOT / "outputs/choice/CR3/s1_generate/s1_generate__dataset.npz"
