@@ -399,7 +399,9 @@ def main():
             "and not a held-out map recovery test; use --mapping-fit train for that."],
         "results":{},
     }
-    arrays={"A":A,"b":b,"Z":Z,"T_hat":T_hat}
+    arrays={"A":A,"b":b,"Z":Z,"T_hat":T_hat,
+            "sieve_train_ids":fit.train_idx,"sieve_test_ids":fit.test_idx,
+            "map_fit_ids":np.asarray(fit_ids,dtype=np.int64)}
     for label,ref in oracle.items():
         for metric in ("conditional_mean","strict_mean","conditional_rms",
                        "conditional_std","fraction_defined"):
@@ -410,6 +412,7 @@ def main():
     for name in CHANNELS:
         print("Infer 10D Hessian from ZX and Y:",name,flush=True)
         coef=fit.fit(Y[name])
+        arrays[f"coefficients_{name}"]=coef
         estimated=fit.expected_hessian(coef,Z,np.full(len(Z),1./len(Z)))
         ref=oracle[response_type[name]]
         fitted[name]=estimated
