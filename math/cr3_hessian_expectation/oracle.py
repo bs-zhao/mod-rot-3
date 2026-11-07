@@ -1,12 +1,17 @@
-"""CR3-4P analytic logit/probability and their full 10x10 Hessians.
+"""CR3-4P exact analytic logit/probability and full 10x10 Hessians.
 
-Independent reproduction of np/reference/s0_cr2_design_recovery.py. This
-module is ONLY used by the oracle branch and to construct the experimental
-logit response. The data-only regression module does not import this file.
+Independently reproduces np/reference/s0_cr2_design_recovery.py.
+Only used for the analytic oracle and the true-logit response construction;
+data_only.py NEVER imports this module.
 
-Coordinates: [alpha, lambda_loss, gamma, tau, gA, lA, pA, gB, lB, pB].
-At an amount of exactly zero, alpha<1 gives non-finite amount derivatives.
-Entries in the corresponding Hessian row/column are reported as NaN.
+Coordinates: alpha, lambda, gamma, tau, gainA, lossA, pA, gainB, lossB, pB.
+For alpha in (0,1), amount derivatives at EXACT zero do not exist.
+Those Hessian rows/columns are marked NaN, without masking TT entries.
+
+IMPORTANT: The source generator computes weighting(p) and weighting(1-p)
+SEPARATELY (and clips their probabilities separately). Do NOT replace
+weighting(1-p) by 1-weighting(p): finite-precision clipping at p=0/1
+can produce meaningful mismatches, particularly for small gamma.
 """
 from __future__ import annotations
 
@@ -19,26 +24,27 @@ EPS = 1e-12
 
 
 def oracle_outputs(T: np.ndarray, X: np.ndarray):
-    """Return true logit and probability, shape (n_subjects, n_trials)."""
+    """Return true generator logit and probability, shape (subjects, trials)."""
     T, X = np.asarray(T, float), np.asarray(X, float)
     alpha, lam, gamma, tau = (T[:, None, i] for i in range(4))
     dv = 0.0
     for opt, sign in ((0, 1.0), (1, -1.0)):
         g, loss, prob = (X[None, :, opt * 3 + k] for k in range(3))
-        w = expit(gamma * logit(np.clip(prob, EPS, 1-EPS)))
-        value = w * (g / 100.0) ** alpha - lam * (1-w) * (loss / 100.0) ** alpha
+        wg = expit(gamma * logit(np.clip(prob, EPS, 1. - EPS)))
+        wl = expit(gamma * logit(np.clip(1. - prob, EPS, 1. - EPS)))
+        value = wg * (g / 100.0) ** alpha - lam * wl * (loss / 100.0) ** alpha
         dv = dv + sign * value
     eta = tau * dv
     return eta, expit(eta)
 
 
 def oracle_hessians(T: np.ndarray, X: np.ndarray):
-    """Vectorized analytic Hessians of eta and sigmoid(eta).
+    """Analytic Hessians of the exact generated logit and probability.
 
-    T: (n,4); X: (m,6), fixed stimulus bank.
-    Returns (H_eta, H_probability), each (n,m,10,10).
-    Handles clipped probability weighting exactly away from clipping knots.
-    Invalid derivatives at zero monetary amounts are NaN, not zero.
+    T: (n,4), X: (m,6) fixed stimulus bank.
+    Returns (H_eta, H_prob), both (n,m,10,10).
+    Derivatives in probability coordinates are those of the original clipped
+    function away from clipping boundary knots (p=EPS or p=1-EPS).
     """
     T, X = np.asarray(T, float), np.asarray(X, float)
     n, m = len(T), len(X)
@@ -57,14 +63,12 @@ def oracle_hessians(T: np.ndarray, X: np.ndarray):
         g, loss, prob = (X[None, :, 3 * opt + j] for j in range(3))
         lg = np.where(g > 0, np.log(np.maximum(g / 100., 1e-300)), 0.)
         ll = np.where(loss > 0, np.log(np.maximum(loss / 100., 1e-300)), 0.)
-        a = (g / 100.) ** alpha
-        b = (loss / 100.) ** alpha
+        a, b = (g / 100.) ** alpha, (loss / 100.) ** alpha
         aa, ba = a * lg, b * ll
         aaa, baa = aa * lg, ba * ll
 
-        # Zero amounts: fractional-power amount derivative does not exist.
-        sg = np.where(g > 0, g, 1.)
-        sl = np.where(loss > 0, loss, 1.)
+        # Fractional powers at zero monetary amounts are NOT differentiable.
+        sg, sl = np.where(g > 0, g, 1.), np.where(loss > 0, loss, 1.)
         ag = np.where(g > 0, alpha * a / sg, np.nan)
         bl = np.where(loss > 0, alpha * b / sl, np.nan)
         aag = np.where(g > 0, a / sg * (1. + alpha * lg), np.nan)
@@ -72,29 +76,37 @@ def oracle_hessians(T: np.ndarray, X: np.ndarray):
         agg = np.where(g > 0, alpha * (alpha - 1.) * a / sg**2, np.nan)
         bll = np.where(loss > 0, alpha * (alpha - 1.) * b / sl**2, np.nan)
 
-        r = logit(np.clip(prob, EPS, 1. - EPS))
-        w = expit(gamma * r)
-        s = w * (1. - w)
-        wg = s * r
-        wgg = s * (1. - 2. * w) * r**2
-        inside = (prob > EPS) & (prob < 1. - EPS)
-        ps = np.where(inside, prob, .5)
-        den = ps * (1. - ps)
-        wp = np.where(inside, gamma * s / den, 0.)
-        wgp = np.where(inside, s / den * (1. + gamma * r * (1. - 2. * w)), 0.)
-        wpp = np.where(
-            inside,
-            s / den**2 * (gamma**2 * (1. - 2. * w) + gamma * (2. * ps - 1.)),
-            0.
-        )
+        # Exactly replicate the TWO independent probability-weight calls.
+        rg = logit(np.clip(prob, EPS, 1. - EPS))
+        rl = logit(np.clip(1. - prob, EPS, 1. - EPS))
+        wg, wl = expit(gamma * rg), expit(gamma * rl)
+        sgam, slam = wg * (1. - wg), wl * (1. - wl)
+        wg_gamma, wl_gamma = sgam * rg, slam * rl
+        wg_gg = sgam * (1. - 2. * wg) * rg**2
+        wl_gg = slam * (1. - 2. * wl) * rl**2
 
-        v = w * a - lam * (1. - w) * b
-        v_alpha = w * aa - lam * (1. - w) * ba
-        v_lambda = -(1. - w) * b
-        v_gamma = wg * (a + lam * b)
-        v_g = w * ag
-        v_l = -lam * (1. - w) * bl
-        v_p = wp * (a + lam * b)
+        interior = (prob > EPS) & (prob < 1. - EPS)
+        safe_p = np.where(interior, prob, .5)
+        den = safe_p * (1. - safe_p)
+        rg_p = np.where(interior, 1. / den, 0.)
+        rl_p = np.where(interior, -1. / den, 0.)
+        rg_pp = np.where(interior, (2. * safe_p - 1.) / den**2, 0.)
+        rl_pp = -rg_pp
+        wg_p = gamma * sgam * rg_p
+        wl_p = gamma * slam * rl_p
+        wg_gp = sgam * rg_p * (1. + gamma * rg * (1. - 2. * wg))
+        wl_gp = slam * rl_p * (1. + gamma * rl * (1. - 2. * wl))
+        wg_pp = sgam * (
+            gamma * rg_pp + gamma**2 * (1. - 2. * wg) * rg_p**2)
+        wl_pp = slam * (
+            gamma * rl_pp + gamma**2 * (1. - 2. * wl) * rl_p**2)
+
+        v = wg * a - lam * wl * b
+        v_alpha = wg * aa - lam * wl * ba
+        v_lambda = -wl * b
+        v_gamma = wg_gamma * a - lam * wl_gamma * b
+        v_g, v_l = wg * ag, -lam * wl * bl
+        v_p = wg_p * a - lam * wl_p * b
 
         eta += sign * tau * v
         grad[..., 0] += sign * tau * v_alpha
@@ -105,50 +117,49 @@ def oracle_hessians(T: np.ndarray, X: np.ndarray):
         grad[..., k + 1] += sign * tau * v_l
         grad[..., k + 2] += sign * tau * v_p
 
-        # theta-theta block
-        symmetric_add(0, 0, sign * tau * (w * aaa - lam * (1. - w) * baa))
-        symmetric_add(0, 1, sign * tau * (-(1. - w) * ba))
-        symmetric_add(0, 2, sign * tau * wg * (aa + lam * ba))
+        # TT block
+        symmetric_add(0, 0, sign * tau * (wg * aaa - lam * wl * baa))
+        symmetric_add(0, 1, sign * (-tau * wl * ba))
+        symmetric_add(0, 2, sign * tau * (wg_gamma * aa - lam * wl_gamma * ba))
         symmetric_add(0, 3, sign * v_alpha)
-        symmetric_add(1, 2, sign * tau * wg * b)
+        symmetric_add(1, 2, sign * (-tau * wl_gamma * b))
         symmetric_add(1, 3, sign * v_lambda)
-        symmetric_add(2, 2, sign * tau * wgg * (a + lam * b))
+        symmetric_add(2, 2, sign * tau * (wg_gg * a - lam * wl_gg * b))
         symmetric_add(2, 3, sign * v_gamma)
-        # lambda-lambda and tau-tau identically zero for logit.
+        # Lambda-lambda and tau-tau are identically zero on logit scale.
 
-        # theta-X block
-        symmetric_add(0, k, sign * tau * w * aag)
-        symmetric_add(0, k + 1, sign * (-tau * lam * (1. - w) * bal))
-        symmetric_add(0, k + 2, sign * tau * wp * (aa + lam * ba))
-        # d(lambda)/d(gain) is structurally zero
-        symmetric_add(1, k + 1, sign * (-tau * (1. - w) * bl))
-        symmetric_add(1, k + 2, sign * tau * wp * b)
-        symmetric_add(2, k, sign * tau * wg * ag)
-        symmetric_add(2, k + 1, sign * tau * lam * wg * bl)
-        symmetric_add(2, k + 2, sign * tau * wgp * (a + lam * b))
+        # TX block
+        symmetric_add(0, k, sign * tau * wg * aag)
+        symmetric_add(0, k + 1, sign * (-tau * lam * wl * bal))
+        symmetric_add(0, k + 2, sign * tau * (wg_p * aa - lam * wl_p * ba))
+        # Lambda / gain cross derivative is structurally zero.
+        symmetric_add(1, k + 1, sign * (-tau * wl * bl))
+        symmetric_add(1, k + 2, sign * (-tau * wl_p * b))
+        symmetric_add(2, k, sign * tau * wg_gamma * ag)
+        symmetric_add(2, k + 1, sign * (-tau * lam * wl_gamma * bl))
+        symmetric_add(2, k + 2, sign * tau * (wg_gp * a - lam * wl_gp * b))
         symmetric_add(3, k, sign * v_g)
         symmetric_add(3, k + 1, sign * v_l)
         symmetric_add(3, k + 2, sign * v_p)
 
-        # X-X block; different lotteries do not couple on the logit scale.
-        symmetric_add(k, k, sign * tau * w * agg)
-        symmetric_add(k + 1, k + 1, sign * (-tau * lam * (1. - w) * bll))
-        symmetric_add(k + 2, k + 2, sign * tau * wpp * (a + lam * b))
-        symmetric_add(k, k + 2, sign * tau * wp * ag)
-        symmetric_add(k + 1, k + 2, sign * tau * lam * wp * bl)
+        # XX block: separate lotteries contribute additively to logit.
+        symmetric_add(k, k, sign * tau * wg * agg)
+        symmetric_add(k + 1, k + 1, sign * (-tau * lam * wl * bll))
+        symmetric_add(k + 2, k + 2, sign * tau * (wg_pp * a - lam * wl_pp * b))
+        symmetric_add(k, k + 2, sign * tau * wg_p * ag)
+        symmetric_add(k + 1, k + 2, sign * (-tau * lam * wl_p * bl))
 
-    prob_out = expit(eta)
-    fac = prob_out * (1. - prob_out)
-    h_prob = fac[..., None, None] * (
-        h + (1. - 2. * prob_out)[..., None, None] *
+    probability = expit(eta)
+    fac = probability * (1. - probability)
+    h_probability = fac[..., None, None] * (
+        h + (1. - 2. * probability)[..., None, None] *
         grad[..., :, None] * grad[..., None, :]
     )
-    # Conservative domain mask: entire row/column of a zero amount is
-    # undefined. Do not silently replace infinities by zero.
+    # Mask undefined X derivatives only; TT remains well-defined.
     for col in (0, 1, 3, 4):
-        idx = np.flatnonzero(X[:, col] == 0.)
-        if len(idx):
-            for arr in (h, h_prob):
-                arr[:, idx, 4 + col, :] = np.nan
-                arr[:, idx, :, 4 + col] = np.nan
-    return h, h_prob
+        bad_trials = np.flatnonzero(X[:, col] == 0.)
+        if len(bad_trials):
+            for matrix in (h, h_probability):
+                matrix[:, bad_trials, 4 + col, :] = np.nan
+                matrix[:, bad_trials, :, 4 + col] = np.nan
+    return h, h_probability
