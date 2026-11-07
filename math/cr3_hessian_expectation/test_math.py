@@ -84,11 +84,26 @@ class AnalyticHessianTests(unittest.TestCase):
                         a, p = oracle_outputs(t[None, :], X[j:j+1])
                         return float(a[0,0] if channel=="logit" else p[0,0])
                     for dim in range(4):
-                        step = np.zeros(4); step[dim] = h[dim]
-                        num = (outcome(theta+step) - 2*outcome(theta) +
-                               outcome(theta-step)) / h[dim]**2
-                        self.assertAlmostEqual(num, analytical[i,j,dim,dim],
-                                               delta=5e-5)
+                        step = np.zeros(4)
+                        step[dim] = h[dim]
+                        # Fourth-order five-point stencil for the second
+                        # derivative. The old three-point O(h^2) stencil
+                        # had ~0.0016 truncation error for d²/dgamma²
+                        # at p=0/1, gamma=.05 (true curvature ~680.69).
+                        # This is a finite-difference issue, NOT an
+                        # analytical-Hessian error; do not loosen the
+                        # accuracy criterion to accept the old stencil.
+                        num = (
+                            -outcome(theta + 2*step)
+                            + 16*outcome(theta + step)
+                            - 30*outcome(theta)
+                            + 16*outcome(theta - step)
+                            - outcome(theta - 2*step)
+                        ) / (12*h[dim]**2)
+                        self.assertAlmostEqual(
+                            num, analytical[i,j,dim,dim], delta=5e-5,
+                            msg=f"{channel}: subject={i}, trial={j}, dim={dim}"
+                        )
 
     def test_zero_amount_marked_undefined(self):
         theta = np.array([[.8, 2., .7, 2.2]])
