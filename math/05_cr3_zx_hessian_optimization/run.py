@@ -19,6 +19,7 @@ import numpy as np
 from tensor import TensorExperiment
 from patterns import PARTS,all_blocks
 from four_d import run_krr,run_splines
+from rbf import make_rbf_experiment
 
 HERE=Path(__file__).resolve().parent
 ROOT=HERE.parents[1]
@@ -211,6 +212,70 @@ def run_tensors(data,args,output):
     return summary,output_arrays,len(combos)*len(ridges_z)*len(ridges_x)
 
 
+def run_rbfs(data,args,output):
+    """RBF full 10D Hessian, same six Y, same splits, same oracle evaluator."""
+    lengths_z=args.rbf_ell_z or ([.75,1.5] if args.preset=="quick" else [.5,1.,2.])
+    lengths_x=args.rbf_ell_x or ([.75,1.5] if args.preset=="quick" else [.5,1.,2.])
+    ridges=args.rbf_ridges or ([.01,1e-4,1e-6] if args.preset=="quick" else [.01,1e-4,1e-6,1e-8])
+    number=len(lengths_z)*len(lengths_x)*len(ridges)**2
+    if number>args.max_grid:
+        raise ValueError(f"RBF grid has {number} candidates; narrow parameters or raise --max-grid")
+    rows=[]
+    selected={}
+    Z,X,Y=data["Z"],data["X"],data["Y"]
+    count=0
+    for ell_z,ell_x in itertools.product(lengths_z,lengths_x):
+        print(f"RBF full ZX: ell_Z={ell_z:g}, ell_X={ell_x:g}",flush=True)
+        engine=make_rbf_experiment(
+            Z,X,Y,data["train"],data["val"],data["test"],
+            landmarks_z=args.rbf_landmarks_z,
+            landmarks_x=args.rbf_landmarks_x,
+            ell_z=ell_z,ell_x=ell_x,seed=args.seed)
+        for rz,rx in itertools.product(ridges,ridges):
+            count+=1
+            coeff=engine.fit(rz,rx)
+            v=engine.metrics(coeff,data["val"])["rmse"]
+            test=engine.metrics(coeff,data["test"])["rmse"]
+            H,_=engine.mean_hessian(coeff)
+            for j,name in enumerate(CHANNELS):
+                blocks=mean_block_scores(H[:,:,j],data["oracle"],name)
+                fields=dict(method="rbf",ell_z=float(ell_z),ell_x=float(ell_x),
+                            n_landmarks_z=int(args.rbf_landmarks_z),
+                            n_landmarks_x=int(args.rbf_landmarks_x),
+                            ridge_z=float(rz),ridge_x=float(rx),
+                            channel=name,val_rmse=float(v[j]),
+                            test_rmse=float(test[j]),n_features=engine.feature_count)
+                for block,metrics in blocks.items():
+                    rows.append({**fields,"block":block,**metrics})
+                previous=selected.get(name)
+                if previous is None or float(v[j])<previous["val_rmse"]:
+                    selected[name]={**fields,
+                                    "hessian":H[:,:,j].copy(),
+                                    "coefficients":coeff[:,:,j].copy(),
+                                    "pattern_scores":blocks}
+        print(f" completed {count}/{number} RBF candidates",flush=True)
+        del engine
+    csv_rows(output/"rbf_grid_pattern_metrics.csv",rows)
+    arrays={};summary={}
+    for name,best in selected.items():
+        matrix=best["hessian"]
+        arrays[f"rbf__{name}__mean_hessian"]=matrix
+        arrays[f"rbf__{name}__coefficients"]=best["coefficients"]
+        summary[name]={k:v for k,v in best.items()
+                       if k not in ("hessian","coefficients")}
+        if not args.no_plots:
+            for block in ("ZZ","ZX","XX"):
+                plot_triple(output/f"rbf__{name}__{block}.png",
+                            data["oracle"][CLASSES[name]]["conditional_mean"],
+                            data["old"][name],matrix,"rbf/"+name,block)
+        print(f" selected RBF/{name}: ell_Z={best['ell_z']:g}, "
+              f"ell_X={best['ell_x']:g}, ridge=({best['ridge_z']:g},{best['ridge_x']:g}) "
+              f"ZZ cosine {best['pattern_scores']['ZZ']['cosine']}, "
+              f"ZX cosine {best['pattern_scores']['ZX']['cosine']}, "
+              f"XX cosine {best['pattern_scores']['XX']['cosine']}",flush=True)
+    return summary,arrays,number
+
+
 def run_zz_methods(data,args,output,methods):
     results={};arrays={}
     Z,Y=data["Z"],data["Y"]
@@ -255,13 +320,18 @@ def main():
                    help="Previously completed step-04 repeat directory")
     p.add_argument("--output",type=Path)
     p.add_argument("--preset",choices=("quick","full"),default="quick")
-    p.add_argument("--methods",nargs="+",choices=("tensor","krr","spline"),
-                   default=["tensor","krr","spline"])
+    p.add_argument("--methods",nargs="+",choices=("tensor","rbf","krr","spline"),
+                   default=["tensor","rbf","krr","spline"])
     p.add_argument("--basis",nargs="+",choices=("monomial","chebyshev"))
     p.add_argument("--degree-z",nargs="+",type=int)
     p.add_argument("--degree-x",nargs="+",type=int)
     p.add_argument("--ridge-z",nargs="+",type=float)
     p.add_argument("--ridge-x",nargs="+",type=float)
+    p.add_argument("--rbf-landmarks-z",type=int,default=64)
+    p.add_argument("--rbf-landmarks-x",type=int,default=64)
+    p.add_argument("--rbf-ell-z",nargs="+",type=float)
+    p.add_argument("--rbf-ell-x",nargs="+",type=float)
+    p.add_argument("--rbf-ridges",nargs="+",type=float)
     p.add_argument("--krr-rank",type=int,default=128)
     p.add_argument("--spline-bases",nargs="+",type=int)
     p.add_argument("--max-grid",type=int,default=400)
@@ -270,12 +340,14 @@ def main():
     p.add_argument("--verify-step04-baseline",action="store_true",
                    help="Reproduce step04 old degree4/3 ridge .01 mean matrices (strict test)")
     args=p.parse_args()
-    if args.repeat<1 or args.krr_rank<8 or args.max_grid<1:
+    if (args.repeat<1 or args.krr_rank<8 or args.max_grid<1 or
+        args.rbf_landmarks_z<4 or args.rbf_landmarks_x<4):
         p.error("Invalid repeat / krr rank / max grid")
     if args.source_dir is None:
         args.source_dir=ROOT/"outputs/math/cr3_zx_hessian_threeway"/args.condition/f"repeat{args.repeat:02d}"
     if args.output is None:
-        args.output=ROOT/"outputs/math/05_cr3_zx_hessian_optimization"/args.condition/f"repeat{args.repeat:02d}"/args.preset
+        args.output=(ROOT/"outputs/math/05_cr3_zx_hessian_optimization"/args.condition/
+                     f"repeat{args.repeat:02d}"/f"{args.preset}__{'_'.join(args.methods)}")
     data=load_step04(args.source_dir,args.seed)
     args.output.mkdir(parents=True,exist_ok=True)
     if args.verify_step04_baseline:
@@ -312,7 +384,11 @@ def main():
         ],
         configs=dict(basis=args.basis,degree_z=args.degree_z,degree_x=args.degree_x,
                      ridge_z=args.ridge_z,ridge_x=args.ridge_x,
-                     krr_rank=args.krr_rank,spline_bases=args.spline_bases),
+                     krr_rank=args.krr_rank,spline_bases=args.spline_bases,
+                     rbf_landmarks_z=args.rbf_landmarks_z,
+                     rbf_landmarks_x=args.rbf_landmarks_x,
+                     rbf_ell_z=args.rbf_ell_z,rbf_ell_x=args.rbf_ell_x,
+                     rbf_ridges=args.rbf_ridges),
         results={},
     )
     arrays={}
@@ -320,6 +396,10 @@ def main():
         report["results"]["tensor"],a,number=run_tensors(data,args,args.output)
         report["tensor_designs_times_ridge_pairs"]=number
         arrays.update(a)
+    if "rbf" in args.methods:
+        report["results"]["rbf"],rbf_arrays,rbf_number=run_rbfs(data,args,args.output)
+        report["rbf_bandwidth_ridge_candidates"]=rbf_number
+        arrays.update(rbf_arrays)
     other,rest=run_zz_methods(data,args,args.output,args.methods)
     report["results"]["zz_only"]=other
     arrays.update(rest)
