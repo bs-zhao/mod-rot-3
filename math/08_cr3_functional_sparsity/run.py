@@ -96,7 +96,6 @@ def finite_effects(t, x, r, st, sx, step):
     non-affinity without differentiating a surrogate.
     """
     n=len(t)
-    base=outputs(t,x)
     pair=np.zeros((2,4,6)); selfv=np.zeros((2,4))
     offsets=(-1.,0.,1.)
     for i in range(4):
@@ -170,13 +169,13 @@ def plots(out, plane, angles, curve, hzx, apair):
         chosen=sorted(set([0,len(angles)//2,len(angles)-1]))
         vmax_h=max(float(hzx[i,c].max()) for i in chosen)
         vmax_a=max(float(apair[i,c].max()) for i in chosen)
-        fig,axs=plt.subplots(2,len(chosen),figsize=(4*len(chosen),7),constrained_layout=True)
+        fig,axs=plt.subplots(2,len(chosen),figsize=(4*len(chosen),7),constrained_layout=True,squeeze=False)
         for ci,k in enumerate(chosen):
             for ri,(m,vmax,label) in enumerate(((hzx[k,c],vmax_h,'Hessian RMS'),(apair[k,c],vmax_a,'3x3 ANOVA gap'))):
                 ax=axs[ri,ci]
                 im=ax.imshow(m,aspect='auto',vmin=0,vmax=max(vmax,1e-12))
                 ax.set_xticks(range(6),X_NAMES,rotation=55,ha='right',fontsize=8)
-                ax.set_yticks(range(4),PARAM_NAMES)
+                ax.set_yticks(range(4),[f'U{k}' for k in range(4)])
                 ax.set_title(f'{angles[k]:g}°: {label}')
                 fig.colorbar(im,ax=ax,shrink=.65)
         fig.savefig(out/f'heatmaps__{plane}__{channel}.png',dpi=140);plt.close(fig)
@@ -227,7 +226,6 @@ def run(args):
         raise FileExistsError(f'{out} is nonempty; use --overwrite or --output NEW_DIR')
     out.mkdir(parents=True,exist_ok=True)
     all_curves=[];audit_rows=[]
-    frob_zx_reference=np.sqrt(np.mean(zx_raw**2,axis=0))
     for i,j in planes:
         plane=f'{i}{j}_{PARAM_NAMES[i]}_{PARAM_NAMES[j]}'
         curve=[];zh=[];zp=[];vself=[];ap=[]
