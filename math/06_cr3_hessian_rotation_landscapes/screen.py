@@ -55,9 +55,10 @@ def select_sparsity_metrics(rows,*,min_correlation=.90,
                             endpoint_tolerance=10.,min_relative_range=.02):
     if not rows:return [],[],[]
     meta={"plane","parameter_i","parameter_j","angle_degrees","source","target","block"}
-    common=set(rows[0].keys())
-    for row in rows[1:]:common.intersection_update(row)
-    metric_names=sorted(k for k in common if k not in meta and _is_loss_column(k))
+    # ZX-specific row losses are missing by design from ZZ/XX rows.
+    # Use UNION, then check availability inside each (plane,Y,block) group.
+    possible=set().union(*(row.keys() for row in rows))
+    metric_names=sorted(k for k in possible if k not in meta and _is_loss_column(k))
     groups=defaultdict(lambda:defaultdict(dict))
     for row in rows:
         group=(row["plane"],row["target"],row["block"])
