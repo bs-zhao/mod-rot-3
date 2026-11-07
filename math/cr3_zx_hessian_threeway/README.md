@@ -137,7 +137,8 @@ Outputs go to
   A,b and six complete Y arrays.
 - \`all_matrices.npz\`: original CR3 analytic Hessian in ZX coordinates,
   data-only six Hessian means/RMS/SD/validity masks and NN-minus-analytic
-  response-based fitted differences.
+  response-based fitted differences, all six fitted polynomial coefficient
+  matrices and exact mapping/sieve subject IDs.
 - \`analytic_logit__mean.csv\`, \`analytic_probability__mean.csv\`,
   and \`fitted_<six_channel>__mean.csv\`: full 10×10 numeric matrices.
 - \`threeway_choice_ZZ.png\`, \`threeway_logit_ZX.png\` etc.: five-panel
