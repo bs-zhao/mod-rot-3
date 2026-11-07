@@ -264,7 +264,7 @@ def main():
     p.add_argument("--ridge-x",nargs="+",type=float)
     p.add_argument("--krr-rank",type=int,default=128)
     p.add_argument("--spline-bases",nargs="+",type=int)
-    p.add_argument("--max-grid",type=int,default=200)
+    p.add_argument("--max-grid",type=int,default=400)
     p.add_argument("--seed",type=int,default=20261106)
     p.add_argument("--no-plots",action="store_true")
     p.add_argument("--verify-step04-baseline",action="store_true",
