@@ -12,6 +12,7 @@ import numpy as np
 from features import Features, exponent_table, validity_mask
 from tensor import TensorExperiment
 from patterns import score,all_blocks
+from rbf import RBFGroup,make_rbf_experiment
 from run import load_step04,run_tensors, CHANNELS
 
 
@@ -94,6 +95,44 @@ class FitTests(unittest.TestCase):
         # Yet the algebraic estimated Hessian must be symmetric/finite.
         self.assertAlmostEqual(H[0,6,0],H[6,0,0],places=11)
         self.assertTrue(np.isfinite(H[1,1,0]))
+
+
+class KernelTests(unittest.TestCase):
+    def test_gaussian_kernel_first_and_second_derivatives(self):
+        rng=np.random.default_rng(44)
+        Z=rng.normal(size=(60,4))
+        obj=RBFGroup(Z,np.arange(45),n_landmarks=10,lengthscale=1.2,seed=8)
+        h=1e-4
+        for i,j in ((0,0),(0,2),(2,3)):
+            def kernel_with_shift(di,dj):
+                saved=obj.p
+                shifted=Z.copy()
+                shifted[:,i]+=di*h
+                shifted[:,j]+=dj*h
+                obj.p=shifted
+                obj._cache={}
+                try:return obj.matrix().copy()
+                finally:obj.p=saved;obj._cache={}
+            numerical=(kernel_with_shift(1,1)-kernel_with_shift(1,-1)
+                       -kernel_with_shift(-1,1)+kernel_with_shift(-1,-1))/(4*h*h)
+            np.testing.assert_allclose(obj.matrix((i,j)),numerical,
+                                       atol=1e-6,rtol=1e-5)
+
+    def test_rbf_six_y_full_hessian(self):
+        rng=np.random.default_rng(42)
+        z=rng.normal(size=(85,4))
+        x=rng.uniform(.1,.9,size=(34,6))
+        y=rng.normal(size=(85,34,6))
+        model=make_rbf_experiment(z,x,y,np.arange(60),
+                                  np.arange(60,70),np.arange(70,85),
+                                  landmarks_z=12,landmarks_x=14,
+                                  ell_z=1.,ell_x=1.3,seed=5)
+        coef=model.fit(1e-3,1e-3)
+        h,m=model.mean_hessian(coef)
+        self.assertEqual(h.shape,(10,10,6))
+        self.assertTrue(np.isfinite(h).all())
+        self.assertGreater(model.feature_count,0)
+        np.testing.assert_allclose(h,h.transpose(1,0,2),atol=1e-10)
 
 
 class PatternTests(unittest.TestCase):
