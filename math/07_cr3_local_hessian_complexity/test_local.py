@@ -17,6 +17,7 @@ from controlled_sweeps import sweep_grids,sweep_metrics
 from analytic_reference import rotate_fields,reference_fields
 from local_polynomial import polynomial_field_shake
 from comparisons import compare_three_arrays
+from pairwise_sweeps import pairwise_additivity
 from fast_tensor import RotationTensor
 
 
@@ -117,6 +118,37 @@ def test_local_polynomial_exact_z_cubic_and_z2_x_modulation():
     assert_allclose(vals,true,atol=.03,rtol=.02)
     # d³f/dz1² dx5 = 2*.4*.6, independent of z1 and X.
     assert_allclose(fields["zzx"][0,...,1,1,5],.48,atol=.03,rtol=.03)
+
+
+
+def test_pairwise_ZZ_additivity_gap_detects_cross_product():
+    rng=np.random.default_rng(32)
+    U=rng.uniform(-1,1,size=(50,4))
+    X=rng.uniform(.1,.9,size=(7,6))
+    class FakePoly:
+        def __init__(self,interaction):
+            self.X=X
+            self.interaction=interaction
+        def evaluate(self,Unew):
+            v=Unew[:,0]*Unew[:,1] if self.interaction else (
+                Unew[:,0]**2+Unew[:,1]**3)
+            return np.broadcast_to(v[None,:,None],(6,len(Unew),len(X))).copy()
+    class FakeOracle:
+        def __init__(self,interaction):self.interaction=interaction
+        def oracle_outputs(self,T,X):
+            v=T[:,0]*T[:,1] if self.interaction else (
+                T[:,0]**2+T[:,1]**3)
+            values=np.broadcast_to(v[:,None],(len(T),len(X))).copy()
+            return values,values
+    separate=pairwise_additivity(FakePoly(False),U,[2,8],np.zeros(4),
+                                 np.eye(4),FakeOracle(False),levels=5)
+    interacting=pairwise_additivity(FakePoly(True),U,[2,8],np.zeros(4),
+                                    np.eye(4),FakeOracle(True),levels=5)
+    key="zz_pair_01_additivity_gap_loss"
+    assert separate[("analytic","logit")][key]<1e-20
+    assert interacting[("analytic","logit")][key]>.05
+    assert interacting[("formula_y","logit")][key]>.05
+    assert interacting[("nn_y","logit")][key]>.05
 
 
 def test_three_way_gap_separates_estimator_vs_nn_fit():
