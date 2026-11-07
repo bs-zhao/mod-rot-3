@@ -53,6 +53,19 @@ polynomial function space at fixed degrees, but ridge regularization is
 basis-dependent. This provides a direct controlled test of basis and
 regularization effects.
 
+### Additional full 10x10 non-polynomial estimator
+
+- **Factorized Gaussian RBF:** use independent landmark Gaussian kernel features
+  for 4D Z and 6D X in the SAME two-sided ridge matrix solver:
+  `f(Z,X) = phi_RBF_Z(Z)^T B phi_RBF_X(X)`.
+- Different Z and X lengthscales (standard-deviation-scaled) and ridge
+  penalties are swept independently; model selection remains based on
+  validation Y RMSE, without inspecting the true Hessian.
+- Analytic first and second derivatives of the kernel basis give
+  **all 10x10 blocks ZZ, ZX and XX** in the original Z/X coordinates.
+- This is a genuinely different nonlinear function class, unlike the
+  Chebyshev-versus-monomial comparison at the same polynomial degrees.
+
 ### Two additional ZZ-only estimators
 
 - **Nyström Gaussian kernel ridge regression (KRR)** with subject-wise
@@ -133,10 +146,10 @@ and increase X degree:**
 python math/05_cr3_zx_hessian_optimization/run.py --methods tensor --preset quick --verify-step04-baseline --no-plots
 ```
 
-**All four algorithm families (quick preset):**
+**All five algorithm variants / four CLI method groups (quick preset):**
 
 ```cmd
-python math/05_cr3_zx_hessian_optimization/run.py --methods tensor krr spline --preset quick
+python math/05_cr3_zx_hessian_optimization/run.py --methods tensor rbf krr spline --preset quick
 ```
 
 **Broader polynomial degree/ridge sweep:**
@@ -149,6 +162,12 @@ python math/05_cr3_zx_hessian_optimization/run.py --methods tensor --preset full
 
 ```cmd
 python math/05_cr3_zx_hessian_optimization/run.py --methods tensor --basis monomial --degree-z 4 --degree-x 3 4 --ridge-z 0.000001 --ridge-x 0.000001 --output outputs\math\05_cr3_zx_hessian_optimization\focused_low_ridge
+```
+
+**Full 10D RBF kernel sweep:**
+
+```cmd
+python math/05_cr3_zx_hessian_optimization/run.py --methods rbf --preset quick --rbf-landmarks-z 64 --rbf-landmarks-x 64
 ```
 
 **ZZ-only nonparametric comparison:**
@@ -175,12 +194,13 @@ outputs/math/cr3_zx_hessian_threeway/beta5em05_lambda0_ctx0p25to0p8_L4/repeat01/
 Default (quick):
 
 ```text
-outputs/math/05_cr3_zx_hessian_optimization/beta5em05_lambda0_ctx0p25to0p8_L4/repeat01/quick/
+outputs/math/05_cr3_zx_hessian_optimization/beta5em05_lambda0_ctx0p25to0p8_L4/repeat01/quick__tensor_rbf_krr_spline/
 ```
 
 - `tensor_grid_pattern_metrics.csv`: **all** tensor hyperparameter
   candidates × six Y × eight Hessian blocks, including numerical and
   structural metrics, for retrospective diagnosis.
+- `rbf_grid_pattern_metrics.csv`: all RBF Z/X bandwidth, ridge, six-Y and eight-block pattern combinations.
 - `summary.json`: source SHA256 hashes, train/val/test sizes,
   selected per-channel hyperparameters, validation and test Y RMSE,
   selected block-wise Hessian recovery scores, KRR/spline ZZ results.
