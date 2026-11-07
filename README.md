@@ -8,6 +8,8 @@
 
 **Independent integration & matrix-statistics dimensions:** [Q: integration and averaging](readmes/HESSIAN_INTEGRATION_AND_AVERAGING.md) · [a: Hessian → numeric matrix metrics M01–M20](readmes/HESSIAN_TO_MATRIX_METRICS.md). Both are distinct from downstream scalar simplicity k.
 
+**General Hessian operations:** [D × P: eliminate input-variable dependence independently from changing output shape](readmes/HESSIAN_FUNCTIONAL_OPERATIONS.md) — includes scalar/vector/smaller matrices, operation order, and rotation invariance.
+
 The two independent parts of the project are:
 
 - [np/](np/README.md): **seven manually executed stages** for C1/C2/C3/CR3
