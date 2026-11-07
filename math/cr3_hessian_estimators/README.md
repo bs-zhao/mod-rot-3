@@ -121,6 +121,13 @@ subjects, and a quadrature check of the identity using the deterministic
 conditional mean. It NEVER compares this method to an unweighted
 Hessian while pretending that the targets match.
 
+For numerical variance reduction, the direct method subtracts a **fixed**
+control-variate intercept c=0.5 for binary/probability responses (and c=0
+for logit). Since the weighted score satisfies E[psi]=0, subtracting a
+fixed constant leaves the population expectation unchanged, but can
+substantially reduce empirical variance. Reported standard errors account
+for this centered score and the empirical weight denominator.
+
 The score method can have **large variance**, especially when the true
 prior-mean Hessian nearly cancels. Data-only values for binary responses
 include sampling noise; `n=5000` may not suffice for reliable 4D
