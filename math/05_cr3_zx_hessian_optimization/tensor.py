@@ -13,7 +13,7 @@ from features import Features, validity_mask
 
 class TensorExperiment:
     def __init__(self,Z,X,Y,train_ids,val_ids,test_ids,*,degree_z=4,
-                 degree_x=3,basis="monomial"):
+                 degree_x=3,basis="monomial",zbasis_override=None,xbasis_override=None):
         Z=np.asarray(Z,dtype=float)
         X=np.asarray(X,dtype=float)
         Y=np.asarray(Y,dtype=float)
@@ -25,8 +25,10 @@ class TensorExperiment:
             raise ValueError("Expected Z=(N,4), X=(M,6), Y=(N,M,channels)")
         if len(set(self.train.tolist()+self.val.tolist()+self.test.tolist()))!=len(Z):
             raise ValueError("Subject train/validation/test splits must partition N")
-        self.zbasis=Features(Z,self.train,degree_z,basis)
-        self.xbasis=Features(X,np.arange(len(X)),degree_x,basis)
+        self.zbasis=(zbasis_override if zbasis_override is not None
+                     else Features(Z,self.train,degree_z,basis))
+        self.xbasis=(xbasis_override if xbasis_override is not None
+                     else Features(X,np.arange(len(X)),degree_x,basis))
         Pz=self.zbasis.matrix()
         Px=self.xbasis.matrix()
         self.normz=np.maximum(np.linalg.norm(Pz[self.train],axis=0),1e-12)
@@ -46,7 +48,7 @@ class TensorExperiment:
 
     @property
     def feature_count(self):
-        return int(len(self.zbasis.powers)*len(self.xbasis.powers))
+        return int(self.features_z.shape[1]*self.features_x.shape[1])
 
     def fit(self,ridge_z,ridge_x):
         rz,rx=float(ridge_z),float(ridge_x)
