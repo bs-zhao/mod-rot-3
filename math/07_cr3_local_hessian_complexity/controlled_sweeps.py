@@ -130,3 +130,36 @@ def sweep_metrics(one_source):
         outputs[f"sweep_mean_{key}"]=float(vals.mean())
         outputs[f"sweep_max_{key}"]=float(vals.max())
     return outputs
+
+
+def sweep_support_diagnostics(U_all,train_indices,anchor_indices,*,levels=9):
+    """Detect OOD controlled scans; this is NOT a simplicity objective.
+
+    Holding U_{-i} fixed while changing U_i can leave the correlated
+    empirical Z-manifold. Use covariance-based Mahalanobis distance as a
+    conservative diagnostic and report the fraction outside the 95th
+    percentile of the training-subject distance distribution.
+    """
+    U=np.asarray(U_all,dtype=float)
+    train=np.asarray(train_indices,dtype=int)
+    grids,_=sweep_grids(U,anchor_indices,levels=levels)
+    central=U[train].mean(axis=0)
+    cov=np.cov(U[train],rowvar=False)
+    inv=np.linalg.pinv(cov,rcond=1e-10)
+    def distance(a):
+        diff=np.asarray(a)-central
+        return np.einsum("...i,ij,...j->...",diff,inv,diff,optimize=True)
+    threshold=float(np.quantile(distance(U[train]),.95))
+    ratios=[];means=[]
+    scores={}
+    for i in range(4):
+        v=distance(grids[i])
+        ratios.append(float(np.mean(v>threshold)))
+        means.append(float(np.mean(v)))
+        scores[f"sweep_z{i}_OOD95_fraction_diagnostic"]=ratios[-1]
+        scores[f"sweep_z{i}_Mahalanobis_mean_diagnostic"]=means[-1]
+    scores["sweep_mean_OOD95_fraction_diagnostic"]=float(np.mean(ratios))
+    scores["sweep_max_OOD95_fraction_diagnostic"]=float(np.max(ratios))
+    scores["sweep_mean_Mahalanobis_diagnostic"]=float(np.mean(means))
+    scores["sweep_training_Mahalanobis_95pct_diagnostic"]=threshold
+    return scores
