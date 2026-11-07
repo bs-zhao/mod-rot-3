@@ -9,7 +9,7 @@ Each experiment is its **own runnable Python file**, with actual stage logic in 
 | 3 | `np/s3_train.py` | Train original NP; choose beta, lambda, latent dimension, optimizer hyperparameters | S2 qualification |
 | 4 | `np/s4_evaluate.py` | Saved NP validation/test accuracy, CE, KL, learning curves; if S5 exists, also posterior-Z histograms, per-axis variance and KL | S3 checkpoint; S5 optional for Z diagnostics |
 | 5 | `np/s5_extract_z.py` | Encode every subject using **ALL observed trials**, save frozen posterior-mean Z | S3 checkpoint and S1 dataset |
-| 6 | `np/s6_pca.py` | TRAIN-only PCA of Z; explained variance and correlations; threshold-selected PC and raw Z correlation heatmaps and pairwise scatter | S5 Z |
+| 6 | `np/s6_pca.py` | TRAIN-only PCA, FastICA and FactorAnalysis; threshold-selected PC/Z pair plots plus TEST PC/IC/FA-to-theta heatmaps and all-pair scatter | S5 Z |
 | 7 | `np/s7_regression.py` | Full-Z and top-k-PC Ridge regression to simulator theta; validation-selected alpha; held-out test | S5 Z and S6 PCA |
 
 Run commands **one at a time** from repository root, e.g. for CR3 beta=0 L8:
@@ -111,3 +111,50 @@ remain intact. PCA TRAIN components have near-zero Pearson correlations
 **by construction**; inspect ALL/TEST matrices and scatterplots, and
 do not equate uncorrelatedness with statistical independence. When a
 threshold selects zero axes, S6 records that status rather than failing.
+
+
+### S6: TEST correlations and scatterplots from PCA, ICA and 4-factor FA
+
+All three representations are fitted **only using TRAIN subjects' frozen
+posterior-mean Z**, without access to simulator theta:
+
+1. **PC1..PCL**: all components of the existing TRAIN PCA, whether or not
+   they pass `--pc-var-threshold`. (Thresholded PC plots above remain intact.)
+2. **IC1..ICL**: sklearn FastICA of TRAIN-standardized original Z,
+   `whiten='unit-variance'`, deterministic seed 31, all latent dimensions.
+3. **FA1..FA4**: sklearn FactorAnalysis, four factors, `rotation='varimax'`,
+   on the same TRAIN-standardized Z. If latent dimension is smaller than 4,
+   the factor count is reduced to the available dimension.
+
+The fitted transforms are then applied to ALL subjects. Each representation
+is compared to ALL true parameters on **held-out TEST subjects only**, never
+used for transform fitting, axis selection, sign flips or optimization.
+
+New files under the same `s12_z_diagnostics/<condition>/repeatXX/` folder:
+
+* `s12__{pc,ic,fa}_theta_correlations.csv`: signed Pearson-r matrix with
+  true parameters in rows and every corresponding component in columns.
+* `s12__{pc,ic,fa}_theta_heatmap.png`: annotated signed-r heatmap,
+  fixed red/blue range [-1, 1].
+* `s12__{pc,ic,fa}_theta_scatter.png`: full theta-by-component scatter
+  grid on TEST subjects, annotated with signed `r` and `r²`.
+* `s12__{pc,ic,fa}_theta_pairwise.csv`: one row per parameter/component
+  combination, signed `r`, squared correlation, and test sample count.
+* `s12__ica.npz`, `s12__factor_analysis.npz`: fitted transform outputs,
+  TRAIN feature normalization and provenance; original `s12__pca.npz`
+  remains unchanged for S7.
+* `s12__component_theta_summary.json`: results, configuration and
+  convergence warnings.
+
+For the already trained L4 run with beta=5e-5:
+
+```cmd
+python np/s6_pca.py --model CR3 --beta 0.00005 --latent-dim 4 --pc-var-threshold 0.05 --z-var-threshold 0.01 --fa-factors 4
+```
+
+Important interpretation: ICA components and FA factors are identifiable
+only up to certain permutations, signs and potentially other ambiguities;
+they are not forced to match the generating theta. Four factors extracted
+from **four** original Z variables are generally an underidentified factor
+model. The correlations are descriptive comparisons, not evidence of
+uniquely recovered causal latent factors.
