@@ -28,6 +28,13 @@ There is no aggregate "run everything" script.
   all six Y. The NN produces Y ONLY; it is never differentiated.
   See cr3_hessian_six_y/README.md.
 
+- cr3_zx_hessian_threeway/: fit an affine A from the original all-trial
+  encoder Z to true T, evaluate CR3 Y at T_hat=A Z+b and frozen decoder Y
+  at actual Z, then infer two full 10x10 Hessians from the SAME Z,X
+  matrix estimator. Compare with analytic CR3 H at T_hat pulled back
+  by J=diag(A,I6). No NN derivatives are computed.
+  See cr3_zx_hessian_threeway/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
