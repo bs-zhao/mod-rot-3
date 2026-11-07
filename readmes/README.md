@@ -1,54 +1,68 @@
 # Mod-Rot：研究框架总 README
 
-> **相关独立资料**：[C1/C2/C3/CR3 的真实生成模型](TOY_GENERATIVE_MODELS.md)；**新方法模块**：[从数值 ZXY 提取 Hessian 的 14 类统计/数值估计器及参考文献](HESSIAN_FROM_ZXY_METHODS.md)。这些分别属于生成模型与数值 Hessian 估计器两个独立实验维度。
+> **独立研究维度与方法目录**：[真实生成模型 C1/C2/C3/CR3](TOY_GENERATIVE_MODELS.md) · [从 ZXY 提取 Hessian 的统计估计器 e](HESSIAN_FROM_ZXY_METHODS.md) · [积分/求平均的评价域、测度与权重 Q](HESSIAN_INTEGRATION_AND_AVERAGING.md) · [从 Hessian 函数获得数值矩阵的 20 类指标 a](HESSIAN_TO_MATRIX_METRICS.md)。最后才是对数值矩阵求**标量简单性损失 k**。
 
 > **目的**：用一份长期维护的框架文档明确研究中的不同层次、实验因素、比较对象和评价标准。本文是**研究架构说明**，不是新的运行器，也不改变已有 NP、math 或 rotations 项目。  
 > **日期**：2026-11-07。当前聚焦 C1、C2、C3、CR3；后续允许增加模型、估计器、积分方式和复杂度指标。  
-> **核心分离**：生成数据、NP 表征、Y 的类型、Hessian 来源、积分/平均、Hessian 准确性、简单性指标和旋转搜索必须分别定义。
+> **核心分离**：生成数据、NP 表征、Y 的类型与来源、Hessian 数值估计器 e、**积分与平均方案 Q**、**Hessian → 数值矩阵指标 a**、标量简单性 k、旋转搜索和 Hessian 准确性诊断必须分别定义。
 
-## 0. 总览：七层加一个独立诊断层
+## 0. 总览：九个研究层级 + 独立 Hessian 准确性诊断
 
 ~~~text
-L1 真实生成模型（C1/C2/C3/CR3）
-   ├── 真实生成解析式 eta_m(T,X) → p_m(T,X) → Bernoulli choice
-   ├── 已知真实参数 T 和真实参数的先验 pi_m(T)
-   └── 已知 Xset 的生成/选择方案及真实 (T,X,Y)
-                     │
-          ┌──────────┴───────────────┐
-          ▼                          ▼
-L2 每个模型单独训练的 NP           原始生成解析函数
-   ├── encoder: (X,choice) → Z        │
-   ├── decoder: (Z,X) → Y             │
-   ├── 特定配置令 dim Z = dim T       │
-   └── Z→T 线性回归的可恢复性检验      │
-          └──────────┬───────────────┘
-                     ▼
-L3 Y 的表达 / Hessian 计算来源
-   × 输出：logit / probability / choice
-   A 解析函数直接求导（oracle）
-   B 解析函数产生数值 Y → 回归/拟合函数 → 导数/Hessian
-   C 冻结 NP decoder 产生数值 Y → 同一拟合器 → 导数/Hessian
-   ×【独立 Hessian 估计器 e】全局/局部多项式、样条、核/GP、Stein 等
-     （对 B/C 的数值 ZXY；解析 A 为真值参考，不是数值估计器）
-                     │
-                     ▼
-L4 对 X 和 Z/T 进行积分、经验平均，或保留局部 Hessian
-   × 固定 Xset / X 分布；经验被试 / 已知 T 先验 / Z 经验分布
-   × E[H] / RMS(H) / Var(H) / 局部 H / 三四阶导数字段
-                     │
-          ┌──────────┴───────────────┐
-          ▼                          ▼
-诊断层：Hessian fidelity          L5 简单性指标 S(H) → 标量 loss
-A 对 B/C 的误差、局部结构等         稀疏性、交互、高阶变化、JD 等
-                                     │
-                                     ▼
-L6 旋转 U=A Z+b；角度是自变量
-   两两 2D / 3D、4D 联合旋转 / SO(d) 连续优化
-                                     │
-                                     ▼
-L7 最终验证：loss 是否在真参数轴最小？U 与 T 是否一一对应？
-   解析成功？解析 Y 数值估计也成功？NN-Y 也成功？跨四模型成功？
+L1 真实生成模型与数据：C1 / C2 / C3 / CR3
+   └── 真 T、先验、真实解析式、Xset、真实 choice
+                       │
+                       ▼
+L2 各模型冻结的 NP：Encoder → Z，Decoder 预测 Y
+                       │
+                       ▼
+L3 Y 的通道与来源（两组独立因素）
+   ├── 通道：logit / probability / binary choice
+   ├── 来源 A：解析式直接求 Hessian（oracle）
+   ├── 来源 B：解析式生成数值 Y → 估计器
+   └── 来源 C：冻结 Decoder 生成数值 Y → 同一个估计器
+                       │
+                       ▼
+L4 从数值 ZXY 推断 Hessian 的估计器 e
+   Polynomial / spline / local regression / KRR / GP / Stein …
+   （解析 oracle 不经过此步骤；有些方法直接估计平均 Hessian）
+                       │
+                       ▼
+   Hessian 函数 / 局部导数字段 H(U,X)
+                       │
+             ┌─────────┴──────────────┐
+             │                        ▼
+             │             诊断层：Hessian fidelity
+             │             解析 / 解析 Y / NN Y 的误差
+             ▼
+L5 【独立】积分与求平均方案 Q
+   对什么求积？Z/X/联合、实际 Xset/真实 prior/经验 Z
+   什么权重？被试均等、试次均等、条件/重要性权重
+   用何数值规则？有限求和 / MC / Sobol / quadrature
+                       │
+                       ▼
+L6 【独立】Hessian → 固定数值矩阵的指标 a
+   Signed mean / Mean abs / RMS / Variance / Q99
+   Gram E[HHᵀ] / Cov(vec H) / 条件变化 / 高阶变化 …
+                       │
+                       ▼
+L7 【独立】数值矩阵 → 标量简单性指标 k
+   非对角能量 / L1 / Top-k tail / rank / JD …
+                       │
+                       ▼
+L8 旋转自变量 U=AZ+b：两两、3D、4D、SO(d)
+   观察因变量 L(φ) = 简单性 Loss 如何随角度变化
+                       │
+                       ▼
+L9 验证：解析真轴最小？数值来源重现？TEST U 与 T 对应？
 ~~~
+
+**特别区分**：
+- **Q（积分/求平均方案）**：固定测度、变量、样本点、权重及数值求积规则。例如先对 500 个 X 等权，再对每位被试等权；Q 允许只做条件积分而保留某个变量。
+- **a（数值矩阵指标）**：固定 Q 后，决定被求期望的是 H、|H|、H²、HHᵀ，或者取分位数、条件方差等。这一步决定数值矩阵的**数学含义**。
+- **k（简单性指标）**：对给定数值矩阵计算非对角 L1、Top-k 或其它**标量**损失。不要把 RMS 与 off-diagonal sparsity 混为同一层。
+- **特殊直接分支**：可以先对每个局部 Hessian 求标量简单性、再按 Q 积分；此时**没有**先生成一张固定数值矩阵，必须用不同 pipeline_mode 明确标注。
+- **部分估计器限制**：Stein 等方法可能只直接输出一个带权均值矩阵，并不产生局部 Hessian 场；它们不能无条件参与要求局部 RMS/Q99/高阶变化的 a 指标比较。
 
 两个最基本、不能混淆的科学问题：
 
@@ -141,7 +155,7 @@ H_p=\sigma'(\eta)H_\eta+
 B 与 C 的 Hessian 估计算法应当在相同坐标系、训练数据规模、输入 X 网格、目标类型、超参数和划分下比较。B 的拟合器**不知道**生成 Y 的解析式；否则就不再是数据驱动估计 benchmark。**现在正式将从数值 ZXY 提取 Hessian 的算法定义为独立实验维度 e**。Tensor polynomial、local polynomial、P-spline、KRR、GP、Stein 等不是 data source（公式/NN 来源）的类别，而是作用于给定数值矩阵的可比较估计器；同一 e 必须在 formula-Y 与 nn-Y 路径中按同样协议使用。完整数学解释与原始参考文献见 [方法目录](HESSIAN_FROM_ZXY_METHODS.md)。
 
 
-### L3-C：独立的数值 Hessian 估计方法（新增）
+### L4：独立的数值 Hessian 估计方法 e
 
 这层的输入固定为数值 \((U,X,Y)\)，输出为一个局部 Hessian 字段、平均导数矩，或其它严格说明的对象：
 
@@ -191,50 +205,45 @@ H_{(U,X)}^{oracle}=J^\top H_{(T,X)}^{oracle}J.
 
 **估计器的误差来源**还包括拟合误差、平滑/正则化、X 的离散支持、有限样本、数值微分与模型错设。拟合预测 Y 很准确并**不能推出** Hessian、梯度或高阶导数准确。
 
-## 5. L4：积分、求平均与局部保留——另外一组正交维度
+## 5. L5：积分与求平均方案 Q（独立研究维度）
 
-明确区分三个选择：
-
-1. **积分测度与网格**：真实 T 先验、模拟被试经验分布、NP Z 经验分布、真实 Xset、或另行说明的设计分布。
-2. **积分变量**：仅 X、仅参数/被试、X 与参数联合，或者局部评估点**不积分**。
-3. **被积分的量**：H 本身、|H|、H²、局部导数、三阶/四阶张量、甚至局部简单性分数。
-
-CR3 的共享固定 500 试次，例：
+**本层回答“对什么积分/平均、按照哪个分布、什么权重、用哪种数值算法”**；它本身**不规定**最终取 Signed Mean、Mean Abs、RMS、Variance、Quantile 还是 Gram。这些由下一层 a 决定。
 
 \[
-\bar H_X(T_s)=\frac1{500}\sum_{t=1}^{500}H(T_s,X_t);
+Q=(\Omega,\mu,\mathcal I,\text{conditioning},\text{mask}),
+\qquad
+\mathcal I_Q[g]\approx\int_\Omega g(Z,X)\,d\mu(Z,X).
+\]
+
+| 子维度 | 可选择的研究条件 | 是否改变统计目标？ |
+|---|---|---|
+| **积分变量** | X-only、Z-only、Z×X、固定点、分阶段条件平均 | 是；部分积分后仍可能含自由变量 |
+| **Z/T 的积分测度** | S5 Z 经验分布、真实 T 经验分布、真实 T 先验 | 是；T 先验不等于 Z 分布 |
+| **X 的测度** | CR3 真实 500-X bank、C1–C3 配对的 X、生成器 X 先验、条件子集 | 是 |
+| **被试/试次耦合** | 原样配对、经验 Z × X 笛卡儿积、假设独立的乘积分布 | 是 |
+| **样本与条件权重** | 每被试等权、每 trial 等权、分组权重、importance、Stein | 是 |
+| **积分数值方法** | 固定有限和、MC、Sobol、quadrature | 在同一测度下主要改变近似误差 |
+| **可微域/缺失规则** | 无条件严格、定义域内条件、fraction_defined | 是，若筛选改变支持域 |
+
+以 CR3 为例，固定 Xset 时的两种不同联合测度：
+
+\[
+\mu_{\mathrm{empirical}}
+=\frac1N\sum_s\delta_{Z_s}\otimes\frac1{500}\sum_t\delta_{X_t};
 \]
 
 \[
-\bar H_{\mathrm{sample}}
-=\frac1N\sum_{s=1}^N \bar H_X(T_s);
+\mu_{\mathrm{prior}}
+=\pi_{\mathrm{CR3}}(T)dT\otimes\frac1{500}\sum_t\delta_{X_t}.
 \]
 
-\[
-\bar H_{\mathrm{prior}}
-=\int\biggl[\frac1{500}\sum_{t=1}^{500}H(T,X_t)\biggr]
-\pi_m(T)\,dT.
-\]
+两者不仅坐标不同（Z 与 T），被试积分分布也不同。若对 X 先积分，得到的 \(\mathcal I_{Q_X}[H(Z,X)]\) **通常仍是 Z 的矩阵函数**；只有进一步对 Z 进行积分或指定 Z 点，才变成固定数值矩阵。
 
-其中 prior 积分是**对真实参数 T 积分**，而 X 仍是固定的有限 500 行，不是自动积分某个假想的连续 X 分布。
+对于 C1–C3，按每位被试平均与把全部 trial 直接池化，在试次数不同的情况下有不同权重。CR3 的 500 个共享固定 X 不等于连续 X 先验积分。CR3 零金额导致部分金额 X 导数未定义时，必须区分 strict/unconditional、conditional 和 fraction_defined。
 
-**C1/C2/C3 的 X 是逐被试随机生成的**，所以对每位被试先平均再对被试平均，和将全部试次直接池化可能产生不同权重；必须说明目标 estimand。
+此外，\(\nabla_Z^2\mathbb E_X f=\mathbb E_X\nabla_Z^2f\) 只有在允许交换微分和积分、且所用 X 测度满足必要条件时才成立。先对 Y 取 X 均值再求导可能获得平均 ZZ，却不能重建局部 ZX/XX。
 
-**真实参数的先验 pi(T) ≠ NP Z 的 prior/aggregate posterior。** 如果想在 Z 空间做先验积分，需要显式定义从 T 到 Z 的映射/密度或使用经验 Z 分布，不能直接借用 T 的参数先验。
-
-还要明确：
-
-\[
-S(\mathbb E[H])\ne\mathbb E[S(H)],\quad
-|\mathbb E[H]|\ne\mathbb E[|H|],\quad
-(\mathbb E[H])^2\ne\mathbb E[H^2].
-\]
-
-例如三次函数 z³ 在对称 z 分布下平均二阶导数可能为零，却仍有明显三阶复杂度。**为了计算复杂度而选择先平均 Hessian，是方法上的重要选择，不是无关紧要的加速步骤。**
-
-积分实现上可以有精确有限求和、Monte Carlo、Sobol、quadrature 等不同算法。必须保留积分节点数、权重、随机种子、数值收敛诊断。
-
-**CR3 可微域警告**：金额为零时分数次幂的某些 X 导数未定义。必须区分 strict/unconditional mean、定义域条件 mean、fraction_defined；如果为了高阶微分只取正金额 X，则新估计量对应的是**改变后的 X 域**。
+**详细子维度、CR3/C1–C3 测度、数值积分及权重约定**：[HESSIAN_INTEGRATION_AND_AVERAGING.md](HESSIAN_INTEGRATION_AND_AVERAGING.md)。
 
 ## 6. 诊断层：先评价 Hessian 是否算准，而不是直接评价“简单性”
 
@@ -259,15 +268,42 @@ H_C-H_A=(H_B-H_A)+(H_C-H_B).
 
 这项诊断与下一层的 simplicity 完全分开：一个估计器即使 Hessian 数值偏差较大，也可能保留损失随角度变化的规律；相反，平均 Hessian 接近也不保证更高阶结构一致。
 
-## 7. L5：由已知 Hessian/导数字段计算简单性 S
+## 7. L6：Hessian 函数 → 固定数值矩阵的指标 a（独立研究维度）
 
-这一层应该实现为**与 Hessian 来源无关**的评分器：
+**这是新的必要层级**。Hessian 是一个矩阵值函数 \(H(Z,X)\)，可能随 Z、X 改变；即使解析式 Hessian 已完全准确，仍必须指定矩阵统计指标 a，才得到一个固定的数值矩阵 \(M_a\)。
 
 \[
-S_k:\mathcal H\longrightarrow\mathbb R.
+\boxed{M_{q,a}=\operatorname{MatrixStatistic}_a(H;\mu_q).}
 \]
 
-给出相同 H、统计矩阵或局部导数字段，不论它是 oracle 算出来、formula-Y 回归算出来还是 NN-Y 回归算出来，**同一个指标必须得到相同评分**；不应在这里读取真实 T、拟合器类别或网络训练细节。
+同一个积分方案 q 可产生多种不同数值矩阵：
+
+| 指标族 | 指标编号与公式示例 | 核心特点 |
+|---|---|---|
+| **有符号平均** | M01：\(\mathbb E_Q[H]\) | 正负值可抵消 |
+| **幅度/能量** | M02：\(\mathbb E_Q[|H|]\)，M03：\(\sqrt{\mathbb E_Q[H\odot H]}\)，M04：Mean Square，M07：Lp | 强度，不依赖或不同程度依赖符号 |
+| **变化/稳健性** | M05：逐元素 Variance，M06：SD，M08：Median，M09：Q90/Q99，M10：Max | 区分稳定与局部极端曲率 |
+| **符号/阈值/截尾** | M11–M14：Exceedance、Sign consistency、正/负部分、Winsorized | 衡量出现频率和方向一致性 |
+| **整体矩阵算子** | M15：\(\mathbb E_Q[HH^\top]\)；M16：\(\mathbb E_Q[H^\top H]\)；M17：谱矩阵绝对值；M18：\(\mathrm{Cov}(\mathrm{vec}H)\) | 保留方向协变，**输出尺寸/含义可能变化** |
+| **条件及高阶变化** | M19：按 Z/X 的条件方差与 ANOVA 分解；M20：\(\partial_ZH,\partial_XH\) 的统计矩阵 | 需要条件测度或三/四阶导数字段 |
+
+**数值矩阵指标不是标量简单性指标。** 比如 a=M03 得到一张 RMS-ZZ 矩阵，而 k=off-diagonal L1 才将它转成标量。对于 Gram 或 covariance，输出矩阵可能不是原本 ZZ 的维度；必须检查后续简单性损失的合法性及含义。
+
+**例子**：\(f(z_1,z_2,x)=z_1^3+z_1z_2x\)，有 \(H_{ZZ}=\left(\begin{smallmatrix}6z_1&x\\x&0\end{smallmatrix}\right)\)。若 Z1 与 X 都独立标准正态，a=M01 的平均为零矩阵，而 a=M03 的 RMS 是 \(\left(\begin{smallmatrix}6&1\\1&0\end{smallmatrix}\right)\)。**即使使用完全相同的解析 Hessian，矩阵指标不同也会给出截然不同的结构。**
+
+**必须在局部场上先完成旋转，再计算 M02/M03/M05/Q99 等逐元素矩阵统计**；一般不能先把 RMS 矩阵算出再直接对它做正交旋转。最后还需区分先求数值矩阵再计算 S、以及先计算局部 S 再按 Q 平均，两条路径一般不相等。
+
+**完整 M01–M20 的数学定义、矩阵维度、旋转等变性与实验接口**：[HESSIAN_TO_MATRIX_METRICS.md](HESSIAN_TO_MATRIX_METRICS.md)。
+
+## 8. L7：从固定数值矩阵到标量简单性 S_k
+
+这一层应实现为**与 Hessian 来源和矩阵提取过程无关**的评分器：给定已明确形状/意义的数值矩阵 M，输出标量 Loss。对高阶或非局部指标，另设附加导数字段或局部标量分支：
+
+\[
+S_k:M_{q,a}\longrightarrow\mathbb R.
+\]
+
+给出**相同的数值矩阵 M**，不论来自 analytic、formula-Y 或 nn-Y，也不论用了哪种积分或估计器，**同一个 k 必须得到相同标量评分**。一些局部/非局部指标不能仅由一个 M 计算，应独立标注附加输入要求或 local-first 分支；不能假称它们全是固定数值矩阵的函数。
 
 | 指标族 | 所需输入 | 衡量什么 |
 |---|---|---|
@@ -281,7 +317,7 @@ S_k:\mathcal H\longrightarrow\mathbb R.
 
 “简单”不是同一个数学概念：稀疏、独立、低阶和可加性可能互相冲突。每个 loss 都需要明确其方向（minimize）、坐标标准化、聚合顺序、可比较的输入域。
 
-## 8. L6：角度是自变量，简单性是因变量
+## 9. L8：角度是自变量，简单性是因变量
 
 在选定了 A_* 作为研究参考坐标后：
 
@@ -292,15 +328,21 @@ A(\varphi)=R(\varphi)A_*.
 
 在真实实验中应使用与代码一致的行/列向量方向，明确固定 b、原始 Z/X/Y、NP checkpoint、积分节点和估计器。解析分支可以等变地转换局部导数；数值 B/C 分支在每一个旋转角度下重新以 U,X 拟合指定的数值响应。
 
-定义：
+定义一条**矩阵优先**的旋转损失路径（所有下标均为独立实验因素）：
 
 \[
-L_{m,y,h,e,q,k}(\varphi)
-=S_k\left(\operatorname{Aggregate}_q[
-\widehat H_{m,y,h,e}(U_\varphi,X)]\right),
+\boxed{
+L_{m,y,h,e,q,a,k}(\varphi)
+=S_k\left(
+\mathcal A_a\left[
+H_{m,y,h,e}(U_\varphi,X);\;\mu_q
+\right]\right).
+}
 \]
 
-其中 m=生成模型，y=logit/p/choice，h=解析/formula-Y/NN-Y Hessian 来源，**e=作用于数值 B/C 路径的 Hessian 估计器**，q=积分/局部保留方式，k=简单性指标，**旋转角度 φ 是自变量，损失 L 是因变量**。完整下标应为 (L_{m,y,h,e,q,k}(arphi))；仅当固定一个估计器时才可省略 e。
+其中 m=生成模型，y=logit/p/choice，h=解析/formula-Y/nn-Y 来源，e=对数值 B/C 使用的 Hessian 估计器（analytic oracle 时不适用），q=积分方案，**a=Hessian → 数值矩阵指标（M01–M20）**，**k=矩阵 → 标量简单性指标**，φ=旋转自变量，L=简单性因变量。
+
+**局部标量优先**的替代分支单独写为 \(\mathbb E_{\mu_q}[S_k(H_\varphi(U,X))]\)；它通常不等于 \(S_k(\mathbb E_{\mu_q}H_\varphi)\)，必须明确 pipeline_mode。
 
 旋转族：
 - **两两旋转**：4 维时有 6 个平面，0–90° 扫描，通常 0°/90° 为有符号坐标置换等价方向（对于具有相应不变性的损失）。
@@ -320,7 +362,7 @@ L_{m,y,h,e,q,k}(\varphi)
 
 **重要**：A_* 由 Z 线性预测 T 得到，只是研究上的**理论轴近似锚点**，不等于模型真实参数已由 NP 完美恢复。若 dim(Z)>dim(T)，还必须明确是否先选择 d_T 子空间、使用 PCA、还是旋转全部 Z；非方阵 A 不能无条件求逆。
 
-## 9. 所有实验因素的总表：后续可以新增轴，而不是重写整个框架
+## 10. 所有实验因素的总表：后续可以新增轴，而不是重写整个框架
 
 | 层 | 独立因素 | 当前/可选值 |
 |---|---|---|
@@ -331,26 +373,28 @@ L_{m,y,h,e,q,k}(\varphi)
 | 3 | Y 输出 | logit / probability / binary choice（明确采样/阈值） |
 | 3 | Hessian 来源 | A 解析 / B 解析 Y 回归 / C NN Y 回归 |
 | **3（新增独立轴）** | **Hessian 数值估计器 e** | [E01–E14 方法目录](HESSIAN_FROM_ZXY_METHODS.md)：全局/局部多项式、样条、核/GP、Stein 等；B/C 同配置，明确局部/平均对象 |
-| 4 | 积分域与测度 | 真实 Xset、T 先验、经验 Z、局部网格 |
-| 4 | 聚合量 | 局部 H、E[H]、RMS、SD、三/四阶导数 |
+| **5（独立 Q）** | **积分、求平均的测度与数值规则** | [Q 方案目录](HESSIAN_INTEGRATION_AND_AVERAGING.md)：Xset、真实 T 先验、经验 Z、配对/乘积分布、权重、有限和/MC/Sobol/quadrature |
+| **6（独立 a）** | **Hessian → 数值矩阵指标** | [M01–M20 数值矩阵指标](HESSIAN_TO_MATRIX_METRICS.md)：Mean、Mean Abs、RMS、Variance、Q99、Gram、条件方差、高阶变化 |
+| **7（独立 k）** | **固定数值矩阵 → 标量简单性** | 非对角能量、L1、Top-k、JD；单独注明 local-first 例外 |
 | 诊断 | Hessian 精度 | A−B、B−C、A−C 的误差与稳定性 |
-| 5 | 简单性定义 | ZZ/ZX 稀疏、高阶、JD、函数可加性 |
-| 6 | 旋转方式与参数 | 2D、3D、4D、连续 SO(d)、角度步长 |
-| 7 | 最终成功标准 | minima、曲线相关、跨模型、独立 TEST 参数匹配 |
+| **7（补充）** | 附加局部/非局部复杂度指标 | 必须声明高阶导数字段或函数值，而非仅由固定矩阵 M 可推得 |
+| 8 | 旋转方式与参数 | 2D、3D、4D、连续 SO(d)、角度步长 |
+| 9 | 最终成功标准 | minima、曲线相关、跨模型、独立 TEST 参数匹配 |
 
 **研究策略**：不要立即跑所有维度的巨大笛卡儿积。每次只改变明确的一个因素，其余保持冻结，这样才能定位失败发生在哪里。
 
-## 10. 分层数据接口与 provenance（规范草案，不是现有统一 API）
+## 11. 分层数据接口与 provenance（规范草案，不是现有统一 API）
 
 ~~~text
 experiment/
   metadata.json          模型版本/参数先验/Xset/数据hash/NP checkpoint/坐标/seed/estimator_id/estimator_hyperparams
   responses/             每种 Y 及其数值预测准确性
   derivatives/           局部 H_UU / H_UX / H_XX；可选 H3/H4
-  aggregation/           积分定义/权重/平均/RMS/有效域掩码
+  integration/           Q：积分域/变量/点位/权重/算法/有效域掩码
+  numeric_matrices/      a：M01–M20 数值矩阵、维度、构造方式
   fidelity/              A/B/C 的 Hessian 数值误差及归因
-  simplicity/            给定导数字段后各指标的 loss 数值
-  rotation_landscapes/   angle × model × Y × source × estimator × integration × metric
+  simplicity/            k：给定数值矩阵或明确补充字段后的标量 loss
+  rotation_landscapes/   angle × model × Y × source × estimator × Q × matrix_metric_a × scalar_simplicity_k
   validation/            TEST 的 U 与 T 对应、非对应相关、稳定性
 ~~~
 
@@ -361,18 +405,21 @@ data = load_generator_data(model, data_id)             # L1
 z, decoder = load_frozen_np(condition)                # L2
 y = produce_numerical_y(source, output_type, data, z) # L3
 derivatives = infer_derivatives(estimator, y, coords) # L3-C：B/C 共享估计器
-field = aggregate_or_retain(derivatives, measure)     # L4
-accuracy = compare_to_oracle(field, oracle)            # 诊断层
-loss = simplicity_metric(field)                        # L5
-landscape[angle] = loss                                # L6
+evaluation = choose_points_and_measure(derivatives, Q) # L5：点位/测度/积分规则
+accuracy = compare_to_oracle(derivatives, oracle)      # 独立的 Hessian fidelity
+matrix = matrix_metric(evaluation, a)                  # L6：矩阵 M01–M20
+loss = scalar_simplicity(matrix, k)                    # L7：矩阵 → 标量
+landscape[angle] = loss                                # L8：旋转角 → 损失
 ~~~
 
 **不要因此合并独立旋转套餐。** rotations/ 下每个套餐仍是独立文件夹、独立 run.py；总 README 负责科学架构和接口约定，不负责一键运行所有方法。
 
-## 11. 目前代码分工与既有实验
+## 12. 目前代码分工与既有实验
 
 - **np/**：四个模型的数据生成、NP 训练、验证、Z 提取、PCA、Z→T 线性回归。
-- **估计器文献与实验目录**：[HESSIAN_FROM_ZXY_METHODS.md](HESSIAN_FROM_ZXY_METHODS.md)——从数值 ZXY 恢复 Hessian 的 14 类独立方法、适用目标、参考文献与已有代码对照。
+- **Hessian 估计器**：[HESSIAN_FROM_ZXY_METHODS.md](HESSIAN_FROM_ZXY_METHODS.md)——从数值 ZXY 恢复 Hessian 的 14 类方法。
+- **积分/平均 Q**：[HESSIAN_INTEGRATION_AND_AVERAGING.md](HESSIAN_INTEGRATION_AND_AVERAGING.md)——Z/X 测度、条件、权重、求积算法。
+- **矩阵提取指标 a**：[HESSIAN_TO_MATRIX_METRICS.md](HESSIAN_TO_MATRIX_METRICS.md)——Hessian 场 → 固定数值矩阵的 M01–M20 类方法。
 - **math/01_cr3_hessian_expectation/**：CR3 的解析/数据矩阵 Hessian 与经验、先验积分。
 - **math/02_cr3_hessian_estimators/**：不同数据驱动 Hessian 估计器的精度 benchmark。
 - **math/03_cr3_hessian_six_y/**、**math/04_cr3_zx_hessian_threeway/**：三种 Y，解析与 NN Y 生成，真实解析对照与统一坐标变换。
@@ -384,9 +431,9 @@ landscape[angle] = loss                                # L6
 
 **范围澄清**：math/01–07 主要围绕 CR3；目前不能说 C1/C2/C3 的全部三路 Hessian、先验积分和旋转实验已经按同一标准实施。统一跨模型 benchmark 属于下一阶段扩展。
 
-## 12. 现阶段的核心科学目标与开放问题
+## 13. 现阶段的核心科学目标与开放问题
 
-**已经明确的研究结构**：已知生成函数/先验/Xset → 训练 NP，验证 Z 包含可线性恢复的 T 信息 → 用三种 Y/三种 Hessian 来源获得同一坐标的导数字段 → 按明确分布积分或保留局部信息 → 先衡量 Hessian 精度，再从该对象独立计算简单性 → 考察旋转角度如何影响 loss。
+**已经明确的研究结构**：已知生成函数/先验/Xset → 训练 NP，验证 Z 包含可线性恢复的 T 信息 → 用三种 Y/三种 Hessian 来源、选择独立数值估计器 e 获得同一坐标的导数字段 → 固定积分方案 Q（测度/样本/权重/求积）→ 用指标 a 将导数字段变成数值矩阵 M → 用指标 k 将 M 变成标量简单性（或采用明示的 local-first 分支）→ 考察旋转角度如何影响 loss。Hessian 准确性独立与解析 oracle 比较。
 
 **尚未被证明**：
 - 哪个简单性指标能同时在 C1、C2、C3、CR3 和不同 Y 表达中识别理论轴；
