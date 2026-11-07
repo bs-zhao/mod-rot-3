@@ -100,7 +100,8 @@ def plot_index(output,plots):
 def calculate_best_angles(rows):
     """Best-angle diagnostics, not proof that the true axes minimize a loss."""
     # Include every new loss automatically in the same best-angle output.
-    loss_keys=sorted(k for k in rows[0] if k.endswith("_loss"))
+    loss_keys=sorted(k for k in set().union(*(row.keys() for row in rows))
+                     if k.endswith("_loss"))
     metrics=[(key,"min") for key in loss_keys]+[
         ("normalized_l1","min"),
         ("max_abs_over_frob","max"),
