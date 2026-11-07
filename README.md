@@ -4,6 +4,8 @@
 
 **Ground-truth generators:** [readmes/TOY_GENERATIVE_MODELS.md](readmes/TOY_GENERATIVE_MODELS.md) — **本项目 C1/C2/C3/CR3** 的真实公式、参数先验、X 设计、logit/probability/choice 和 Hessian 结构。
 
+**Hessian estimator methods:** [readmes/HESSIAN_FROM_ZXY_METHODS.md](readmes/HESSIAN_FROM_ZXY_METHODS.md) — 独立统计/数值算法维度，E01–E14 14 类方法与 15 项原始文献、目标量、局限及已有实现对照。
+
 The two independent parts of the project are:
 
 - [np/](np/README.md): **seven manually executed stages** for C1/C2/C3/CR3
