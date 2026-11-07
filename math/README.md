@@ -38,6 +38,14 @@ There is no aggregate "run everything" script.
 Numbered math source directories follow experiment chronology. Previously generated
 output directories retain their original unnumbered names.
 
+- 05_cr3_zx_hessian_optimization/: extend step 04 with independent
+  Z/X ridge and polynomial-degree grids, monomial versus Chebyshev basis,
+  and two additional ZZ-only methods (Z-adaptive cubic B-splines and KRR).
+  Reuses EXACT step-04 Z, X, six Y and analytic H; models are selected by
+  validation Y RMSE, never by the oracle Hessian. Reports full-matrix and
+  diagonal/off-diagonal pattern recovery metrics.
+  See 05_cr3_zx_hessian_optimization/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
