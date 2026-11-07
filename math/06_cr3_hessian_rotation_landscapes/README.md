@@ -199,6 +199,107 @@ original CR3 parameter axes minimize off-diagonal curvature. In fact,
 CR3 parameters interact nonlinearly, so an off-axis angle may give a
 simpler mean Hessian than A* without invalidating the recovery.
 
+## New: rich sparsity losses and three-way error diagnosis
+
+The ordinary matrix \`L1\`, row entropy and row concentration indicators
+are NOT enough to detect tiny "extra" X effects in a row with one,
+two, or several dominant X effects. We therefore export **multiscale
+orientation-dependent simplicity losses** with all of these properties:
+
+- Treat every XZ row separately as a 6-component vector of the
+  X effects for ONE latent parameter. Also export mean and worst-row
+  (max) loss; an average alone may hide a badly mixed dimension.
+- Test **multiple fixed top-k tails** \`k=1..4\` (L1, L2, squared L2)
+  and next-largest-effect residuals. Do not assume k=1.
+- **Adaptive / soft support**: capped L1, capped squared L2, smooth
+  soft-L0, log-sum, fractional penalty, and
+  \`min_k[lambda*k + sum_{j>k}s_j^2]\`. Four relative scales:
+  0.0005, 0.001, 0.005, 0.02 of each row's largest absolute effect.
+- Hoyer loss, \`L_p\` quasi-norms (\`p=0.25,0.5,0.75\`), Shannon/Rényi
+  entropies and Gini impurity.
+- The original unscaled physical derivatives AND X-column-standardized
+  derivatives, because gain/loss and probability columns of X have
+  different units. This multiplies \`H_ZX[:,j]\` by \`sd(X_j)\`,
+  separately for the original X bank. The same units apply at every
+  angle and for all three Hessian sources.
+- Diagonal and off-diagonal blocks have their own sparsity losses, with
+  duplicate elements of symmetric Hessians counted once.
+
+All new keys ending in \`_loss\` mean **MINIMIZE**. Hard support sizes
+are \`_diagnostic\` values and are NOT optimized directly.
+
+These losses are descriptive until validated. High curve correlation is
+not sufficient: **all three** sources (exact analytic, numeric analytic-Y
+regression, numeric NN-Y regression) must have highly correlated
+angle curves and a true 0°/90° MINIMUM. Flat curves are rejected.
+The automatic screening files report thresholds, qualifying pairs and
+six-plane consistency.
+
+### Distinguish three possible discrepancies
+
+You highlighted an essential diagnostic: if the true analytic Hessian
+has a clean endpoint minimum, but the fitted Hessian from **analytic
+generated Y** does not, this is evidence of the data-only
+Hessian-estimation/inference pipeline failing its oracle-Y control.
+It is premature to blame the NN.
+
+For EACH angle, Y and block we save the exact vector identity:
+
+\[
+\underbrace{\widehat H_{NN-Y}-H_{\mathrm{analytic}}}_{\mathrm{total}}
+=
+\underbrace{\widehat H_{\mathrm{formula-Y}}-H_{\mathrm{analytic}}}_{\mathrm{estimator/sampling}}
++
+\underbrace{\widehat H_{NN-Y}-\widehat H_{\mathrm{formula-Y}}}_{\mathrm{extra\ fitted-Y\ gap}}.
+\]
+
+The filename is \`three_way_hessian_gaps.csv\`. It includes the
+relative and absolute norms of the three residuals, cosine alignment,
+and the squared-error interaction/cancellation term.
+
+A separate scalar-curve screen (\`sparsity_screen_all.csv\`) reports
+ALL THREE pairwise correlations:
+\`analytic_vs_formula\`, \`analytic_vs_NN\`, and \`formula_vs_NN\`,
+plus minima and a diagnostic label. The label is **not** a unique
+causal explanation of the network's own unknown Hessian.
+
+For Choice, formula-Y is sampled Bernoulli while NN-Y is hard
+threshold choice, so differences also involve sampling/response-type
+mismatch. Interpret these separately from Logit/Probability.
+
+### Rescore saved step-06 matrices immediately (no refitting)
+
+If step 06 was already completed, DO NOT rerun 1,026 regressions
+to obtain the new metrics. Use the saved \`hessians__*.npz\` files:
+
+\`\`\`cmd
+python math/06_cr3_hessian_rotation_landscapes/rescore_existing.py --input "outputs\math\06_cr3_hessian_rotation_landscapes\beta5em05_lambda0_ctx0p25to0p8_L4\repeat01\monomial_u4_x4_ridgeu1e-06_ridgex1e-06"
+\`\`\`
+
+Alternatively, from the previous ZIP:
+
+\`\`\`cmd
+python math/06_cr3_hessian_rotation_landscapes/rescore_existing.py --input "D:\Downloads\monomial_u4_x4_ridgeu1e-06_ridgex1e-06.zip"
+\`\`\`
+
+Specify \`--step04-source "outputs\math\cr3_zx_hessian_threeway\beta5em05_lambda0_ctx0p25to0p8_L4\repeat01"\`
+if the original step-04 directory is not auto-discovered.
+Without it, unit-standardized X losses are omitted but RAW
+Hessian sparsity scores and analytic/formula/NN contrasts still work.
+
+The rescore creates a **separate** \`rich_sparsity_rescored\` directory,
+never overwriting the original step-06 output. It writes:
+
+- \`all_curves.csv\` with every new metric for all 9 Hessians/angle
+- \`sparsity_screen_all.csv\`, \`sparsity_screen_groups.csv\`,
+  \`sparsity_screen_ranking.csv\` for strict three-way endpoint minima
+- \`three_way_hessian_gaps.csv\` for estimator-versus-NN attribution
+- \`metric_catalog.csv\` and \`best_angles.csv\`
+- \`xz_sparsity__...png\` figures per plane/metric (unless \`--no-plots\`)
+
+A normal fresh \`run.py\` now produces these new metrics automatically,
+and includes X-standardization by reading the original fixed X bank.
+
 ## Windows CMD commands
 
 First pull and verify isolated unit tests:
