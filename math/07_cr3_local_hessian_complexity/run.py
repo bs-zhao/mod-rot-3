@@ -37,6 +37,7 @@ from controlled_sweeps import (analytic_sweeps,polynomial_sweeps,
                                sweep_metrics,sweep_support_diagnostics)
 from local_metrics import complexity_metrics
 from comparisons import compare_all_sources
+from pairwise_sweeps import pairwise_additivity
 from catalog import describe_all
 
 import analytic_reference as oracle_module
@@ -108,7 +109,8 @@ def domain_convergence(reference1,reference2,keys=("zzz","zzx","zxx","zzzz","zzx
 
 
 def evaluate_rotation(A,R,Z,X_bank,Y,estimator,analytic_reference,
-                      eval_subj,eval_stim,anchors,b,include_fourth,sweep_levels,scales_x):
+                      eval_subj,eval_stim,anchors,b,include_fourth,sweep_levels,
+                      scales_x,do_pairwise=True,pairwise_anchors=2,pairwise_levels=5):
     X_eval=np.asarray(X_bank)[eval_stim]
     poly,fit_local,_,_,fit_rmse=polynomial_field_shake(
         estimator,A,Z,b,eval_subj,X_eval,fourth=include_fourth)
@@ -141,6 +143,11 @@ def evaluate_rotation(A,R,Z,X_bank,Y,estimator,analytic_reference,
                 "curvature":sweep["curvature"][ci],
                 "position":sweep["position"]}))
             per[(source,target)].update(support)
+    if do_pairwise:
+        pair=pairwise_additivity(poly,U,anchors[:pairwise_anchors],b,R,
+                                 oracle_module,levels=pairwise_levels)
+        for key in per:
+            per[key].update(pair[key])
     comparisons=compare_all_sources(analytic_local,fit_local,None,
                                     include_fourth=include_fourth)
     return per,comparisons,fit_rmse,analytic_local,fit_local
@@ -164,6 +171,10 @@ def main(argv=None):
     p.add_argument("--eval-stimuli",type=int,default=24)
     p.add_argument("--anchors",type=int,default=6)
     p.add_argument("--sweep-levels",type=int,default=9)
+    p.add_argument("--pairwise-levels",type=int,default=5)
+    p.add_argument("--pairwise-anchors",type=int,default=2)
+    p.add_argument("--no-pairwise",action="store_true",
+                   help="Skip six controlled 2D ZZ pair-interaction grids")
     p.add_argument("--no-fourth",action="store_true",
                    help="Only local Hessian and 3rd derivative tensors")
     p.add_argument("--no-fd-convergence",action="store_true",
@@ -178,6 +189,8 @@ def main(argv=None):
     if min(args.eval_subjects,args.eval_stimuli,args.anchors)<1:
         p.error("Nonpositive local grid dimensions")
     if args.sweep_levels<6:p.error("At least 6 sweep levels required")
+    if args.pairwise_levels<3 or args.pairwise_anchors<1:
+        p.error("Pairwise grid needs >=3 levels and >=1 anchor")
     if min(args.degree_u,args.degree_x)<1 or min(args.ridge_u,args.ridge_x)<=0:
         p.error("Invalid surrogate degree/ridge")
     angles=parse_angles(args.angles)
@@ -229,7 +242,10 @@ def main(argv=None):
                 data["A_star"],data["b"],Z,i,j,angle)
             values,gaps,rmse,analytic_loc,fit_loc=evaluate_rotation(
                 A,R,Z,X,Y,engine,reference,eval_subj,eval_stim,
-                anchors,data["b"],not args.no_fourth,args.sweep_levels,xscale)
+                anchors,data["b"],not args.no_fourth,args.sweep_levels,xscale,
+                do_pairwise=not args.no_pairwise,
+                pairwise_anchors=args.pairwise_anchors,
+                pairwise_levels=args.pairwise_levels)
             for (source,target),metrics in values.items():
                 all_metrics.append(dict(
                     plane=plane,parameter_i=i,parameter_j=j,
@@ -285,6 +301,10 @@ def main(argv=None):
                   X_column_std=xscale),
         estimator=dict(degree_u=args.degree_u,degree_x=args.degree_x,
                        ridge_u=args.ridge_u,ridge_x=args.ridge_x,basis=args.basis),
+        controlled_grids=dict(one_axis_levels=args.sweep_levels,
+                              pairwise_levels=args.pairwise_levels,
+                              pairwise_anchors=args.pairwise_anchors,
+                              pairwise_enabled=not args.no_pairwise),
         fd_reference=fd_cfg,fd_convergence=fd_records,
         derivative_interpretation=(
             "Exact reference Hessian is CR3 evaluated at T_hat=A*Z+b. "
