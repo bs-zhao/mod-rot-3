@@ -247,7 +247,8 @@ def plot_comparison(out,channel,ref,estimate,block):
     import matplotlib.pyplot as plt
     sub={"TT":(slice(None,4),slice(None,4)),
          "TX":(slice(None,4),slice(4,None)),
-         "XX":(slice(4,None),slice(4,None))}[block]
+         "XX":(slice(4,None),slice(4,None)),
+         "FULL":(slice(None),slice(None))}[block]
     a=ref[sub];b=estimate[sub];c=b-a
     finite=np.concatenate([np.abs(x[np.isfinite(x)]).ravel() for x in (a,b,c)])
     limit=max(1e-12,float(finite.max(initial=1e-12)))
@@ -430,7 +431,7 @@ def main():
             write_matrix(args.output/f"{name}__{ch}__estimated_mean.csv",
                          estimated["conditional_mean"])
             if name=="sample" and not args.no_plots:
-                for block in ("TT","TX","XX"):
+                for block in ("TT","TX","XX","FULL"):
                     plot_comparison(
                         args.output,ch,analytic["conditional_mean"],
                         estimated["conditional_mean"],block)
