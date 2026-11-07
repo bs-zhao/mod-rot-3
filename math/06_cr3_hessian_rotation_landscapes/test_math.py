@@ -19,6 +19,9 @@ from run import run_nine,main
 from metrics import structure,equivariance_error,metrics_for_source
 from loader import load_source,CHANNELS
 from plots import plot_dashboard
+from sparsity import vector_losses,rich_sparsity,metric_catalog
+from screen import select_sparsity_metrics
+from plots import plot_xz_sparsity
 
 
 def fixture(seed=41,n=75,m=35):
@@ -139,6 +142,108 @@ class PlotTests(unittest.TestCase):
                            np.array([0.,45.,90.]),"normalized_l1",output)
             self.assertTrue(output.is_file())
             self.assertGreater(output.stat().st_size,1000)
+
+
+class RichSparsityTests(unittest.TestCase):
+    def test_generic_one_and_two_dominant_effect_cases(self):
+        # Examples reflect a general property: any small residual
+        # should be penalized whether 1, 2 or more major effects remain.
+        for large_a,small_a,large_b,small_b,k in [
+            ([2.],[.011,.001],[2.],[.001,.001],1),
+            ([2.,2.],[.01,.001],[2.,2.],[.001,.001],2),
+            ([3.,1.,2.],[.02,.003],[3.,1.,2.],[.002,.003],3),
+        ]:
+            a=np.array(large_a+small_a,dtype=float)
+            b=np.array(large_b+small_b,dtype=float)
+            one=vector_losses(a)
+            two=vector_losses(b)
+            self.assertGreater(one[f"tail2sq_k{k}_loss"],
+                               two[f"tail2sq_k{k}_loss"])
+            self.assertGreater(one["softl0_t0p005_loss"],
+                               two["softl0_t0p005_loss"])
+            self.assertGreater(one["logsum_t0p005_loss"],
+                               two["logsum_t0p005_loss"])
+            self.assertGreater(one["capped_l2_t0p005_loss"],
+                               two["capped_l2_t0p005_loss"])
+            self.assertGreater(one["penalized_support_t0p005_loss"],
+                               two["penalized_support_t0p005_loss"])
+
+    def test_scale_sign_and_permutation_invariance(self):
+        rng=np.random.default_rng(5)
+        a=np.array([2.,2.,.012,.001,0.,.00005])
+        baseline=vector_losses(a)
+        for factor in (1e-8,1e7):
+            perturbed=factor*a[rng.permutation(len(a))]
+            perturbed[0]*=-1
+            current=vector_losses(perturbed)
+            for key in baseline:
+                np.testing.assert_allclose(current[key],baseline[key],
+                                           rtol=1e-9,atol=1e-10,
+                                           err_msg=key)
+
+    def test_rowwise_sparsity_and_unit_scaling(self):
+        H=np.zeros((4,6))
+        H[0,:4]=[2,2,.01,.001]
+        H[1,:4]=[2,2,.001,.001]
+        raw=rich_sparsity(H,"ZX",x_std=np.array([.2,1.5,.5,3.,2.,1.]))
+        self.assertIn("zx_row_mean_tail2sq_k2_loss",raw)
+        self.assertIn("zx_row_max_tail2sq_k2_loss",raw)
+        self.assertIn("zx_xstd_row_mean_logsum_t0p005_loss",raw)
+        self.assertIn("xstd_flat_capped_l2_t0p005_loss",raw)
+        self.assertGreater(raw["zx_row_max_tail2sq_k2_loss"],
+                           raw["zx_row_mean_tail2sq_k2_loss"])
+        self.assertNotAlmostEqual(raw["zx_row_mean_logsum_t0p005_loss"],
+                                  raw["zx_xstd_row_mean_logsum_t0p005_loss"])
+        # Row reorder/sign is an exact 90-degree coordinate exchange.
+        R=np.eye(4)
+        R[:2,:2]=[[0,-1],[1,0]]
+        changed=rich_sparsity(R@H,"ZX",x_std=np.array([.2,1.5,.5,3.,2.,1.]))
+        for key,val in raw.items():
+            np.testing.assert_allclose(changed[key],val,atol=1e-10,err_msg=key)
+
+    def test_all_hessian_blocks_get_sparsity_metrics(self):
+        H=np.eye(10)
+        H[0,6]=H[6,0]=.04
+        oracle=H.copy()
+        mask=np.ones((10,10))
+        result=metrics_for_source(H,oracle,mask,x_std=np.ones(6))
+        for block in ("ZZ","ZX","XX","FULL","ZZ_diag","ZZ_offdiag","XX_diag","XX_offdiag"):
+            self.assertIn("flat_lp025_loss",result[block])
+            self.assertIn("flat_tail1_k1_loss",result[block])
+        self.assertGreater(len(metric_catalog()),35)
+
+    def test_minimum_is_essential_not_just_an_extremum(self):
+        angles=[0.,15.,45.,75.,90.]
+        good=[1.0,2.,3.,2.2,1.]
+        rows=[]
+        for source,off in (("analytic",0.),("formula_y",.05),("nn_y",.02)):
+            for ang,v in zip(angles,good):
+                rows.append(dict(plane="01_alpha_lambda",target="logit",
+                                 block="ZX",source=source,angle_degrees=ang,
+                                 zx_row_mean_capped_l2_t0p005_loss=v+off))
+        a,b,r=select_sparsity_metrics(rows,min_correlation=.9)
+        self.assertEqual(len(a),1)
+        self.assertTrue(a[0]["qualifies"])
+        self.assertEqual(r[0]["max_planes_in_one_group"],1)
+        for row in rows:
+            row["zx_row_mean_capped_l2_t0p005_loss"]*= -1
+        neg,_,_=select_sparsity_metrics(rows,min_correlation=.9)
+        self.assertFalse(neg[0]["qualifies"])  # 0/90 becomes a MAXIMUM
+
+    def test_plot_xz_sparsity_renders(self):
+        rows=[]
+        for target in ("choice","logit","probability"):
+            for source in ("analytic","formula_y","nn_y"):
+                for angle in (0.,45.,90.):
+                    rows.append(dict(plane="01_alpha_lambda",target=target,
+                                     block="ZX",source=source,angle_degrees=angle,
+                                     zx_row_mean_capped_l2_t0p005_loss=angle/90+1))
+        with tempfile.TemporaryDirectory() as tmp:
+            dest=Path(tmp)/"xz.png"
+            plot_xz_sparsity(rows,"01_alpha_lambda",[0.,45.,90.],
+                             "zx_row_mean_capped_l2_t0p005_loss",dest)
+            self.assertTrue(dest.is_file())
+            self.assertGreater(dest.stat().st_size,500)
 
 
 class EndToEndTests(unittest.TestCase):
