@@ -67,6 +67,14 @@ output directories retain their original unnumbered names.
   analytic-Y inference error from the additional frozen-NN-Y gap.
   See 07_cr3_local_hessian_complexity/README.md.
 
+- 08_cr3_functional_sparsity/: independent CR3 oracle rotation benchmark on
+  all six true-parameter planes. Compare exact logit/probability ZZ/ZX
+  Hessian-RMS support sparsity and self-curvature against derivative-free
+  3x3 function-value factorial interaction gaps; save six-plane angle
+  curves, 4x6 heatmaps, flatness and endpoint-minimum audit. No NP/NN,
+  no invalid independent-input Sobol on the fixed designed X bank.
+  See 08_cr3_functional_sparsity/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
