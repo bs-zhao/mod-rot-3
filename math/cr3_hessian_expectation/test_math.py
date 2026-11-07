@@ -45,6 +45,51 @@ class AnalyticHessianTests(unittest.TestCase):
             np.testing.assert_allclose(expected, actual, rtol=5e-3, atol=2e-4)
             np.testing.assert_allclose(expected, expected.T, atol=1e-12)
 
+    def test_exact_cr3_probability_at_sure_outcomes(self):
+        # Regression test for the actual bug: the source generator makes
+        # separate weighting(p) and weighting(1-p) calls with separate clips.
+        # For low gamma near a sure outcome, the two do NOT add to 1 to
+        # machine precision. The earlier oracle assumed they did.
+        from scipy.special import expit, logit
+        T = np.array([[.82, 1.9, .05, 2.3],
+                      [.65, 2.6, .14, 1.7],
+                      [.92, 1.1, .71, 3.0]])
+        X = np.array([[70., 30., 0., 100., 80., 1.],
+                      [80., 40., 1., 150., 25., 0.],
+                      [100., 50., .6, 90., 20., .4]])
+        eta, observed = oracle_outputs(T, X)
+        source_logits = np.empty_like(eta)
+        for person, theta in enumerate(T):
+            a, lam, gamma, tau = theta
+            for trial, row in enumerate(X):
+                def value(g, loss, p):
+                    w_gain = expit(gamma * logit(np.clip(p, 1e-12, 1-1e-12)))
+                    w_loss = expit(gamma * logit(np.clip(1-p, 1e-12, 1-1e-12)))
+                    return w_gain * (g/100.)**a - lam*w_loss*(loss/100.)**a
+                source_logits[person, trial] = tau * (
+                    value(*row[:3]) - value(*row[3:]))
+        np.testing.assert_allclose(eta, source_logits, atol=1e-14, rtol=1e-14)
+        np.testing.assert_allclose(observed, expit(source_logits),
+                                   atol=1e-14, rtol=1e-14)
+
+        # TT derivatives remain defined at sure probabilities and zero amounts.
+        # Numeric differentiation only perturbs theta, NOT p or zero amounts.
+        H_eta, H_p = oracle_hessians(T, X)
+        for channel, analytical in (("logit", H_eta), ("probability", H_p)):
+            for i in range(len(T)):
+                for j in range(len(X)):
+                    theta = T[i].copy()
+                    h = np.array([2e-4, 2e-4, 2e-4, 2e-4])
+                    def outcome(t):
+                        a, p = oracle_outputs(t[None, :], X[j:j+1])
+                        return float(a[0,0] if channel=="logit" else p[0,0])
+                    for dim in range(4):
+                        step = np.zeros(4); step[dim] = h[dim]
+                        num = (outcome(theta+step) - 2*outcome(theta) +
+                               outcome(theta-step)) / h[dim]**2
+                        self.assertAlmostEqual(num, analytical[i,j,dim,dim],
+                                               delta=5e-5)
+
     def test_zero_amount_marked_undefined(self):
         theta = np.array([[.8, 2., .7, 2.2]])
         stim = np.array([[0., 30., .6, 80., 20., .4]])
