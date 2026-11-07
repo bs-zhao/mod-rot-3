@@ -22,6 +22,8 @@ from plots import plot_dashboard
 from sparsity import vector_losses,rich_sparsity,metric_catalog
 from screen import select_sparsity_metrics
 from plots import plot_xz_sparsity
+from attribution import three_way_gap,three_way_all
+from rescore_existing import score_existing
 
 
 def fixture(seed=41,n=75,m=35):
@@ -246,6 +248,59 @@ class RichSparsityTests(unittest.TestCase):
             self.assertGreater(dest.stat().st_size,500)
 
 
+class ThreeWayAttributionTests(unittest.TestCase):
+    def test_exact_error_decomposition_and_cancellation(self):
+        analytic=np.eye(10)
+        fit_analytic=analytic.copy()
+        fit_nn=analytic.copy()
+        fit_analytic[0,0]=2.
+        fit_nn[0,0]=1. # an estimation error canceled by the fitted NN difference
+        gap=three_way_gap(analytic,fit_analytic,fit_nn,"ZZ",
+                          validity=np.ones((10,10)),channel="logit")
+        self.assertAlmostEqual(gap["formula_fit_error_abs"],1.)
+        self.assertAlmostEqual(gap["nn_minus_formula_abs"],1.)
+        self.assertAlmostEqual(gap["nn_fit_total_error_abs"],0.)
+        self.assertAlmostEqual(gap["residual_alignment_cosine"],-1.)
+        self.assertAlmostEqual(gap["squared_error_interaction"],-2.)
+        binary=three_way_gap(analytic,fit_analytic,fit_nn,"ZX",channel="choice")
+        self.assertTrue(binary["binary_choice_semantics_not_comparable"])
+
+    def test_formula_fit_failure_is_not_misattributed_to_nn(self):
+        source_vals={"analytic":[1.,2.5,4.,2.5,1.],
+                     "formula_y":[5.,3.5,1.,3.5,5.],
+                     "nn_y":[1.,2.5,4.,2.5,1.]}
+        angles=[0.,15.,45.,75.,90.]
+        rows=[
+            dict(plane="01_alpha_lambda",target="logit",block="ZX",
+                 source=source,angle_degrees=float(angle),
+                 zx_row_mean_capped_l2_t0p005_loss=float(value))
+            for source,values in source_vals.items()
+            for angle,value in zip(angles,values)]
+        checks,groups,ranking=select_sparsity_metrics(rows)
+        self.assertEqual(len(checks),1)
+        self.assertFalse(checks[0]["qualifies"])
+        self.assertEqual(checks[0]["failure_diagnosis"],
+                         "formula_Y_fit_fails_even_if_NN_fit_looks_good")
+        self.assertAlmostEqual(checks[0]["analytic_nn_curve_pearson"],1.)
+        self.assertLess(checks[0]["analytic_formula_curve_pearson"],0.)
+
+    def test_shared_estimator_bias_candidate(self):
+        a=[1.,3.,5.,3.,1.]
+        other=[5.,3.,1.,3.,5.]
+        angles=[0.,15.,45.,75.,90.]
+        rows=[
+            dict(plane="01_alpha_lambda",target="probability",block="ZX",
+                 source=source,angle_degrees=float(angle),
+                 zx_row_mean_softl0_t0p005_loss=float(value))
+            for source,values in (("analytic",a),("formula_y",other),("nn_y",other))
+            for angle,value in zip(angles,values)]
+        checks,_,_=select_sparsity_metrics(rows)
+        self.assertFalse(checks[0]["qualifies"])
+        self.assertEqual(checks[0]["failure_diagnosis"],
+                         "shared_fit_bias_candidate")
+        self.assertAlmostEqual(checks[0]["formula_nn_curve_pearson"],1.)
+
+
 class EndToEndTests(unittest.TestCase):
     def test_step04_directory_and_zip_end_to_end(self):
         Z,T,X,Y,A,b=fixture()
@@ -278,6 +333,14 @@ class EndToEndTests(unittest.TestCase):
                          "--ridge-u","1e-7","--ridge-x","1e-7",
                          "--validation-limit","3","--no-plots"])
             self.assertEqual(result["total_hessians"],18)
+            # Reuse stored 9-H matrices; new score/attribution needs
+            # no regression, network checkpoint or fresh Y.
+            rescored=score_existing(out,output=Path(tmp)/"rescored",
+                                    plots=False)
+            self.assertEqual(rescored["n_hessian_matrices"],18)
+            self.assertTrue((Path(tmp)/"rescored"/"all_curves.csv").exists())
+            self.assertTrue((Path(tmp)/"rescored"/"three_way_hessian_gaps.csv").exists())
+            self.assertTrue((Path(tmp)/"rescored"/"sparsity_screen_all.csv").exists())
             self.assertTrue((out/"all_curves.csv").is_file())
             self.assertTrue((out/"best_angles.csv").is_file())
             self.assertTrue((out/"hessians__01_alpha_lambda.npz").is_file())
