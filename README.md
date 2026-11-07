@@ -2,7 +2,7 @@
 
 **Research architecture:** [readmes/README.md](readmes/README.md) — 中文研究总览：C1/C2/C3/CR3 生成模型、NP/Z、Y 类型、三条 Hessian 计算路径、积分/平均、Hessian 准确性、简单性指标、旋转与验证分层。
 
-**Toy generator catalog:** [readmes/TOY_GENERATIVE_MODELS.md](readmes/TOY_GENERATIVE_MODELS.md) — T1–T11 的真实解析公式、参数与 X 定义域、全部六种连续输出变换、理论值域和 T9/T11 与 C2/CR3 的区别。
+**Ground-truth generators:** [readmes/TOY_GENERATIVE_MODELS.md](readmes/TOY_GENERATIVE_MODELS.md) — **本项目 C1/C2/C3/CR3** 的真实公式、参数先验、X 设计、logit/probability/choice 和 Hessian 结构。
 
 The two independent parts of the project are:
 
