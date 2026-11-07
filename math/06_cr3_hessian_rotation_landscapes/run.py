@@ -23,6 +23,7 @@ from fast_tensor import RotationTensor
 from loader import load_source, TARGETS, CHANNELS, ORACLE_TARGET
 from metrics import metrics_for_source,equivariance_error,structure,block_array
 from screen import select_sparsity_metrics
+from attribution import three_way_all
 from sparsity import metric_catalog
 from rotation import (candidate_mapping, original_z_to_candidate_u,
                       parse_angles,parse_planes,plane_name,full_block_rotation)
@@ -206,6 +207,7 @@ def main(argv=None):
         heldout_ids=data["heldout"],validation_limit=args.validation_limit)
     all_rows=[]
     all_yerrors=[]
+    all_attribution=[]
     plotted=[]
     trace={}
     for i,j in planes:
@@ -250,6 +252,10 @@ def main(argv=None):
                                  equivariance_error=drift,
                                  frobenius_norm_drift=float(norm/max(baseline_norm,1e-15)-1.))
                         plane_rows.append(row)
+            masks={target:data["oracle"][ORACLE_TARGET[target]]["fraction_defined"]
+                   for target in TARGETS}
+            for gap in three_way_all(nine,masks,ALL_BLOCKS):
+                all_attribution.append(dict(plane=plane,angle_degrees=float(angle),**gap))
             if yerror is not None:
                 for k,channel in enumerate(CHANNELS):
                     all_yerrors.append(dict(plane=plane,angle_degrees=float(angle),
@@ -284,6 +290,7 @@ def main(argv=None):
                 plotted.append(file)
         print("Completed pairwise plane:",plane,flush=True)
     csv_write(output/"all_curves.csv",all_rows)
+    csv_write(output/"three_way_hessian_gaps.csv",all_attribution)
     csv_write(output/"heldout_y_rmse.csv",all_yerrors)
     # A machine-readable definition catalog documents directions and
     # thresholds; all hard-support sizes are diagnostics, not losses.
@@ -325,6 +332,8 @@ def main(argv=None):
         note_choice_analytic="H[ E[Choice|Z,X] ] = H[Probability], not a derivative of sampled 0/1 decisions",
         source=data["original_source"],source_sha256=data["sha256"],
         regression_R2=data["ols_r2"],total_hessians=len(planes)*len(angles)*9,
+        attribution_identity="H_NNfit-H_exact=(H_formulaFit-H_exact)+(H_NNfit-H_formulaFit)",
+        attribution_warning="First term is analytic-Y data-only estimation/sampling error; second is an additional fitted-Y difference, not automatically the actual NN Hessian gap; Choice uses sampled-vs-hard discrete Y.",
         original_X_standard_deviation=x_std,
         original_X_constant_columns=zero_sd,
         sparsity_screen_settings=dict(min_correlation=args.sparsity_corr_threshold,
@@ -349,6 +358,7 @@ def main(argv=None):
             "A*, not its left-rotation, maps the fixed encoder Z to original CR3 parameters.",
         ],
         files=dict(curves="all_curves.csv",best_angles="best_angles.csv",
+                   three_way_hessian_gaps="three_way_hessian_gaps.csv",
                    sparsity_screen="sparsity_screen_all.csv",
                    sparsity_groups="sparsity_screen_groups.csv",
                    sparsity_ranking="sparsity_screen_ranking.csv",
