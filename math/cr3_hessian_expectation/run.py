@@ -277,9 +277,20 @@ def main():
     # CR3 S1 does not store logits: compute ONCE with the true generator
     # strictly to construct the observable logit response channel.
     eta, regenerated_p = oracle_outputs(T, X)
-    p_error = float(np.max(np.abs(regenerated_p - saved_p)))
-    if p_error > 1e-10:
-        raise ValueError(f"Saved P disagrees with exact CR3 formula: {p_error}")
+    abs_errors = np.abs(regenerated_p - saved_p)
+    p_error = float(np.max(abs_errors))
+    # Both calculations must reproduce the separately clipped CR3 generator.
+    # This is a precision check, not permission to hide systematic bias.
+    if not np.allclose(regenerated_p, saved_p, atol=1e-12, rtol=1e-12):
+        row, col = np.unravel_index(np.argmax(abs_errors), abs_errors.shape)
+        raise ValueError(
+            f"Saved P disagrees with exact CR3 formula: max_abs={p_error:.12g}; "
+            f"subject={row}, trial={col}, saved={saved_p[row,col]:.17g}, "
+            f"recomputed={regenerated_p[row,col]:.17g}, "
+            f"X={X[col].tolist()}, T={T[row].tolist()}. "
+            "Check source formula and independently clipped p versus (1-p)."
+        )
+    print(f"Exact CR3 saved-probability check PASS: max_abs={p_error:.3g}", flush=True)
     Y = {"binary": y_binary, "logit": eta, "probability": saved_p}
 
     qt, qw, mass_error = prior_quadrature(args.quad_nodes)
