@@ -9,7 +9,7 @@ Each experiment is its **own runnable Python file**, with actual stage logic in 
 | 3 | `np/s3_train.py` | Train original NP; choose beta, lambda, latent dimension, optimizer hyperparameters | S2 qualification |
 | 4 | `np/s4_evaluate.py` | Saved NP validation/test accuracy, CE, KL, learning curves; if S5 exists, also posterior-Z histograms, per-axis variance and KL | S3 checkpoint; S5 optional for Z diagnostics |
 | 5 | `np/s5_extract_z.py` | Encode every subject using **ALL observed trials**, save frozen posterior-mean Z | S3 checkpoint and S1 dataset |
-| 6 | `np/s6_pca.py` | TRAIN-only PCA of Z; explained variance and correlations | S5 Z |
+| 6 | `np/s6_pca.py` | TRAIN-only PCA of Z; explained variance and correlations; threshold-selected PC and raw Z correlation heatmaps and pairwise scatter | S5 Z |
 | 7 | `np/s7_regression.py` | Full-Z and top-k-PC Ridge regression to simulator theta; validation-selected alpha; held-out test | S5 Z and S6 PCA |
 
 Run commands **one at a time** from repository root, e.g. for CR3 beta=0 L8:
@@ -69,3 +69,45 @@ collapse. The per-axis diagonal-Gaussian KL is calculated directly as
 observed-trials inference regime, whereas the training KL was measured on
 random context masks. S5 must agree with S3's checkpoint hash, dataset hash,
 latent dimension and subject splits; no theta is accessed.
+
+
+### S6: PC vs original-Z pairwise dependence diagnostics
+
+S6 accepts two **independent thresholds** (both select dimensions using
+TRAIN subjects only; comparisons use **strictly greater than**):
+
+* `--pc-var-threshold 0.05`: select PCA components whose **individual**
+  TRAIN explained-variance ratio is > 0.05, e.g. PC1–PC4.
+* `--z-var-threshold 0.01`: select **original z coordinates** whose
+  between-subject TRAIN variance (ddof=1) is > 0.01; unlike the PC
+  threshold, this is an **absolute variance** in raw z units.
+
+Example:
+
+```cmd
+python np/s6_pca.py --model CR3 --beta 0.0005 --latent-dim 8 --pc-var-threshold 0.05 --z-var-threshold 0.01
+```
+
+New files under `outputs/choice/<MODEL>/s12_z_diagnostics/<CONDITION>/repeat01/`:
+
+* `s12__selected_pc_correlations.csv` and
+  `s12__selected_z_correlations.csv`: labeled **ALL-subject** signed
+  Pearson r matrices for retained original axes. Analogous
+  `_train.csv`, `_validation.csv`, and `_test.csv` versions included.
+* `s12__selected_pc_correlation_heatmap.png` and
+  `s12__selected_z_correlation_heatmap.png`: three side-by-side panels
+  for ALL, TRAIN, TEST, each annotated with signed r.
+* `s12__selected_pc_pairwise_scatter.png` and
+  `s12__selected_z_pairwise_scatter.png`: scatterplot matrices
+  (lower triangle ALL gray plus TEST orange, diagonal histograms,
+  upper triangle signed r).
+* `s12__z_train_variances.csv`: original Z-axis variance and selection.
+* `s12__selected_dimensions.json`: selected indices/thresholds and
+  split-specific correlation matrices.
+
+The existing `s12__pca.npz`, `s12__pca_variance.csv`,
+`s12__pca_summary.json`, theta-vs-Z/PC correlations and original plots
+remain intact. PCA TRAIN components have near-zero Pearson correlations
+**by construction**; inspect ALL/TEST matrices and scatterplots, and
+do not equate uncorrelatedness with statistical independence. When a
+threshold selects zero axes, S6 records that status rather than failing.
