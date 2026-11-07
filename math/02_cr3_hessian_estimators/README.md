@@ -1,6 +1,6 @@
 # CR3: three independent Hessian estimation algorithms
 
-**One self-contained experiment** in `math/cr3_hessian_estimators/`. This folder
+**One self-contained experiment** in `math/02_cr3_hessian_estimators/`. This folder
 imports no Python modules from any other `math/` experiment or rotation code.
 It reads only the saved CR3 S1 dataset, not checkpoints or learned representations.
 The methods in `estimators.py` do **not** import the CR3 analytic equation.
@@ -12,8 +12,8 @@ an analytic gold standard and to construct S1's unstored logit channel.
 ```cmd
 conda activate py11
 git pull origin main
-python -m unittest discover -s math/cr3_hessian_estimators -p "test_*.py" -v
-python math/cr3_hessian_estimators/run.py
+python -m unittest discover -s math/02_cr3_hessian_estimators -p "test_*.py" -v
+python math/02_cr3_hessian_estimators/run.py
 ```
 
 Data must already exist from:
@@ -25,16 +25,16 @@ python np/s1_generate.py --model CR3 --subjects 5000
 To run methods individually (outputs always in a single experiment folder):
 
 ```cmd
-python math/cr3_hessian_estimators/run.py --methods krr
-python math/cr3_hessian_estimators/run.py --methods spline
-python math/cr3_hessian_estimators/run.py --methods stein
+python math/02_cr3_hessian_estimators/run.py --methods krr
+python math/02_cr3_hessian_estimators/run.py --methods spline
+python math/02_cr3_hessian_estimators/run.py --methods stein
 ```
 
 Tuning examples:
 
 ```cmd
-python math/cr3_hessian_estimators/run.py --nystrom-rank 384 --spline-basis 5 --quad-nodes 10
-python math/cr3_hessian_estimators/run.py --quad-nodes 12 --spline-basis 6
+python math/02_cr3_hessian_estimators/run.py --nystrom-rank 384 --spline-basis 5 --quad-nodes 10
+python math/02_cr3_hessian_estimators/run.py --quad-nodes 12 --spline-basis 6
 ```
 
 Requires NumPy, SciPy and matplotlib; no neural network or PyTorch.

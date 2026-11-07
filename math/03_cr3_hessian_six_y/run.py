@@ -2,7 +2,7 @@
 
 No neural-network Hessian / autodiff / neural gradient is calculated.
 Frozen NN ONLY synthesizes Y for the same original T and fixed X.
-Uses EXACT earlier math/cr3_hessian_expectation TensorPolynomial method.
+Uses EXACT earlier math/01_cr3_hessian_expectation TensorPolynomial method.
 """
 from __future__ import annotations
 

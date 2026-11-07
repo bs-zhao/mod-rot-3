@@ -1,6 +1,6 @@
 """Quick synthetic tests; do not require a 5000x500 generated dataset.
 
-python -m unittest discover -s math/cr3_hessian_expectation -p 'test_*.py' -v
+python -m unittest discover -s math/01_cr3_hessian_expectation -p 'test_*.py' -v
 """
 import unittest
 

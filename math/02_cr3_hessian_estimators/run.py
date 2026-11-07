@@ -1,6 +1,6 @@
 """Independent CR3 benchmark of three statistical Hessian estimators.
 
-At repo root: python math/cr3_hessian_estimators/run.py
+At repo root: python math/02_cr3_hessian_estimators/run.py
 Only 4x4 H_TT. All 500 fixed X are averaged *before* regression.
 """
 from __future__ import annotations

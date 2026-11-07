@@ -58,7 +58,7 @@ For the three analytic-Y channels and three NN-Y channels, fit the
 **identical** full \`TensorPolynomial(Z,X,Y)\` estimator, using the same
 4D Z features, 6D X features, regularization and subject-level holdout
 splits. This is the exact polynomial-sieve matrix method of the original
-\`math/cr3_hessian_expectation\` experiment, now applied to original Z,X.
+\`math/01_cr3_hessian_expectation\` experiment, now applied to original Z,X.
 
 Estimates include mean 10×10 Hessian, local-curvature RMS and standard
 deviation moments, and a defined-domain mask for zero-amount X derivatives.
@@ -105,8 +105,8 @@ From the repository root:
 \`\`\`cmd
 conda activate py11
 git pull origin main
-python -m unittest discover -s math/cr3_zx_hessian_threeway -p "test_*.py" -v
-python math/cr3_zx_hessian_threeway/run.py
+python -m unittest discover -s math/04_cr3_zx_hessian_threeway -p "test_*.py" -v
+python math/04_cr3_zx_hessian_threeway/run.py
 \`\`\`
 
 If the all-trial S5 latent file is absent:
@@ -121,10 +121,10 @@ must match each other by hashes; this script will not overwrite them.
 Other useful runs:
 
 \`\`\`cmd
-python math/cr3_zx_hessian_threeway/run.py --mapping-fit train
-python math/cr3_zx_hessian_threeway/run.py --nn-choice-mode sampled
-python math/cr3_zx_hessian_threeway/run.py --no-intercept
-python math/cr3_zx_hessian_threeway/run.py --no-plots --batch-size 8
+python math/04_cr3_zx_hessian_threeway/run.py --mapping-fit train
+python math/04_cr3_zx_hessian_threeway/run.py --nn-choice-mode sampled
+python math/04_cr3_zx_hessian_threeway/run.py --no-intercept
+python math/04_cr3_zx_hessian_threeway/run.py --no-plots --batch-size 8
 \`\`\`
 
 Outputs go to

@@ -2,7 +2,7 @@
 
 A new independent math experiment that **reuses the exact prior 10D
 T-X-Y polynomial sieve and analytic CR3 comparator** from
-`math/cr3_hessian_expectation/` without changing it.
+`math/01_cr3_hessian_expectation/` without changing it.
 
 ## Objective
 
@@ -75,8 +75,8 @@ and `strict_mean`.
 ```cmd
 conda activate py11
 git pull origin main
-python -m unittest discover -s math/cr3_hessian_six_y -p "test_*.py" -v
-python math/cr3_hessian_six_y/run.py
+python -m unittest discover -s math/03_cr3_hessian_six_y -p "test_*.py" -v
+python math/03_cr3_hessian_six_y/run.py
 ```
 
 If the S5 posterior mean Z file is not available, run once:
@@ -90,7 +90,7 @@ Then rerun the analysis.
 A faster sample-only check (skip 10^4-node prior quadrature):
 
 ```cmd
-python math/cr3_hessian_six_y/run.py --sample-only --no-plots
+python math/03_cr3_hessian_six_y/run.py --sample-only --no-plots
 ```
 
 Optional:

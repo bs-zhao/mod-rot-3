@@ -1,6 +1,6 @@
 # CR3 Hessian expectations: analytic versus data-only
 
-Independent experiment in math/cr3_hessian_expectation/. No NP training, no
+Independent experiment in math/01_cr3_hessian_expectation/. No NP training, no
 rotation code or changes to any previously generated files.
 
 ## Run
@@ -9,15 +9,15 @@ At repository root, with NumPy, SciPy, matplotlib installed:
 
     conda activate py11
     python np/s1_generate.py --model CR3 --subjects 5000
-    python math/cr3_hessian_expectation/run.py
+    python math/01_cr3_hessian_expectation/run.py
 
 More accurate (slower) prior quadrature:
 
-    python math/cr3_hessian_expectation/run.py --quad-nodes 12 --degree-t 4 --degree-x 3 --ridge-t 0.01 --ridge-x 0.01
+    python math/01_cr3_hessian_expectation/run.py --quad-nodes 12 --degree-t 4 --degree-x 3 --ridge-t 0.01 --ridge-x 0.01
 
 Unit tests without requiring the generated dataset:
 
-    python -m unittest discover -s math/cr3_hessian_expectation -p "test_*.py" -v
+    python -m unittest discover -s math/01_cr3_hessian_expectation -p "test_*.py" -v
 
 ## Data
 

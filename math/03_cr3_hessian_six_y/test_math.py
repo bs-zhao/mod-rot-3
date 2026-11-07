@@ -1,6 +1,6 @@
 """Unit tests; no trained CR3 checkpoint or S5 file required.
 
-python -m unittest discover -s math/cr3_hessian_six_y -p "test_*.py" -v
+python -m unittest discover -s math/03_cr3_hessian_six_y -p "test_*.py" -v
 """
 from __future__ import annotations
 import unittest

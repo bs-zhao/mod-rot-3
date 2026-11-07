@@ -1,7 +1,7 @@
 """Three-way CR3 Hessian experiment in ORIGINAL encoder Z and fixed X.
 
 Run from repository root:
-    python math/cr3_zx_hessian_threeway/run.py
+    python math/04_cr3_zx_hessian_threeway/run.py
 
 Three parallel Hessian paths, all in W=(Z,X) coordinates:
   (1) fit same data-only matrix/TensorPolynomial estimator on oracle Y(AZ+b,X)

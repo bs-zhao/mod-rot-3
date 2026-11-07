@@ -1,8 +1,8 @@
 """CR3 full Hessian expectation experiment: analytic vs T,X,Y-only.
 
 Run at repo root:
-  python math/cr3_hessian_expectation/run.py
-  python math/cr3_hessian_expectation/run.py --quad-nodes 12 --degree-t 4 --degree-x 3
+  python math/01_cr3_hessian_expectation/run.py
+  python math/01_cr3_hessian_expectation/run.py --quad-nodes 12 --degree-t 4 --degree-x 3
 
 Does not train or access NP/rotation models. Reads the immutable S1 NPZ.
 """

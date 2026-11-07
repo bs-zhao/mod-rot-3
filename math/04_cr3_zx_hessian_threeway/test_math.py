@@ -1,7 +1,7 @@
 """Regression, chain-rule, and six-channel matrix-estimator correctness tests.
 
 Does not require an actual saved CR3 checkpoint or S5 file.
-Run: python -m unittest discover -s math/cr3_zx_hessian_threeway -p "test_*.py" -v
+Run: python -m unittest discover -s math/04_cr3_zx_hessian_threeway -p "test_*.py" -v
 """
 import unittest
 import numpy as np
