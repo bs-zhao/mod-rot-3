@@ -65,7 +65,7 @@ def load_source(source):
                 "mean_ZX":np.asarray(m[f"analytic_{key}__conditional_mean"],dtype=float),
                 "fraction_defined":np.asarray(m[f"analytic_{key}__fraction_defined"],dtype=float)
             }
-    if (Z.ndim!=2 or Z.shape[1]!=4 or T.shape!=Z or
+    if (Z.ndim!=2 or Z.shape[1]!=4 or T.shape!=Z.shape or
         X.ndim!=2 or X.shape[1]!=6 or Y.shape!=(len(Z),len(X),6)):
         raise ValueError("Inconsistent 04 data dimensions")
     if not np.array_equal(np.sort(np.r_[train,held]),np.arange(len(Z))):
