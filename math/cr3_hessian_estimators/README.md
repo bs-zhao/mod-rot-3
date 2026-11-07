@@ -69,8 +69,8 @@ For each channel, compare:
 
 `H_prior` uses independent CR3 Beta / truncated Gamma / Beta / truncated
 Normal priors and Gauss-Legendre integration, while the X bank is fixed.
-Increase `--quad-nodes` to assess convergence (8 nodes per dimension is
-only an initial, non-exact numerical approximation). The analytic oracle
+Increase `--quad-nodes` to assess convergence (the default 10 nodes
+per dimension is a numerical approximation, not an exact integral). The analytic oracle
 follows the original CR3 generator's *separately clipped* gain and loss
 probability weighting at p=0 and p=1.
 
