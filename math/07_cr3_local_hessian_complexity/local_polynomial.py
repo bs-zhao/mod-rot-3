@@ -47,7 +47,7 @@ class LocalPolynomial:
         if not np.array_equal(zu,self.U):
             zu_basis=_feature_on(zu,self.zbasis,du)
         elif du not in self.zm:
-            self.zm[du]=self.zbasis.matrix(du)
+            self.zm[du]=_feature_on(self.U,self.zbasis,du)
             zu_basis=self.zm[du]
         else:
             zu_basis=self.zm[du]
