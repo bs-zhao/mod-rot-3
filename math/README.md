@@ -75,6 +75,13 @@ output directories retain their original unnumbered names.
   no invalid independent-input Sobol on the fixed designed X bank.
   See 08_cr3_functional_sparsity/README.md.
 
+- 09_cr3_three_gap_reaudit/: independently re-audit historical math/07
+  winner metrics in analytic (Gap 1), numeric formula-Y (Gap 2) and
+  frozen decoder-Y (Gap 3) conditions, without rerunning models. Preserve
+  the original 10-degree endpoint-tolerance gate and also report exact
+  endpoint minima. Includes six-plane loss plots, candidate ranking and
+  explicit failure diagnostics. See 09_cr3_three_gap_reaudit/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
