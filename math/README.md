@@ -40,7 +40,8 @@ output directories retain their original unnumbered names.
 
 - 05_cr3_zx_hessian_optimization/: extend step 04 with independent
   Z/X ridge and polynomial-degree grids, monomial versus Chebyshev basis,
-  and two additional ZZ-only methods (Z-adaptive cubic B-splines and KRR).
+  a full-ZX factorized Gaussian RBF estimator, and two additional ZZ-only
+  methods (Z-adaptive cubic B-splines and KRR).
   Reuses EXACT step-04 Z, X, six Y and analytic H; models are selected by
   validation Y RMSE, never by the oracle Hessian. Reports full-matrix and
   diagonal/off-diagonal pattern recovery metrics.
