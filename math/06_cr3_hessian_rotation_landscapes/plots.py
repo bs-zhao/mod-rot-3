@@ -31,7 +31,53 @@ TITLES={
     "row_entropy":"Normalized Z-row energy entropy",
     "effective_rank":"Effective Hessian rank",
     "equivariance_error":"Rotation-equivariance drift vs 0 degrees",
+    "zx_row_mean_capped_l2_t0p005_loss":"XZ per-Z-row capped squared support (smaller=sparser)",
+    "zx_row_mean_tail2sq_k2_loss":"XZ per-Z-row tail after top 2 (squared, smaller=sparser)",
+    "zx_row_mean_penalized_support_t0p005_loss":"XZ adaptive support + residual loss (smaller=sparser)",
+    "zx_xstd_row_mean_logsum_t0p005_loss":"XZ X-standardized row-wise log-sum (smaller=sparser)",
 }
+
+
+# Plot only XZ without misleading blank ZZ/XX cells.
+DEFAULT_XZ_SPARSITY_METRICS=(
+    "zx_row_mean_capped_l2_t0p005_loss",
+    "zx_row_mean_tail2sq_k2_loss",
+    "zx_row_mean_penalized_support_t0p005_loss",
+    "zx_xstd_row_mean_logsum_t0p005_loss",
+)
+
+
+def plot_xz_sparsity(curves,plane,angles,metric,output):
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+    subset=[r for r in curves if r["plane"]==plane and r["block"]=="ZX"]
+    fig,axes=plt.subplots(1,3,figsize=(15,4.6),sharex=True,constrained_layout=True)
+    for ax,target in zip(axes,TARGETS):
+        for source in SOURCES:
+            byangle={float(r["angle_degrees"]):r.get(metric) for r in subset
+                     if r["target"]==target and r["source"]==source}
+            values=np.array([
+                np.nan if byangle.get(float(a)) is None else
+                float(byangle[float(a)]) for a in angles])
+            if np.isfinite(values).any():
+                ax.plot(angles,values,linewidth=1.8,marker=".",markersize=4,
+                        label={"analytic":"Exact analytic",
+                               "formula_y":"Fit: analytic Y",
+                               "nn_y":"Fit: NN Y"}[source])
+        ax.axvline(0,color="gray",linewidth=.8,linestyle=":")
+        ax.axvline(90,color="gray",linewidth=.8,linestyle=":")
+        ax.set_title(f"{target}: XZ Hessian")
+        ax.set_xlabel("Rotation (degrees)")
+        ax.grid(alpha=.25)
+    axes[0].set_ylabel("Sparsity loss (lower is simpler)")
+    handles,labels=axes[0].get_legend_handles_labels()
+    if handles:fig.legend(handles,labels,loc="upper center",
+                          bbox_to_anchor=(.5,1.09),ncol=3,frameon=False)
+    fig.suptitle(f"{plane} · {TITLES.get(metric,metric)}",fontsize=12)
+    path=Path(output);path.parent.mkdir(parents=True,exist_ok=True)
+    fig.savefig(path,dpi=140)
+    plt.close(fig)
 
 
 def plot_dashboard(curves,plane,angles,metric,output):
