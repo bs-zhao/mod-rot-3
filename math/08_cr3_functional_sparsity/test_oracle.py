@@ -15,6 +15,30 @@ class TestOracle(unittest.TestCase):
                                 rng.uniform(.1,.9,10),rng.uniform(10,180,10),
                                 rng.uniform(10,180,10),rng.uniform(.1,.9,10)])
 
+    def test_exact_cr3_reference_generator(self):
+        # This checks fidelity to the ORIGINAL CR3/CR2 source generator,
+        # not only internal consistency of this experiment's formulas.
+        source = Path(__file__).resolve().parents[2] / 'np' / 'reference'
+        sys.path.insert(0, str(source))
+        from s0_cr2_design_recovery import logits as source_logits
+        expected = source_logits(self.x, self.t)
+        np.testing.assert_allclose(outputs(self.t, self.x)[:, 0], expected,
+                                   atol=1e-12, rtol=1e-12)
+
+    def test_toy_five_links_versus_six(self):
+        # eta=a*c*x1+a*b*x2**c.  At truth, b:x1 cross derivative
+        # is identically zero; a/b mixing introduces a nonzero link.
+        a,b,c,x1,x2=1.2,.7,1.3,.8,1.4
+        original=np.array([[c,b*c*x2**(c-1)],
+                           [0.,a*c*x2**(c-1)],
+                           [a,a*b*x2**(c-1)*(1+c*np.log(x2))]])
+        angle=np.deg2rad(45)
+        r=np.array([[np.cos(angle),-np.sin(angle),0],
+                    [np.sin(angle),np.cos(angle),0],[0,0,1]])
+        rotated=r@original
+        self.assertEqual(np.count_nonzero(original),5)
+        self.assertEqual(np.count_nonzero(rotated),6)
+
     def test_analytic_vs_finite_differences(self):
         t,x=self.t,self.x
         zz,zx=derivatives(t,x)
