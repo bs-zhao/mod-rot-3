@@ -21,6 +21,13 @@ There is no aggregate "run everything" script.
   theta-theta Hessian; the Stein estimand is explicitly weighted.
   See cr3_hessian_estimators/README.md.
 
+- cr3_hessian_six_y/: fit an invertible TRAIN-only affine Z-to-T map,
+  invert true T back to decoder Z, create three additional NN-derived Y
+  channels (hard choice, logit, probability), and use the identical
+  standalone original 10x10 **T-X-Y polynomial Hessian estimator** for
+  all six Y. The NN produces Y ONLY; it is never differentiated.
+  See cr3_hessian_six_y/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
