@@ -13,6 +13,14 @@ There is no aggregate "run everything" script.
   The experiment includes sample averages and prior quadrature.
   See cr3_hessian_expectation/README.md.
 
+
+- cr3_hessian_estimators/: independent benchmark of Nyström Gaussian KRR,
+  penalized tensor-product B-splines, and weighted second-order Stein
+  estimation, evaluated against CR3's analytic 4x4 parameter Hessian.
+  All fixed X stimuli are averaged before fitting to study the *mean*
+  theta-theta Hessian; the Stein estimand is explicitly weighted.
+  See cr3_hessian_estimators/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
