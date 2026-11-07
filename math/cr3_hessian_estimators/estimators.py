@@ -240,8 +240,13 @@ def second_order_score(T):
     return W,psi
 
 
-def fit_stein_mean(T,channel,weights=None):
-    """Direct weighted average Hessian, with delta-method subject-cluster SE."""
+def fit_stein_mean(T,channel,weights=None,baseline=0.):
+    """Direct weighted average Hessian, with fixed control-variate baseline.
+
+    E[psi]=0 from boundary conditions, so any FIXED baseline c yields
+    E[(Y-c)*psi]=E[Y*psi]. Use c=.5 for probability/binary responses
+    to greatly reduce needless intercept noise in the score estimator.
+    """
     T=np.asarray(T,float)
     y=np.asarray(channel,float)
     if y.shape!=(len(T),):raise ValueError('Y must be one value per subject')
@@ -249,12 +254,13 @@ def fit_stein_mean(T,channel,weights=None):
     if weights is None:weights=np.full(len(T),1/len(T))
     weights=np.asarray(weights,float); weights=weights/weights.sum()
     mean_w=float(weights@W)
-    numerator=np.einsum('n,n,nij->ij',weights,y,psi)
+    centered_y=y-float(baseline)
+    numerator=np.einsum('n,n,nij->ij',weights,centered_y,psi)
     mean=numerator/mean_w
     # SE valid for IID subjects and equal weights only; quadrature weights
     # are deterministic and do not have sampling SE.
     se=None
     if np.allclose(weights,np.full(len(T),1/len(T))):
-        IF=(y[:,None,None]*psi-W[:,None,None]*mean[None,:,:])/mean_w
+        IF=(centered_y[:,None,None]*psi-W[:,None,None]*mean[None,:,:])/mean_w
         se=IF.std(axis=0,ddof=1)/np.sqrt(len(T))
     return mean,se,mean_w
