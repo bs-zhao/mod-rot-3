@@ -54,7 +54,9 @@ def structure(H,block,*,x_std=None):
         row_entropy=None,
         effective_rank=None,
     )
-    if M.ndim!=2:return result
+    if M.ndim!=2:
+        result.update(rich_sparsity(a,block,x_std=x_std))
+        return result
     if block in ("ZZ","XX","FULL"):
         total=float(np.sum(M*M))
         off=M.copy()
