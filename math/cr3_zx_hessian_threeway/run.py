@@ -233,7 +233,7 @@ def analytic_zx_moments(T_hat,X,A,batch_size=16):
 
 def score_matrix(ref,est,kind):
     """Comparison of estimated mean vs corresponding oracle in ZX coordinates."""
-    if kind=="TT":s=(slice(0,4),slice(0,4))
+    if kind=="ZZ":s=(slice(0,4),slice(0,4))
     elif kind=="ZX":s=(slice(0,4),slice(4,10))
     elif kind=="XX":s=(slice(4,10),slice(4,10))
     elif kind=="FULL":s=(slice(0,10),slice(0,10))
@@ -265,7 +265,7 @@ def plot_matrices(path,oracle,original,network,label,kind):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    indices={"TT":(slice(0,4),slice(0,4)),
+    indices={"ZZ":(slice(0,4),slice(0,4)),
              "ZX":(slice(0,4),slice(4,10)),
              "XX":(slice(4,10),slice(4,10)),
              "FULL":(slice(0,10),slice(0,10))}[kind]
@@ -416,16 +416,28 @@ def main():
         result=fit.holdout_metrics(Y[name],coef)
         summary["results"][name]=dict(
             holdout_Y=result,
-            comparison_to_original_CR3={
+            mean_hessian_vs_original_CR3={
                 part:score_matrix(ref,estimated,part)
-                for part in ("TT","ZX","XX","FULL")})
+                for part in ("ZZ","ZX","XX","FULL")},
+            hessian_rms_moment_vs_original_CR3={
+                part:score_matrix(
+                    {"conditional_mean":ref["conditional_rms"],
+                     "fraction_defined":ref["fraction_defined"]},
+                    {"conditional_mean":estimated["conditional_rms"]},part)
+                for part in ("ZZ","ZX","XX","FULL")},
+            hessian_sd_moment_vs_original_CR3={
+                part:score_matrix(
+                    {"conditional_mean":ref["conditional_std"],
+                     "fraction_defined":ref["fraction_defined"]},
+                    {"conditional_mean":estimated["conditional_std"]},part)
+                for part in ("ZZ","ZX","XX","FULL"]})
         for metric in ("conditional_mean","strict_mean","conditional_rms",
                        "conditional_std","fraction_defined","model_unmasked_mean"):
             arrays[f"fitted_{name}__{metric}"]=estimated[metric]
         save_mat(args.output/f"fitted_{name}__mean.csv",
                  estimated["conditional_mean"])
-        for part in ("TT","ZX","XX"):
-            errs=summary["results"][name]["comparison_to_original_CR3"][part]
+        for part in ("ZZ","ZX","XX"):
+            errs=summary["results"][name]["mean_hessian_vs_original_CR3"][part]
             print(f"  {part} MAE={errs['mae']:.5g} rel_F={errs['relative_F']:.4g}",flush=True)
     summary["nn_minus_oracle_estimates"]={}
     for label,(a,b_name) in PAIRING.items():
@@ -436,9 +448,9 @@ def main():
                 {"conditional_mean":fitted[a]["conditional_mean"],
                  "fraction_defined":fitted[a]["fraction_defined"]},
                 {"conditional_mean":fitted[b_name]["conditional_mean"]},part)
-            for part in ("TT","ZX","XX","FULL")}
+            for part in ("ZZ","ZX","XX","FULL")}
         if not args.no_plots:
-            for part in ("TT","ZX","XX","FULL"):
+            for part in ("ZZ","ZX","XX","FULL"):
                 plot_matrices(args.output/f"threeway_{label}_{part}.png",
                               oracle["logit" if label=="logit" else "probability"],
                               fitted[a],fitted[b_name],label,part)
