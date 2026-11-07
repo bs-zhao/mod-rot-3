@@ -15,6 +15,8 @@ from scipy.stats import beta, gamma as gamma_distribution, truncnorm
 from oracle import NAMES, oracle_hessians, oracle_outputs
 
 def to_builtin(value):
+    if isinstance(value, (bool, np.bool_)):
+        return bool(value)
     if isinstance(value, np.ndarray):
         return to_builtin(value.tolist())
     if isinstance(value, (np.floating, float)):
