@@ -1,7 +1,7 @@
 # Toy 真实生成模型总表（T1–T11）
 
-> **本文放在 \`mod-rot-3/readmes/\`，作为研究框架中「生成模型层」的独立参考。**
-> **权威来源**：[modlearn-rot-toy 原始模型目录](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/catalog/README_TOY_MODELS.md)；实际实现是该仓库的 \`src/rottoy/toy_models/\`、\`src/rottoy/models.py\`、\`src/rottoy/transforms.py\`、\`src/rottoy/sampling.py\`。
+> **本文放在 `mod-rot-3/readmes/`，作为研究框架中「生成模型层」的独立参考。**
+> **权威来源**：[modlearn-rot-toy 原始模型目录](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/catalog/README_TOY_MODELS.md)；实际实现是该仓库的 `src/rottoy/toy_models/`、`src/rottoy/models.py`、`src/rottoy/transforms.py`、`src/rottoy/sampling.py`。
 > **核对日期**：2026-11-07。以下 T1–T11 的公式、变量定义及理论输出范围均按原 Toy 项目的代码/模型目录保留；不是从其他实验结果反推生成式。
 > **定位**：与 [Mod-Rot 总研究框架](README.md) 配合阅读。本文件是**真实解析生成函数**的说明，M001–M024 是另一个独立层面的简单性指标，不能混为一谈。
 
@@ -9,13 +9,13 @@
 
 **（1）真实 Toy 模型 ≠ C1/C2/C3/CR3 的原始模拟数据集。** Toy 将所有基础参数和 X 坐标定义在 \([0,1]\)，由解析公式生成连续数值 Y。即使 T9 复用了 C2 的数学式、T11 复用了 CR3 的彩票模型数学式，也**没有**复用原来的参数先验、实际被试、试次设计或二元观察标签。
 
-**（2）真实 Toy 函数 ≠ 神经网络近似函数。** 原始模型为 \(\eta_T(\theta,X)\)（analytic oracle）；\`-id/-sig/-sq/-tanh/-sp/-exp\` 只是同一基础函数的六种输出包装。Toy 项目如在 \`--backend both\` 下训练连续输出 MLP，它拟合的 \(\widehat F\) 不是新真实生成模型，也不是 Mod-Rot NP 的训练 checkpoint。
+**（2）真实 Toy 函数 ≠ 神经网络近似函数。** 原始模型为 \(\eta_T(\theta,X)\)（analytic oracle）；`-id/-sig/-sq/-tanh/-sp/-exp` 只是同一基础函数的六种输出包装。Toy 项目如在 `--backend both` 下训练连续输出 MLP，它拟合的 \(\widehat F\) 不是新真实生成模型，也不是 Mod-Rot NP 的训练 checkpoint。
 
-**（3）\([0,1]\) 是解析定义域及数值积分参考区域，不应擅自称作所有模型的实际被试“先验”。** Toy 代码 \`sampling.py\` 用 scrambled Sobol 在单位立方体内部取积分节点（默认端点余量 \`1e-4\`），通常按单位立方体上的均匀参考测度数值积分。它**没有定义与 C1–CR3 真实参数先验相同的概率分布**，也没有在这些 Toy 指标实验中进行 Bernoulli choice 抽样。
+**（3）\([0,1]\) 是解析定义域及数值积分参考区域，不应擅自称作所有模型的实际被试“先验”。** Toy 代码 `sampling.py` 用 scrambled Sobol 在单位立方体内部取积分节点（默认端点余量 `1e-4`），通常按单位立方体上的均匀参考测度数值积分。它**没有定义与 C1–CR3 真实参数先验相同的概率分布**，也没有在这些 Toy 指标实验中进行 Bernoulli choice 抽样。
 
 ---
 
-# Toy 模型目录：基础函数、参数与连续输出范围
+## 原始 Toy 模型目录：基础函数、参数与连续输出范围
 
 本文件是 `src/rottoy/toy_models/` 与 `src/rottoy/transforms.py` 的数学说明。基础函数统一用 **T1、T2、…** 编号。每个基础函数可以使用全部输出变换，版本名为 **`T编号-后缀`**，例如 `T9-sig`。任何输出都属于**连续数值**，`sig` 只是连续 Sigmoid 函数，不采样二分类 choice。
 
@@ -221,7 +221,7 @@ $$
 | T1 | \(a\)：幅度；\(b\)：幂指数 | 幅度与函数形状共同决定 \(a x^b\) |
 | T2 | \(a,b\)：不同 X 的线性系数；\(c\)：截距 | 完全线性的加性对照 |
 | T3 | \(a\)：整体幅度；\(b\)：仅影响第二个 X 作用的相对系数 | \((a,b)\) 通过乘积 \(ab\) 耦合 |
-| T4 | \(a\)：第一项幅度；\(b\)：共享幂指数；\(c,d\)：第二项幅度的乘积分量 | **原代码显式标记 \`identifiable=False\`**：仅有 \(cd\)，不能把 c/d 单独识别出来 |
+| T4 | \(a\)：第一项幅度；\(b\)：共享幂指数；\(c,d\)：第二项幅度的乘积分量 | **原代码显式标记 `identifiable=False`**：仅有 \(cd\)，不能把 c/d 单独识别出来 |
 | T5 | \(a\)：\(x_1\) 线性；\(b\)：\(x_1^2\)；\(c\)：\(x_2\)；\(d\)：截距 | 同一 X 上线性与二次共存 |
 | T6 | \(a,b\)：两个 X 主效应；\(c\)：\(x_1x_2\) 交互；\(d\)：截距 | X×X 交互对照 |
 | T7 | \(a\)：幅度；\(b\)：指数速率 | 指数型响应变化 |
@@ -238,7 +238,7 @@ $$
 
 ### T11 与 CR3 的精确关系
 
-- **相同**：原 CR3 的 \(\eta=\tau(V_A-V_B)\) 与 \(w(p,\gamma)=\sigma(\gamma\,\mathrm{logit}(\mathrm{clip}(p)))\)，包括对 \(p\) 和 \(1-p\) **分别裁剪**；\`T11-sig\` 即该函数外套选择概率 sigmoid。
+- **相同**：原 CR3 的 \(\eta=\tau(V_A-V_B)\) 与 \(w(p,\gamma)=\sigma(\gamma\,\mathrm{logit}(\mathrm{clip}(p)))\)，包括对 \(p\) 和 \(1-p\) **分别裁剪**；`T11-sig` 即该函数外套选择概率 sigmoid。
 - **不同**：Toy 的归一化四参数分别**仿射**变到 \(\alpha\in[.02,.999]\)、\(\lambda\in[.3,5]\)、\(\gamma\in[.02,.999]\)、\(\tau\in[.5,4]\)，X 的金额列乘以 200 美元。原 CR3 的参数先验是 Beta / Gamma / Beta / truncated-Normal，X 为固定 500 个经过设计的彩票比较试次；Toy 在单位立方体上使用 Sobol/轴扫描点，不复制真实 500 Xset。
 - **关键结果**：T11 与 CR3 的数学函数结构可同源，但**积分统计量与旋转最小值不必完全相同**。在比较复杂度指标前，最好统一物理坐标、参数积分权重和 X bank。
 
