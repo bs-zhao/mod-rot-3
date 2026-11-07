@@ -37,6 +37,7 @@ from controlled_sweeps import (analytic_sweeps,polynomial_sweeps,
                                sweep_metrics,sweep_support_diagnostics)
 from local_metrics import complexity_metrics
 from comparisons import compare_all_sources
+from catalog import describe_all
 
 import analytic_reference as oracle_module
 
@@ -248,6 +249,9 @@ def main(argv=None):
         write_csv(args.output/f"curves__{plane}.csv",
                   [r for r in all_metrics if r["plane"]==plane])
     write_csv(args.output/"all_local_metrics.csv",all_metrics)
+    catalog=describe_all(k for k in all_metrics[0]
+                          if k.endswith("_loss") or k.endswith("_diagnostic"))
+    write_csv(args.output/"metric_catalog.csv",catalog)
     write_csv(args.output/"three_way_local_derivative_errors.csv",all_gaps)
     write_csv(args.output/"heldout_Y_rmse.csv",all_rmse)
     selected=[]
@@ -296,6 +300,18 @@ def main(argv=None):
                                bool(r["qualifies"]) for r in selected),
                            tested=len(selected)),
         metrics_count_per_method=len(values[("analytic","logit")]),
+        metric_families=sorted(set(r["indicator_family"] for r in catalog)),
+        zero_vs_ninety_equivalence=(
+            "Only permutation/sign-invariant losses should agree at 0 and 90; "
+            "a mixed rotation may change local curvature in between."),
+        extrapolation_warning=(
+            "Controlled U_i variation holding U_-i fixed may leave the "
+            "training-joint-support. Inspect sweep_*OOD95_fraction_diagnostic."),
+        outputs=dict(metrics="all_local_metrics.csv",catalog="metric_catalog.csv",
+                     score="strict_screen_all.csv",
+                     score_groups="strict_screen_groups.csv",
+                     ranking="strict_screen_ranking.csv",
+                     local_errors="three_way_local_derivative_errors.csv"),
         computation_counts=dict(n_planes=len(planes),n_angles=len(angles),
                                 n_derivative_analyses=len(all_metrics)))
     (args.output/"summary.json").write_text(
