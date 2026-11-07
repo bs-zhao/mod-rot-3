@@ -1,6 +1,6 @@
 # Mod-Rot：研究框架总 README
 
-> **相关独立资料**：[本项目 C1、C2、C3、CR3 的全部真实生成模型、参数先验、Xset 与 logit/p/choice](TOY_GENERATIVE_MODELS.md)。它是本项目生成模型层的目录，区别于 Hessian 提取与简单性指标。
+> **相关独立资料**：[C1/C2/C3/CR3 的真实生成模型](TOY_GENERATIVE_MODELS.md)；**新方法模块**：[从数值 ZXY 提取 Hessian 的 14 类统计/数值估计器及参考文献](HESSIAN_FROM_ZXY_METHODS.md)。这些分别属于生成模型与数值 Hessian 估计器两个独立实验维度。
 
 > **目的**：用一份长期维护的框架文档明确研究中的不同层次、实验因素、比较对象和评价标准。本文是**研究架构说明**，不是新的运行器，也不改变已有 NP、math 或 rotations 项目。  
 > **日期**：2026-11-07。当前聚焦 C1、C2、C3、CR3；后续允许增加模型、估计器、积分方式和复杂度指标。  
@@ -28,6 +28,8 @@ L3 Y 的表达 / Hessian 计算来源
    A 解析函数直接求导（oracle）
    B 解析函数产生数值 Y → 回归/拟合函数 → 导数/Hessian
    C 冻结 NP decoder 产生数值 Y → 同一拟合器 → 导数/Hessian
+   ×【独立 Hessian 估计器 e】全局/局部多项式、样条、核/GP、Stein 等
+     （对 B/C 的数值 ZXY；解析 A 为真值参考，不是数值估计器）
                      │
                      ▼
 L4 对 X 和 Z/T 进行积分、经验平均，或保留局部 Hessian
@@ -136,7 +138,32 @@ H_p=\sigma'(\eta)H_\eta+
 | **B / formula_y** | 真实解析式 → 生成 numerical (T/X/Y 或对应 U/X/Y) → 数据驱动回归函数 → 求 Hessian | **只有生成 Y 的步骤** | 拟合出的连续函数 |
 | **C / nn_y** | 真实 Z、X → **已训练且冻结的 decoder** → numerical Y → **同样**的数值回归/拟合 → 求 Hessian | 不需要 | 拟合出的连续函数；**不对 NN 求导** |
 
-B 与 C 的 Hessian 估计算法应当在相同坐标系、训练数据规模、输入 X 网格、目标类型、超参数和划分下比较。B 的拟合器**不知道**生成 Y 的解析式；否则就不再是数据驱动估计 benchmark。可以将 tensor polynomial、KRR、样条、Stein 等作为 Hessian 估计器的**另一个独立因素**，但不要把“来源”与“估计器种类”写成同一个维度。
+B 与 C 的 Hessian 估计算法应当在相同坐标系、训练数据规模、输入 X 网格、目标类型、超参数和划分下比较。B 的拟合器**不知道**生成 Y 的解析式；否则就不再是数据驱动估计 benchmark。**现在正式将从数值 ZXY 提取 Hessian 的算法定义为独立实验维度 e**。Tensor polynomial、local polynomial、P-spline、KRR、GP、Stein 等不是 data source（公式/NN 来源）的类别，而是作用于给定数值矩阵的可比较估计器；同一 e 必须在 formula-Y 与 nn-Y 路径中按同样协议使用。完整数学解释与原始参考文献见 [方法目录](HESSIAN_FROM_ZXY_METHODS.md)。
+
+
+### L3-C：独立的数值 Hessian 估计方法（新增）
+
+这层的输入固定为数值 \((U,X,Y)\)，输出为一个局部 Hessian 字段、平均导数矩，或其它严格说明的对象：
+
+\[
+\widehat{\mathcal H}_{e}
+=\operatorname{EstimateHessian}_{e}(\{U_s,X_{st},Y_{st}\}).
+\]
+
+| 方法族 | 代表算法 | 当前实现情况 | 核心统计限制 |
+|---|---|---|---|
+| 全局基函数 | 多项式 sieve、张量乘积、Chebyshev、低秩 | **math/01、04–07 已实现部分** | 拟合函数预测准确不保证 Hessian 准确 |
+| 局部多项式 | 局部二次 / 局部高阶 regression、LOESS | 候选 | 维度高，带宽与局部样本不足 |
+| 平滑样条 / GAM | B-spline、P-spline、交互样条 | **math/02 T-only 部分已有** | 惩罚/结构先验可能人为压低简单性 |
+| 光滑核回归 | Gaussian KRR、Nyström、RBF、GP | **math/02、05 的 KRR/RBF 已有**；GP 候选 | 核长度尺度与正则影响二/三阶导数 |
+| 数值微分 | 有限差分、Savitzky–Golay、随机扰动 | 用于部分解析验证；原始稀疏 ZXY 方法待做 | 偏移点若无观测 Y，不能直接差分 |
+| Stein / 积分分部 | 二阶 score/weighted Stein | **math/02 已实现带权 T-only 平均** | **平均/加权 Hessian ≠ 局部 Hessian** |
+| 其它代理 | 独立平滑 NN + autodiff、Bernoulli GLM | 候选 | 代理的 Hessian 不一定是真函数的 Hessian |
+| 计算技巧 | Hessian-vector product | 非独立统计估计器 | 不负责从 ZXY 学习函数 |
+
+**三个必须分开的维度**：来源 d 决定数值 Y 由解析式还是冻结 decoder 产生；估计器 e 决定怎样仅用数值 ZXY 推断导数；积分与平均 q 决定从局部导数得到哪一种统计量。不要把二阶 weighted Stein 的带权均值，与 full-ZX 的局部 10×10 Hessian 直接排名。固定 500 行 X 的连续 X 方向导数也需要光滑函数类假设才能被推断。
+
+**独立详细 README**：[HESSIAN_FROM_ZXY_METHODS.md](HESSIAN_FROM_ZXY_METHODS.md)，共 **E01–E14 14 类**，逐类介绍数学形式、局部/平均目标、优势与局限、仓库已实现/待实现、统一 benchmark 方案，以及 **15 项参考文献**（Fan–Gijbels、Wahba、Eilers–Marx、Wood、KRR/Nyström、GP、Stein、有限差分、autodiff 等）。
 
 ### Hessian 的正确坐标与块结构
 
@@ -273,7 +300,7 @@ L_{m,y,h,q,k}(\varphi)
 H_{m,y,h}(U_\varphi,X)]\right),
 \]
 
-其中 m=生成模型，y=logit/p/choice，h=解析/formula-Y/NN-Y Hessian 来源，q=积分/局部保留方式，k=简单性指标，**旋转角度 φ 是自变量，损失 L 是因变量**。
+其中 m=生成模型，y=logit/p/choice，h=解析/formula-Y/NN-Y Hessian 来源，**e=作用于数值 B/C 路径的 Hessian 估计器**，q=积分/局部保留方式，k=简单性指标，**旋转角度 φ 是自变量，损失 L 是因变量**。完整下标应为 (L_{m,y,h,e,q,k}(arphi))；仅当固定一个估计器时才可省略 e。
 
 旋转族：
 - **两两旋转**：4 维时有 6 个平面，0–90° 扫描，通常 0°/90° 为有符号坐标置换等价方向（对于具有相应不变性的损失）。
@@ -303,7 +330,7 @@ H_{m,y,h}(U_\varphi,X)]\right),
 | 2 | 线性映射与坐标 | 原始 Z、T、T_hat、U，是否 d_Z=d_T |
 | 3 | Y 输出 | logit / probability / binary choice（明确采样/阈值） |
 | 3 | Hessian 来源 | A 解析 / B 解析 Y 回归 / C NN Y 回归 |
-| 3 | Hessian 估计器 | 多项式、样条、核估计、Stein 等；B/C 同配置 |
+| **3（新增独立轴）** | **Hessian 数值估计器 e** | [E01–E14 方法目录](HESSIAN_FROM_ZXY_METHODS.md)：全局/局部多项式、样条、核/GP、Stein 等；B/C 同配置，明确局部/平均对象 |
 | 4 | 积分域与测度 | 真实 Xset、T 先验、经验 Z、局部网格 |
 | 4 | 聚合量 | 局部 H、E[H]、RMS、SD、三/四阶导数 |
 | 诊断 | Hessian 精度 | A−B、B−C、A−C 的误差与稳定性 |
@@ -317,13 +344,13 @@ H_{m,y,h}(U_\varphi,X)]\right),
 
 ~~~text
 experiment/
-  metadata.json          模型版本/参数先验/Xset/数据hash/NP checkpoint/坐标/seed
+  metadata.json          模型版本/参数先验/Xset/数据hash/NP checkpoint/坐标/seed/estimator_id/estimator_hyperparams
   responses/             每种 Y 及其数值预测准确性
   derivatives/           局部 H_UU / H_UX / H_XX；可选 H3/H4
   aggregation/           积分定义/权重/平均/RMS/有效域掩码
   fidelity/              A/B/C 的 Hessian 数值误差及归因
   simplicity/            给定导数字段后各指标的 loss 数值
-  rotation_landscapes/   angle × model × Y × source × integration × metric
+  rotation_landscapes/   angle × model × Y × source × estimator × integration × metric
   validation/            TEST 的 U 与 T 对应、非对应相关、稳定性
 ~~~
 
@@ -333,7 +360,7 @@ experiment/
 data = load_generator_data(model, data_id)             # L1
 z, decoder = load_frozen_np(condition)                # L2
 y = produce_numerical_y(source, output_type, data, z) # L3
-derivatives = infer_derivatives(source, y, coords)    # L3
+derivatives = infer_derivatives(estimator, y, coords) # L3-C：B/C 共享估计器
 field = aggregate_or_retain(derivatives, measure)     # L4
 accuracy = compare_to_oracle(field, oracle)            # 诊断层
 loss = simplicity_metric(field)                        # L5
@@ -345,6 +372,7 @@ landscape[angle] = loss                                # L6
 ## 11. 目前代码分工与既有实验
 
 - **np/**：四个模型的数据生成、NP 训练、验证、Z 提取、PCA、Z→T 线性回归。
+- **估计器文献与实验目录**：[HESSIAN_FROM_ZXY_METHODS.md](HESSIAN_FROM_ZXY_METHODS.md)——从数值 ZXY 恢复 Hessian 的 14 类独立方法、适用目标、参考文献与已有代码对照。
 - **math/01_cr3_hessian_expectation/**：CR3 的解析/数据矩阵 Hessian 与经验、先验积分。
 - **math/02_cr3_hessian_estimators/**：不同数据驱动 Hessian 估计器的精度 benchmark。
 - **math/03_cr3_hessian_six_y/**、**math/04_cr3_zx_hessian_threeway/**：三种 Y，解析与 NN Y 生成，真实解析对照与统一坐标变换。
