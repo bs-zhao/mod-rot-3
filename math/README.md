@@ -57,6 +57,16 @@ output directories retain their original unnumbered names.
   Original Z/X/Y are frozen and each rotated U=AZ+b is refitted.
   See 06_cr3_hessian_rotation_landscapes/README.md.
 
+- 07_cr3_local_hessian_complexity/: extends the six-plane nine-source 06
+  design to LOCAL second/third/fourth derivatives, not just mean H.
+  Implements self-vs-other-Z curvature complexity, ZZ/X modulation,
+  ZX per-row and per-trial multiscale sparsity, finite-difference
+  roughness, controlled one-axis quadratic/cubic approximation errors,
+  ZZ pairwise and ZX functional additivity-gap metrics, support/OOD
+  diagnostics, and strict 0°/90° minimum screening. Distinguishes
+  analytic-Y inference error from the additional frozen-NN-Y gap.
+  See 07_cr3_local_hessian_complexity/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
