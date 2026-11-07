@@ -34,7 +34,7 @@ from screen import select_sparsity_metrics
 from local_polynomial import polynomial_field_shake
 from analytic_reference import reference_fields,rotate_fields
 from controlled_sweeps import (analytic_sweeps,polynomial_sweeps,
-                               sweep_metrics)
+                               sweep_metrics,sweep_support_diagnostics)
 from local_metrics import complexity_metrics
 from comparisons import compare_all_sources
 
@@ -129,6 +129,8 @@ def evaluate_rotation(A,R,Z,X_bank,Y,estimator,analytic_reference,
     fitted_sweeps=polynomial_sweeps(poly,U,anchors,levels=sweep_levels)
     true_sweeps=analytic_sweeps(U,b,R,anchors,X_eval,oracle_module,
                                levels=sweep_levels)
+    support=sweep_support_diagnostics(
+        U,estimator.train,anchors,levels=sweep_levels)
     for source in SOURCES:
         for ti,target in enumerate(TARGETS):
             ci=ti if source!="nn_y" else ti+3
@@ -137,6 +139,7 @@ def evaluate_rotation(A,R,Z,X_bank,Y,estimator,analytic_reference,
                 "value":sweep["value"][ci],
                 "curvature":sweep["curvature"][ci],
                 "position":sweep["position"]}))
+            per[(source,target)].update(support)
     comparisons=compare_all_sources(analytic_local,fit_local,None,
                                     include_fourth=include_fourth)
     return per,comparisons,fit_rmse,analytic_local,fit_local
