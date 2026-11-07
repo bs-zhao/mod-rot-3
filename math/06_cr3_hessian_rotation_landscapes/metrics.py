@@ -8,6 +8,7 @@ each unique pair once (as in step 05).
 from __future__ import annotations
 import numpy as np
 from patterns import score
+from sparsity import rich_sparsity
 
 BLOCKS=("ZZ","ZX","XX","FULL","ZZ_diag","ZZ_offdiag","XX_diag","XX_offdiag")
 
@@ -27,7 +28,7 @@ def block_array(H,block):
     return M
 
 
-def structure(H,block):
+def structure(H,block,*,x_std=None):
     M=block_array(H,block)
     a=np.asarray(M,dtype=float)
     vals=a.ravel()
@@ -35,11 +36,13 @@ def structure(H,block):
     n=len(vals)
     abs_a=np.abs(vals)
     if norm<1e-15:
-        return dict(frob_norm=0.,absolute_l1=0.,
+        result=dict(frob_norm=0.,absolute_l1=0.,
                     normalized_l1=None,max_abs_over_frob=None,
                     offdiag_energy_ratio=None,row_concentration=None,
                     row_entropy=None,effective_rank=None,
                     signed_mean=float(vals.mean()))
+        result.update(rich_sparsity(a,block,x_std=x_std))
+        return result
     result=dict(
         frob_norm=float(norm),
         absolute_l1=float(abs_a.sum()),
@@ -72,6 +75,7 @@ def structure(H,block):
         q=q/q.sum()
         positive=q[q>0]
         result["effective_rank"]=float(np.exp(-np.sum(positive*np.log(positive))))
+    result.update(rich_sparsity(a,block,x_std=x_std))
     return result
 
 
@@ -90,9 +94,9 @@ def compare(H,analytic_H,validity,block):
     )
 
 
-def metrics_for_source(H,analytic_H,validity,blocks=BLOCKS):
+def metrics_for_source(H,analytic_H,validity,blocks=BLOCKS,*,x_std=None):
     return {
-        block:{**structure(H,block),**compare(H,analytic_H,validity,block)}
+        block:{**structure(H,block,x_std=x_std),**compare(H,analytic_H,validity,block)}
         for block in blocks
     }
 
