@@ -18,6 +18,7 @@ from fast_tensor import RotationTensor
 from run import run_nine,main
 from metrics import structure,equivariance_error,metrics_for_source
 from loader import load_source,CHANNELS
+from plots import plot_dashboard
 
 
 def fixture(seed=41,n=75,m=35):
@@ -120,6 +121,24 @@ class DataOnlyTests(unittest.TestCase):
         self.assertEqual(blocks["ZZ_offdiag"]["n_elements"],6)
         self.assertEqual(blocks["ZX"]["n_elements"],24)
         self.assertEqual(blocks["XX_offdiag"]["n_elements"],15)
+
+
+class PlotTests(unittest.TestCase):
+    def test_nine_method_dashboard_png(self):
+        curves=[]
+        for angle in (0.,45.,90.):
+            for method in ("analytic","formula_y","nn_y"):
+                for target in ("choice","logit","probability"):
+                    for block in ("ZZ","ZX","XX"):
+                        curves.append(dict(plane="01_alpha_lambda",angle_degrees=angle,
+                                           source=method,target=target,block=block,
+                                           normalized_l1=.5+.001*angle))
+        with tempfile.TemporaryDirectory() as tmp:
+            output=Path(tmp)/"dashboard.png"
+            plot_dashboard(curves,"01_alpha_lambda",
+                           np.array([0.,45.,90.]),"normalized_l1",output)
+            self.assertTrue(output.is_file())
+            self.assertGreater(output.stat().st_size,1000)
 
 
 class EndToEndTests(unittest.TestCase):
