@@ -19,7 +19,7 @@ import numpy as np
 # Fractions of the largest absolute effect within a vector.
 SCALES=((0.0005,"0p0005"),(0.001,"0p001"),
         (0.005,"0p005"),(0.02,"0p02"))
-SMALL_TOL=1e-13
+SMALL_TOL=0.0  # nonzero values remain scale invariant; tiny noise is diagnosed separately
 PRIMARY=(
     "hoyer_loss",
     "lp025_loss",
@@ -78,7 +78,7 @@ def vector_losses(v,max_topk=4):
     else:
         for key in ("entropy_loss","renyi05_loss","renyi2_loss","gini_impurity_loss"):
             out[key]=0.
-    out["active_nonzero_diagnostic"]=int(np.sum(a>SMALL_TOL))
+    out["active_nonzero_diagnostic"]=int(np.sum(a>max(m*1e-12,1e-300)))
     for k in range(1,min(d,max_topk+1)):
         tail=s[k:]
         out[f"tail1_k{k}_loss"]=float(tail.sum())
