@@ -47,6 +47,16 @@ output directories retain their original unnumbered names.
   diagonal/off-diagonal pattern recovery metrics.
   See 05_cr3_zx_hessian_optimization/README.md.
 
+- 06_cr3_hessian_rotation_landscapes/: fit the original affine A_star mapping
+  Z to T and rotate every pair of its four output dimensions over 0–90°.
+  For each of six planes and every angle compute nine mean Hessians:
+  3 sources (exact analytic CR3, numeric analytic-Y regression, frozen
+  numeric NN-Y regression) × 3 Y types (Choice/Logit/Probability).
+  Save UU/UX/XX and diagonal/off-diagonal structure/similarity curves,
+  rotation-equivariance diagnostics, all 10×10 Hessians, and 3×3 dashboards.
+  Original Z/X/Y are frozen and each rotated U=AZ+b is refitted.
+  See 06_cr3_hessian_rotation_landscapes/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
