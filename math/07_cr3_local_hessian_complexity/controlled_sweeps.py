@@ -103,6 +103,14 @@ def sweep_metrics(one_source):
         for d in (1,2,3,4):
             rem=_poly_residual(f,xs,d)
             res[d]=float(np.mean(rem*rem)/max(yy,1e-15))
+        # Functional ANOVA on the controlled U_i × fixed-X stimulus
+        # grid. Removes U_i and X main effects for EACH anchor;
+        # multiplicative U_i:g(X) relationships have nonzero gap.
+        grand=f.mean(axis=(1,2),keepdims=True)
+        residual=f-f.mean(axis=1,keepdims=True)-f.mean(
+            axis=2,keepdims=True)+grand
+        interaction_fraction=float(np.mean(residual**2)/
+                                   max(np.mean((f-grand)**2),1e-15))
         # DCT is a frequency smoothness diagnostic, not a claim
         # about exact polynomial degree.
         spectral=dct(f,type=2,norm="ortho",axis=1)
@@ -120,6 +128,8 @@ def sweep_metrics(one_source):
             linear_approx_relative_mse_loss=res[1],
             cubic_approx_relative_mse_loss=res[3],
             quartic_approx_relative_mse_loss=res[4],
+            self_Z_X_additivity_gap_loss=interaction_fraction,
+            self_Z_X_additivity_mse_loss=float(np.mean(residual**2)),
             high_frequency_dct_ratio_diagnostic=highfreq,
             sweep_curvature_rms_diagnostic=rms_h,
             sweep_range_diagnostic=extent,
