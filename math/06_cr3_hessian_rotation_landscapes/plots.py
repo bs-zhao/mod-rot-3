@@ -67,8 +67,8 @@ def plot_dashboard(curves,plane,angles,metric,output):
             if c==0:ax.set_ylabel(metric.replace("_"," "),fontsize=8)
             if r==2:ax.set_xlabel("Rotation angle (degrees)")
     handles,labels=axs[0,0].get_legend_handles_labels()
-    if handles:fig.legend(handles,labels,loc="outside upper center",
-                          ncol=3,frameon=False)
+    if handles:fig.legend(handles,labels,loc="upper center",
+                          bbox_to_anchor=(.5,1.045),ncol=3,frameon=False)
     fig.suptitle(f"{plane}: {TITLES.get(metric,metric)}",fontsize=14)
     out=Path(output)
     out.parent.mkdir(parents=True,exist_ok=True)
