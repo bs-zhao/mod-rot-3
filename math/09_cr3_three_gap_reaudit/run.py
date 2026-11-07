@@ -51,7 +51,7 @@ def audit(screen,tolerance=10.,min_range=.02,min_corr=.9):
     for mode in ('near','strict'):
         d['gap1_'+mode]=d['analytic_'+mode]
         d['gap2_'+mode]=d['gap1_'+mode]&d['formula_'+mode]&cf
-        d['gap3_'+mode]=d['gap2_'+mode]&d['nn_'+mode']&cn
+        d['gap3_'+mode]=d['gap2_'+mode]&d['nn_'+mode]&cn
     keys=['target','metric']
     fields=['gap'+str(i)+'_'+mode for mode in ('near','strict') for i in (1,2,3)]
     rank=d.groupby(keys,sort=False)[fields].sum().reset_index()
