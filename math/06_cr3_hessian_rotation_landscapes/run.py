@@ -21,10 +21,12 @@ import numpy as np
 
 from fast_tensor import RotationTensor
 from loader import load_source, TARGETS, CHANNELS, ORACLE_TARGET
-from metrics import metrics_for_source,equivariance_error,structure
+from metrics import metrics_for_source,equivariance_error,structure,block_array
+from screen import select_sparsity_metrics
+from sparsity import metric_catalog
 from rotation import (candidate_mapping, original_z_to_candidate_u,
                       parse_angles,parse_planes,plane_name,full_block_rotation)
-from plots import plot_dashboard,DEFAULT_METRICS
+from plots import plot_dashboard,plot_xz_sparsity,DEFAULT_METRICS,DEFAULT_XZ_SPARSITY_METRICS
 
 
 HERE=Path(__file__).resolve().parent
@@ -97,7 +99,9 @@ def plot_index(output,plots):
 
 def calculate_best_angles(rows):
     """Best-angle diagnostics, not proof that the true axes minimize a loss."""
-    metrics=[
+    # Include every new loss automatically in the same best-angle output.
+    loss_keys=sorted(k for k in rows[0] if k.endswith("_loss"))
+    metrics=[(key,"min") for key in loss_keys]+[
         ("normalized_l1","min"),
         ("max_abs_over_frob","max"),
         ("offdiag_energy_ratio","min"),
@@ -152,11 +156,22 @@ def main(argv=None):
                    help="Max held-out subjects for Y RMSE at every rotation")
     p.add_argument("--no-plots",action="store_true")
     p.add_argument("--plot-metrics",nargs="+",default=list(DEFAULT_METRICS))
+    p.add_argument("--plot-xz-metrics",nargs="+",default=list(DEFAULT_XZ_SPARSITY_METRICS))
+    p.add_argument("--sparsity-corr-threshold",type=float,default=.90)
+    p.add_argument("--sparsity-endpoint-degrees",type=float,default=10.)
+    p.add_argument("--sparsity-min-variation",type=float,default=.02)
+    p.add_argument("--no-sparsity-screen",action="store_true")
     p.add_argument("--no-save-matrices",action="store_true")
     args=p.parse_args(argv)
     if args.degree_u<1 or args.degree_x<1 or args.validation_limit<0:
         p.error("Invalid polynomial degree or validation limit")
     if args.ridge_u<=0 or args.ridge_x<=0:p.error("Ridge must be positive")
+    if not (0<=args.sparsity_corr_threshold<=1):
+        p.error("Sparsity curve correlation must lie in [0,1]")
+    if not (0<=args.sparsity_endpoint_degrees<=45):
+        p.error("Sparsity endpoint tolerance must lie in [0,45]")
+    if args.sparsity_min_variation<0:
+        p.error("Sparsity relative variation must be >= 0")
     angles=parse_angles(args.angles)
     planes=parse_planes(args.planes)
     if args.source is None:
@@ -166,11 +181,19 @@ def main(argv=None):
         args.output=(ROOT/"outputs"/"math"/"06_cr3_hessian_rotation_landscapes"/
                      args.condition/f"repeat{args.repeat:02d}"/
                      f"{args.basis}_u{args.degree_u}_x{args.degree_x}_"
-                     f"ridgeu{args.ridge_u:g}_ridgex{args.ridge_x:g}")
+                     f"ridgeu{args.ridge_u:g}_ridgex{args.ridge_x:g}"/
+                     "rich_sparsity_v2")
     output=args.output
     data=load_source(args.source)
     output.mkdir(parents=True,exist_ok=True)
+    # X is physically heterogeneous (amounts vs probabilities). Both raw
+    # and X-SD standardized interaction losses are exported. Use the SAME
+    # scale at every rotation angle and for all three Hessian sources.
+    x_std=np.std(data["X"],axis=0,ddof=0)
+    zero_sd=x_std<=1e-12
+    x_std=np.where(zero_sd,1.,x_std)
     print("Step04 original Z,X,Y loaded; no NN backprop or regeneration",flush=True)
+    print("XZ X-column SD scales:",x_std,"constant-column flags:",zero_sd,flush=True)
     print(f"Source={args.source}; Subjects={len(data['Z'])}; X={len(data['X'])}; "
           f"R²(T~A*Z+b)={data['ols_r2']}",flush=True)
     print("Six 2D planes and angles:",len(planes),len(angles),
@@ -204,8 +227,8 @@ def main(argv=None):
             # Frobenius norm of full H, ZZ, ZX, XX must be unchanged.
             for target in TARGETS:
                 for block in ("ZZ","ZX","XX","FULL"):
-                    original=structure(reference_at_zero[target],block)["frob_norm"]
-                    current=structure(reference[target],block)["frob_norm"]
+                    original=float(np.linalg.norm(block_array(reference_at_zero[target],block)))
+                    current=float(np.linalg.norm(block_array(reference[target],block)))
                     if not np.isclose(original,current,atol=1e-8,rtol=1e-8):
                         raise AssertionError(f"Analytic reference rotation invariant failed: {plane} {angle} {target} {block}")
             for s,source in enumerate(METHODS):
@@ -214,10 +237,11 @@ def main(argv=None):
                     tensors[index,s*3+t]=H
                     ref=reference[target]
                     ref_fraction=data["oracle"][ORACLE_TARGET[target]]["fraction_defined"]
-                    blocks=metrics_for_source(H,ref,ref_fraction,ALL_BLOCKS)
+                    blocks=metrics_for_source(H,ref,ref_fraction,ALL_BLOCKS,x_std=x_std)
                     drift=equivariance_error(H,H_at_zero[(source,target)],R)
                     for block,values in blocks.items():
-                        baseline_norm=structure(H_at_zero[(source,target)],block)["frob_norm"]
+                        baseline_norm=float(np.linalg.norm(block_array(
+                            H_at_zero[(source,target)],block)))
                         norm=values["frob_norm"]
                         row=dict(plane=plane,parameter_i=i,parameter_j=j,
                                  angle_degrees=float(angle),source=source,
@@ -250,9 +274,44 @@ def main(argv=None):
                 file=output/f"dashboard__{plane}__{metric}.png"
                 plot_dashboard(plane_rows,plane,angles,metric,file)
                 plotted.append(file)
+            # Focused XZ plot avoids empty ZZ/XX panels for per-Z-row metrics.
+            for metric in args.plot_xz_metrics:
+                if metric not in next(r for r in plane_rows if r["block"]=="ZX"):
+                    raise ValueError(f"Unknown XZ plot metric: {metric}")
+                file=output/f"xz_sparsity__{plane}__{metric}.png"
+                plot_xz_sparsity(plane_rows,plane,angles,metric,file)
+                plotted.append(file)
         print("Completed pairwise plane:",plane,flush=True)
     csv_write(output/"all_curves.csv",all_rows)
     csv_write(output/"heldout_y_rmse.csv",all_yerrors)
+    # A machine-readable definition catalog documents directions and
+    # thresholds; all hard-support sizes are diagnostics, not losses.
+    defs=metric_catalog()
+    spec={d["base_metric"]:d for d in defs}
+    examples=[
+        {**{"metric":name,"direction":"minimize" if name.endswith("_loss")
+          else "diagnostic","block":block},
+          **spec.get(next((key for key in spec if name.endswith(key)), ""),{})}
+        for block in ALL_BLOCKS
+        for name in sorted(k for k in next(r for r in all_rows if r["block"]==block)
+                           if k.endswith("_loss") or k.endswith("_diagnostic"))
+    ]
+    csv_write(output/"metric_catalog.csv",examples)
+    screen_counts={}
+    if not args.no_sparsity_screen:
+        checks,groups,ranking=select_sparsity_metrics(
+            all_rows,min_correlation=args.sparsity_corr_threshold,
+            endpoint_tolerance=args.sparsity_endpoint_degrees,
+            min_relative_range=args.sparsity_min_variation)
+        csv_write(output/"sparsity_screen_all.csv",checks)
+        csv_write(output/"sparsity_screen_groups.csv",groups)
+        csv_write(output/"sparsity_screen_ranking.csv",ranking)
+        screen_counts=dict(plane_tests=len(checks),
+                           qualifying_tests=sum(bool(r["qualifies"]) for r in checks),
+                           candidates=len(ranking),
+                           full_six_plane_winners=sum(
+                               bool(r["full_six_plane_successes"]) for r in ranking))
+        print("Sparsity screen:",screen_counts,flush=True)
     best=calculate_best_angles(all_rows)
     csv_write(output/"best_angles.csv",best)
     if plotted:plot_index(output,plotted)
@@ -265,6 +324,12 @@ def main(argv=None):
         note_choice_analytic="H[ E[Choice|Z,X] ] = H[Probability], not a derivative of sampled 0/1 decisions",
         source=data["original_source"],source_sha256=data["sha256"],
         regression_R2=data["ols_r2"],total_hessians=len(planes)*len(angles)*9,
+        original_X_standard_deviation=x_std,
+        original_X_constant_columns=zero_sd,
+        sparsity_screen_settings=dict(min_correlation=args.sparsity_corr_threshold,
+                                      endpoint_tolerance=args.sparsity_endpoint_degrees,
+                                      min_relative_variation=args.sparsity_min_variation),
+        sparsity_screen_counts=screen_counts,
         estimator=dict(type="factorized tensor polynomial",
                        basis=args.basis,degree_u=args.degree_u,degree_x=args.degree_x,
                        ridge_u=args.ridge_u,ridge_x=args.ridge_x,
@@ -283,6 +348,10 @@ def main(argv=None):
             "A*, not its left-rotation, maps the fixed encoder Z to original CR3 parameters.",
         ],
         files=dict(curves="all_curves.csv",best_angles="best_angles.csv",
+                   sparsity_screen="sparsity_screen_all.csv",
+                   sparsity_groups="sparsity_screen_groups.csv",
+                   sparsity_ranking="sparsity_screen_ranking.csv",
+                   metric_catalog="metric_catalog.csv",
                    heldout="heldout_y_rmse.csv",
                    dashboards="dashboard__{plane}__{metric}.png"),
         trace=trace,
