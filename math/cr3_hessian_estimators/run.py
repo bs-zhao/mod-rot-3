@@ -166,20 +166,24 @@ def main():
         W_q,psi_q=second_order_score(quad_T)
         normal_s=W_s.mean();normal_q=quad_W@W_q
         summary['stein_weight']=dict(sample_mean=float(normal_s),prior_mean=float(normal_q),
+                                    max_abs_empirical_score_mean=float(np.max(np.abs(psi_s.mean(0)))),
+                                    max_abs_quadrature_score_mean=float(np.max(np.abs(np.einsum('n,nij->ij',quad_W,psi_q)))),
                                     formula='w(T)=prod_j 16*z_j^2*(1-z_j)^2, z_j=(T_j-low_j)/(high_j-low_j)')
         summary['results']['stein']={}
         for ch in CHANNELS:
             true_sample=np.einsum('n,nij->ij',W_s/np.sum(W_s),truth_sample[ch][1])
             true_prior=np.einsum('n,nij->ij',quad_W*W_q/normal_q,truth_prior[ch][1])
-            est,se,_=fit_stein_mean(T,channels[ch])
+            baseline=0. if ch=='logit' else .5
+            est,se,_=fit_stein_mean(T,channels[ch],baseline=baseline)
             # Quadrature evaluates IBP rhs independently with true conditional
             # mean, to validate the boundary-aware identity numerically.
             yq=truth_prior[ch][0]
-            identity=np.einsum('n,n,nij->ij',quad_W,yq,psi_q)/normal_q
+            identity=np.einsum('n,n,nij->ij',quad_W,yq-baseline,psi_q)/normal_q
             summary['results']['stein'][ch]={
                 'sample_estimate_vs_prior_weighted_oracle':score_matrix(est,true_prior),
                 'sample_estimate_vs_sample_weighted_oracle':score_matrix(est,true_sample),
                 'quadrature_stein_identity_check':score_matrix(identity,true_prior),
+                'fixed_control_variate_baseline':baseline,
                 'max_standard_error':float(np.max(se)),
                 'standard_errors':se,
                 'note':'The identity is for weighted H, not unweighted H; finite-sample estimators need not match pointwise.'}
