@@ -1,5 +1,7 @@
 # mod-rot-3
 
+**Research architecture:** [readmes/README.md](readmes/README.md) — 中文研究总览：C1/C2/C3/CR3 生成模型、NP/Z、Y 类型、三条 Hessian 计算路径、积分/平均、Hessian 准确性、简单性指标、旋转与验证分层。
+
 The two independent parts of the project are:
 
 - [np/](np/README.md): **seven manually executed stages** for C1/C2/C3/CR3
