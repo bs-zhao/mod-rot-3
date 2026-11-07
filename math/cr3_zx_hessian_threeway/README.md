@@ -140,7 +140,7 @@ Outputs go to
   response-based fitted differences.
 - \`analytic_logit__mean.csv\`, \`analytic_probability__mean.csv\`,
   and \`fitted_<six_channel>__mean.csv\`: full 10×10 numeric matrices.
-- \`threeway_choice_TT.png\`, \`threeway_logit_ZX.png\` etc.: five-panel
+- \`threeway_choice_ZZ.png\`, \`threeway_logit_ZX.png\` etc.: five-panel
   plots of exact answer, sieve-from-oracle-Y, sieve-from-NN-Y, and both errors.
 
 ## Correct interpretation
