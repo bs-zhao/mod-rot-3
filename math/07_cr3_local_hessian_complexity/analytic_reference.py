@@ -122,27 +122,31 @@ def reference_fields(T,X,*,fourth=True,tsteps=None,xsteps=None):
 
 
 def rotate_fields(star,R):
-    """Map local derivatives from T_hat into U=R(T_hat-b)+b.
+    """Rotate all tensor parameter axes from T_hat to U=R(T_hat-b)+b.
 
-    The inverse relation is T_hat=b+R.T@(U-b), so tensor derivatives
-    covariantly transform with R on all Z parameter axes.
-    X axes are unchanged.
+    For each parameter derivative index, the covariant transformation is
+    \partial/\partial U_i = sum_a R[i,a] \partial/\partial T_a.
+    The leading axes (channel,subject,trial) are unaffected.
     """
     R=np.asarray(R,dtype=float)
     if R.shape!=(4,4) or not np.allclose(R.T@R,np.eye(4),atol=1e-9):
-        raise ValueError("Expected a 4D orthogonal rotation")
+        raise ValueError("Expected orthogonal 4x4 rotation")
     out={
-        "value":star["value"],
-        "zz":np.einsum("ia,jb,qn mab->qn mij",R,R,star["zz"],optimize=True),
-        "zx":np.einsum("ia,qn mak->qn mik",R,star["zx"],optimize=True),
-        "zzz":np.einsum("ia,jb,kc,qnmabc->qnmijk",R,R,R,star["zzz"],optimize=True),
-        "zzx":np.einsum("ia,jb,qnmabd->qnmijd",R,R,star["zzx"],optimize=True),
-        "zxx":np.einsum("ia,qnmabc->qnmibc",R,star["zxx"],optimize=True),
+        "value":np.asarray(star["value"]),
+        "zz":np.einsum("ia,jb,cnmab->cnmij",R,R,star["zz"],optimize=True),
+        "zx":np.einsum("ia,cnmak->cnmik",R,star["zx"],optimize=True),
+        "zzz":np.einsum("ia,jb,kd,cnmabd->cnmijk",
+                        R,R,R,star["zzz"],optimize=True),
+        "zzx":np.einsum("ia,jb,cnmabq->cnmijq",
+                        R,R,star["zzx"],optimize=True),
+        "zxx":np.einsum("ia,cnmaqr->cnmiqr",
+                        R,star["zxx"],optimize=True),
     }
     if "zzzz" in star:
-        out["zzzz"]=np.einsum("ia,jb,kc,ld,qnmabcd->qnmijkl",
-                            R,R,R,R,star["zzzz"],optimize=True)
-        out["zzxx"]=np.einsum("ia,jb,qnmabk->qnmijk",
-                            R,R,star["zzxx"],optimize=True)
-        out["zxxx"]=np.einsum("ia,qnm ak->qn mik",R,star["zxxx"],optimize=True)
+        out["zzzz"]=np.einsum("ia,jb,kd,le,cnmabde->cnmijkl",
+                               R,R,R,R,star["zzzz"],optimize=True)
+        out["zzxx"]=np.einsum("ia,jb,cnmabq->cnmijq",
+                               R,R,star["zzxx"],optimize=True)
+        out["zxxx"]=np.einsum("ia,cnmaq->cnmiq",
+                               R,star["zxxx"],optimize=True)
     return out
