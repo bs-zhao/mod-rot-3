@@ -73,7 +73,7 @@ def main():
     ap.add_argument('--data',type=Path,default=DEFAULT_DATA)
     ap.add_argument('--out',type=Path,default=DEFAULT_OUT)
     ap.add_argument('--methods',nargs='+',choices=('krr','spline','stein'),default=['krr','spline','stein'])
-    ap.add_argument('--quad-nodes',type=int,default=8)
+    ap.add_argument('--quad-nodes',type=int,default=10)
     ap.add_argument('--nystrom-rank',type=int,default=256)
     ap.add_argument('--spline-basis',type=int,default=6)
     ap.add_argument('--seed',type=int,default=20261106)
