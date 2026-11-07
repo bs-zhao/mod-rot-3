@@ -85,15 +85,58 @@ def select_sparsity_metrics(rows,*,min_correlation=.90,
             if not valid:continue
             rnn=_pearson(arrays["analytic"],arrays["nn_y"])
             rformula=_pearson(arrays["analytic"],arrays["formula_y"])
+            rformula_nn=_pearson(arrays["formula_y"],arrays["nn_y"])
+            # Relative curve discrepancies are measured in units of the
+            # ANALYTIC curve's observed angle variation; if that curve
+            # is nearly flat, absolute errors are not diagnostic.
+            denominator=max(float(np.ptp(arrays["analytic"])),1e-12)
+            infer_rmse=float(np.sqrt(np.mean((
+                np.asarray(arrays["formula_y"])-arrays["analytic"])**2))/denominator)
+            additional_nn_rmse=float(np.sqrt(np.mean((
+                np.asarray(arrays["nn_y"])-arrays["formula_y"])**2))/denominator)
+            combined_nn_rmse=float(np.sqrt(np.mean((
+                np.asarray(arrays["nn_y"])-arrays["analytic"])**2))/denominator)
             near_all=all(stats[s]["near_endpoint_minimum"] for s in SOURCES)
             varying_all=all(stats[s]["informative"] for s in SOURCES)
             strong=bool(rnn is not None and rformula is not None
+                        and rformula_nn is not None
                         and rnn>=min_correlation and rformula>=min_correlation
+                        and rformula_nn>=min_correlation
                         and near_all and varying_all)
+            truth_end=bool(stats["analytic"]["near_endpoint_minimum"])
+            truth_informative=bool(stats["analytic"]["informative"])
+            formula_good=bool(rformula is not None
+                              and rformula>=min_correlation
+                              and stats["formula_y"]["near_endpoint_minimum"]
+                              and stats["formula_y"]["informative"])
+            nn_good=bool(rnn is not None
+                         and rnn>=min_correlation
+                         and stats["nn_y"]["near_endpoint_minimum"]
+                         and stats["nn_y"]["informative"])
+            if not truth_end or not truth_informative:
+                diagnosis="analytic_H_not_endpoint_simple_or_uninformative"
+            elif not formula_good and not nn_good:
+                diagnosis=("shared_fit_bias_candidate" if rformula_nn is not None
+                           and rformula_nn>=min_correlation
+                           else "both_fitted_channels_fail_differently")
+            elif not formula_good:
+                diagnosis="formula_Y_fit_fails_even_if_NN_fit_looks_good"
+            elif not nn_good:
+                diagnosis="NN_Y_additional_discrepancy_candidate"
+            else:
+                diagnosis="three_way_support"
             checks.append(dict(
                 plane=plane,target=target,block=block,metric=key,
                 analytic_nn_curve_pearson=rnn,
                 analytic_formula_curve_pearson=rformula,
+                formula_nn_curve_pearson=rformula_nn,
+                analytic_formula_curve_relative_rmse=infer_rmse,
+                nn_formula_curve_relative_rmse=additional_nn_rmse,
+                analytic_nn_curve_relative_rmse=combined_nn_rmse,
+                formula_fit_meets_endpoint_and_correlation=formula_good,
+                nn_fit_meets_endpoint_and_correlation=nn_good,
+                failure_diagnosis=diagnosis,
+                binary_choice_sampling_vs_hard_choice_caveat=target=="choice",
                 analytic_min_angle=stats["analytic"]["minimum_angle"],
                 formula_min_angle=stats["formula_y"]["minimum_angle"],
                 nn_min_angle=stats["nn_y"]["minimum_angle"],
@@ -114,12 +157,17 @@ def select_sparsity_metrics(rows,*,min_correlation=.90,
         good=[r for r in entries if r["qualifies"]]
         rnn=[r["analytic_nn_curve_pearson"] for r in entries if r["analytic_nn_curve_pearson"] is not None]
         rf=[r["analytic_formula_curve_pearson"] for r in entries if r["analytic_formula_curve_pearson"] is not None]
+        rn=[r["formula_nn_curve_pearson"] for r in entries if r["formula_nn_curve_pearson"] is not None]
         detail.append(dict(metric=metric,target=target,block=block,
                            planes_evaluated=len(entries),
                            planes_good=len(good),
                            qualifies_all_six_planes=bool(len(entries)==6 and len(good)==6),
                            mean_analytic_nn_pearson=float(np.mean(rnn)) if rnn else None,
                            mean_analytic_formula_pearson=float(np.mean(rf)) if rf else None,
+                           mean_formula_nn_pearson=float(np.mean(rn)) if rn else None,
+                           planes_formula_fit_bad=sum(not r["formula_fit_meets_endpoint_and_correlation"] for r in entries),
+                           planes_nn_fit_bad=sum(not r["nn_fit_meets_endpoint_and_correlation"] for r in entries),
+                           planes_shared_bias_candidate=sum(r["failure_diagnosis"]=="shared_fit_bias_candidate" for r in entries),
                            fraction_planes_good=len(good)/len(entries)))
     detail.sort(key=lambda row:(
         -row["planes_good"],-row["fraction_planes_good"],
@@ -132,6 +180,7 @@ def select_sparsity_metrics(rows,*,min_correlation=.90,
     for metric,entries in totals.items():
         nn=[r["mean_analytic_nn_pearson"] for r in entries if r["mean_analytic_nn_pearson"] is not None]
         fm=[r["mean_analytic_formula_pearson"] for r in entries if r["mean_analytic_formula_pearson"] is not None]
+        fn=[r["mean_formula_nn_pearson"] for r in entries if r["mean_formula_nn_pearson"] is not None]
         ranking.append(dict(metric=metric,
                             group_count=len(entries),
                             planes_passed_total=sum(r["planes_good"] for r in entries),
@@ -139,7 +188,10 @@ def select_sparsity_metrics(rows,*,min_correlation=.90,
                             max_planes_in_one_group=max(r["planes_good"] for r in entries),
                             full_six_plane_successes=sum(r["qualifies_all_six_planes"] for r in entries),
                             mean_analytic_nn_curve_corr=float(np.mean(nn)) if nn else None,
-                            mean_analytic_formula_curve_corr=float(np.mean(fm)) if fm else None))
+                            mean_analytic_formula_curve_corr=float(np.mean(fm)) if fm else None,
+                            mean_formula_nn_curve_corr=float(np.mean(fn)) if fn else None,
+                            total_planes_formula_fit_bad=sum(r["planes_formula_fit_bad"] for r in entries),
+                            total_planes_shared_bias_candidate=sum(r["planes_shared_bias_candidate"] for r in entries)))
     ranking.sort(key=lambda row:(
         -row["full_six_plane_successes"],
         -row["max_planes_in_one_group"],
