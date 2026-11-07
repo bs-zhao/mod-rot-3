@@ -433,7 +433,7 @@ def main():
                     {"conditional_mean":ref["conditional_std"],
                      "fraction_defined":ref["fraction_defined"]},
                     {"conditional_mean":estimated["conditional_std"]},part)
-                for part in ("ZZ","ZX","XX","FULL"]})
+                for part in ("ZZ","ZX","XX","FULL")})
         for metric in ("conditional_mean","strict_mean","conditional_rms",
                        "conditional_std","fraction_defined","model_unmasked_mean"):
             arrays[f"fitted_{name}__{metric}"]=estimated[metric]
