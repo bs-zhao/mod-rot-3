@@ -24,13 +24,13 @@ def _feature_on(points,base,derivatives):
 
 
 class LocalPolynomial:
-    def __init__(self,engine,U_all,X_eval):
+    def __init__(self,engine,U_all,X_eval,eval_idx):
         if engine._last is None:
             raise ValueError("Run the frozen numeric-Y regression first")
         self.coef=np.asarray(engine._last["coefficients"],dtype=float)
-        self.U=np.asarray(U_all,dtype=float)
+        self.U=np.asarray(U_all,dtype=float)[np.asarray(eval_idx,dtype=int)]
         self.X=np.asarray(X_eval,dtype=float)
-        self.zbasis=Features(self.U,engine.train,engine.degree_u,engine.basis)
+        self.zbasis=Features(np.asarray(U_all,dtype=float),engine.train,engine.degree_u,engine.basis)
         self.xbasis=engine.xbasis
         self.zm={}
         self.xm={}
@@ -116,10 +116,5 @@ def polynomial_field_shake(engine,A,Z,b,eval_idx,X_eval,*,fourth=True):
     """Fit six Y in rotated U, then compute *local* (not mean) derivatives."""
     fitted,mask,rmse=engine.fit_at(A,Z,b)
     U=np.asarray(Z,dtype=float)@np.asarray(A,dtype=float).T+b
-    local=LocalPolynomial(engine,U[eval_idx],X_eval)
-    # Preserve original training centering/scales: do not create
-    # Features(U_eval,train_ids) from evaluation subjects alone.
-    local.zbasis=Features(U,engine.train,engine.degree_u,engine.basis)
-    local.U=U[eval_idx]
-    local.zm={}
+    local=LocalPolynomial(engine,U,X_eval,eval_idx)
     return local,local.fields(fourth=fourth),fitted,mask,rmse
