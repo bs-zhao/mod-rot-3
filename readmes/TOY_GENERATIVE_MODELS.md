@@ -1,262 +1,309 @@
-# Toy 真实生成模型总表（T1–T11）
+# Toy 真实生成模型：C1 / C2 / C3 / CR3
 
-> **本文放在 `mod-rot-3/readmes/`，作为研究框架中「生成模型层」的独立参考。**
-> **权威来源**：[modlearn-rot-toy 原始模型目录](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/catalog/README_TOY_MODELS.md)；实际实现是该仓库的 `src/rottoy/toy_models/`、`src/rottoy/models.py`、`src/rottoy/transforms.py`、`src/rottoy/sampling.py`。
-> **核对日期**：2026-11-07。以下 T1–T11 的公式、变量定义及理论输出范围均按原 Toy 项目的代码/模型目录保留；不是从其他实验结果反推生成式。
-> **定位**：与 [Mod-Rot 总研究框架](README.md) 配合阅读。本文件是**真实解析生成函数**的说明，M001–M024 是另一个独立层面的简单性指标，不能混为一谈。
+> 本文**仅**描述当前 [mod-rot-3](https://github.com/bs-zhao/mod-rot-3) 仓库中的四个真实生成模型 C1、C2、C3、CR3，属于[研究总框架](README.md)的生成模型/数据层。
+>
+> **注意：这些模型不是另一个 modlearn-rot-toy 仓库的 T1–T11。** 本文的数值定义全部根据当前项目的生成器核对；不是从神经网络预测、旋转结果或简单性指标反推。
 
-## 阅读前必须区分的三件事
+## 1. 全局定义
 
-**（1）真实 Toy 模型 ≠ C1/C2/C3/CR3 的原始模拟数据集。** Toy 将所有基础参数和 X 坐标定义在 \([0,1]\)，由解析公式生成连续数值 Y。即使 T9 复用了 C2 的数学式、T11 复用了 CR3 的彩票模型数学式，也**没有**复用原来的参数先验、实际被试、试次设计或二元观察标签。
+对于模型 \(m\)、被试 \(s\) 和试次 \(t\)，真实生成系统为
 
-**（2）真实 Toy 函数 ≠ 神经网络近似函数。** 原始模型为 \(\eta_T(\theta,X)\)（analytic oracle）；`-id/-sig/-sq/-tanh/-sp/-exp` 只是同一基础函数的六种输出包装。Toy 项目如在 `--backend both` 下训练连续输出 MLP，它拟合的 \(\widehat F\) 不是新真实生成模型，也不是 Mod-Rot NP 的训练 checkpoint。
+\[
+T_s\sim\pi_m(T),\qquad
+X_{st}\sim\mathcal D_m\ \text{（或者读取固定 Xset）},
+\]
 
-**（3）\([0,1]\) 是解析定义域及数值积分参考区域，不应擅自称作所有模型的实际被试“先验”。** Toy 代码 `sampling.py` 用 scrambled Sobol 在单位立方体内部取积分节点（默认端点余量 `1e-4`），通常按单位立方体上的均匀参考测度数值积分。它**没有定义与 C1–CR3 真实参数先验相同的概率分布**，也没有在这些 Toy 指标实验中进行 Bernoulli choice 抽样。
+\[
+\boxed{
+\eta_{st}=f_m(T_s,X_{st}),\quad
+p_{st}=\sigma(\eta_{st}),\quad
+Y_{st}\mid T_s,X_{st}\sim\operatorname{Bernoulli}(p_{st}).
+}
+\]
+
+其中 \(\sigma(v)=1/(1+e^{-v})\)。三种输出分别是 **Logit（连续 \(\eta\)）**、**Probability（连续 \(p\)）**、**Choice（随机 0/1）**。一组参数和刺激定义一个选择概率，而不是一个确定的二元选择。
+
+**Choice 的 Hessian 约定：**单次随机 0/1 choice 没有通常意义的解析 Hessian。所谓解析 Choice Hessian 指条件期望 \(E[Y\mid T,X]=p(T,X)\) 的 Hessian；若将 Bernoulli 样本用于回归，再对拟合函数求 Hessian，得到的是平滑拟合函数的导数。
+
+| 模型 | 真实参数个数 | X 维度 | 真实参数先验 | 真实 X 产生方式 | Logit 的结构 |
+|---|---:|---:|---|---|---|
+| **C1** | 4 | 3 | 各 b 独立 N(0,0.5²) | 每被试每试次独立抽样 | 对参数和原始 X 都线性 |
+| **C2** | 4 | 4 | 各 b 独立 N(0,0.5²) | 每被试每试次独立抽样 | 对参数线性；X1 有线性及二次作用 |
+| **C3** | **6** | 4 | 各 b 独立 N(0,0.5²) | 每被试每试次独立抽样 | 对参数线性；两个二次项与 X1×X2 交互 |
+| **CR3** | 4 | 6 | Beta / 截断 Gamma / Beta / 截断 Normal | **所有被试共用同一个固定 500 试次 Xset** | 对参数非线性；CPT-like 彩票效用 |
+
+当前生成器的默认规模为：C1/C2/C3 各 5000 个被试，每位被试 300–500 试次；CR3 默认 5000 个被试，每位被试**恰好 500 试次**。这些是代码默认值，实际运行可能通过命令行指定不同被试数。
 
 ---
 
-## 原始 Toy 模型目录：基础函数、参数与连续输出范围
+## 2. C1：线性 Logit
 
-本文件是 `src/rottoy/toy_models/` 与 `src/rottoy/transforms.py` 的数学说明。基础函数统一用 **T1、T2、…** 编号。每个基础函数可以使用全部输出变换，版本名为 **`T编号-后缀`**，例如 `T9-sig`。任何输出都属于**连续数值**，`sig` 只是连续 Sigmoid 函数，不采样二分类 choice。
+真实参数
 
-## 1. 统一约定
+\[
+T=(b_1,b_2,b_3,b_4),\qquad
+b_j\overset{\text{iid}}{\sim}N(0,0.5^2).
+\]
 
-对 T 模型，令真实参数 $\theta\in[0,1]^K$，刺激输入 $X\in[0,1]^{D_X}$，基础函数为 $\eta_T(X,\theta)\in\mathbb R$。所有参数坐标和所有输入坐标**分别**在闭区间 $[0,1]$。计算时默认使用区间内部的 Sobol 节点，因此有限采样通常不能达到下表的理论端点；幂函数在 $x=0,b=0$ 等位置可能需要单独约定极限，数值实现避开这些边界。
+真实输入
 
-$$
-Y_{T,w}(X,\theta)=g_w\!\left(\eta_T(X,\theta)\right),
-\qquad u=R\theta,\qquad
-\eta'_{T,w,R}(X,u)=g_w\!\left(\eta_T(X,R^\top u)\right).
-$$
+\[
+X=(x_1,x_2,x_3),\qquad
+x_j\overset{\text{iid}}{\sim}\operatorname{Uniform}(-1,1).
+\]
 
-$R$ 是正交旋转。**旋转后 $u$ 不必仍位于 $[0,1]^K$**，但相应的真实参数 $\theta=R^\top u$ 必须处于原物理定义域。范围与模型参数化无关：正交重参数化不改变在相同物理域上的 $Y$ 理论上下界。
+每个被试的每个试次都重新生成三个 X；并不存在跨被试共享的固定 Xset。
 
-### 全部变换：每个 T 模型自动拥有以下六个后缀
+**生成公式**
 
-| 版本后缀 | 连续输出公式 $g_w(t)$ | 固有值域 | 可逆性 | 结构作用 |
-|---|---|---|---|---|
-| **`-id`** | $t$ | $\mathbb R$ | 是 | 保留原函数 |
-| **`-sig`** | $\sigma(t)=1/(1+e^{-t})$ | $(0,1)$ | 是；logit | 有界饱和，但**不是 Bernoulli** |
-| **`-sq`** | $t^2$ | $[0,\infty)$ | 否 | 损失符号，引入平方和乘积 |
-| **`-tanh`** | $\tanh(t)$ | $(-1,1)$ | 是；atanh | 对称饱和 |
-| **`-sp`** | $\mathrm{sp}(t)=\log(1+e^t)$ | $(0,\infty)$ | 是 | 正值且光滑，近指数/线性 |
-| **`-exp`** | $e^t$ | $(0,\infty)$ | 是；log | 正值和乘性效应 |
+\[
+\boxed{
+\eta_{\mathrm{C1}}=
+b_1+\sqrt3\,b_2x_1+\sqrt3\,b_3x_2+\sqrt3\,b_4x_3.
+}
+\]
 
-上表的“固有值域”是变换作用于全部实数时的值域；**具体 toy 的 $Y$ 有更窄的实际理论上下界**，详见下方第 3 节。
+然后用统一的 sigmoid 得到 \(p\)，再以 Bernoulli(p) 得到 choice。\(b_1\) 控制总体选择倾向，\(b_2,b_3,b_4\) 分别控制三个 X 方向的斜率。由于 Uniform(-1,1) 的方差为 1/3，乘以 \(\sqrt3\) 后相应设计特征的方差为 1。
 
-**T11 特别说明：** T11 与其他 toy 一样使用单位立方体数学输入；其四个归一化参数分别还原成 CR3 物理参数，X 中四个金额坐标还原到美元单位。这样既保留原 CR3 效用公式，也维持统一 Toy 数值积分接口。
+**解析导数结构**：\(\nabla_T^2\eta=0\)，\(\nabla_X^2\eta=0\)；但 \(\nabla_T\nabla_X\eta\) 不为零。施加外层 sigmoid 后 \(H_{TT}(p)\) 通常不为零。因而只依赖 Logit-方向 ZZ 非零曲率的简单性指标在 C1 上通常缺乏旋转识别能力。
 
-## 2. 模型公式速查
+**源代码**：[c1_linear_logit.py](../np/src/modlearn_rot/generators/choice/c1_linear_logit.py)。
 
-**每个 Toy 一个完整的基础生成公式**；不同输出版本统一由第 1 节的后缀函数作用于该式，不重复定义模型。
+---
 
-**T1**
+## 3. C2：共享 X1 的线性与二次作用
 
-$$
-\eta_1=ax^b
-$$
+真实参数仍为四维：
 
-**T2**
+\[
+T=(b_1,b_2,b_3,b_4),\qquad
+b_j\overset{\text{iid}}{\sim}N(0,0.5^2).
+\]
 
-$$
-\eta_2=ax_1+bx_2+c
-$$
+原始输入的四列顺序**必须保留**：
 
-**T3**
+\[
+X=(X_{1A},X_{1B},X_{2A},X_{2B}),
+\]
 
-$$
-\eta_3=ax_1+abx_2
-$$
+各原始 X 坐标独立服从 Uniform(-1,1)，每被试、每试次重新采样。NP 接收的是**这四个原始输入**，不是 Oracle 的手工设计基函数。
 
-**T4**
+定义：
 
-$$
-\eta_4=ax_1^b+cdx_2^b
-$$
-
-**T5**
-
-$$
-\eta_5=ax_1+bx_1^2+cx_2+d
-$$
-
-**T6**
-
-$$
-\eta_6=ax_1+bx_2+cx_1x_2+d
-$$
-
-**T7**
-
-$$
-\eta_7=ae^{bx}
-$$
-
-**T8**
-
-$$
-\eta_8=ax_1^b+cdx_2^b+cx_3
-$$
-
-**T9**
-
-$$
-\eta_9=b_1+\sqrt3\,b_2(X_{1A}-X_{1B})+\frac{3\sqrt5}{2}b_3(X_{1A}^2-X_{1B}^2)+\sqrt3\,b_4(X_{2A}-X_{2B})
-$$
-
-**T10**
-
-$$
-\eta_{10}=ax_1^b+acx_2^b+d
-$$
-
-**T11**
-
-$$
+\[
 \begin{aligned}
-\eta_{11}=\tau\Big[
-&\sigma\!\left(\gamma\log\frac{q_A}{1-q_A}\right)
- \left(\frac{g_A}{100}\right)^\alpha
--\lambda\sigma\!\left(\gamma\log\frac{r_A}{1-r_A}\right)
- \left(\frac{\ell_A}{100}\right)^\alpha\\
-&-\sigma\!\left(\gamma\log\frac{q_B}{1-q_B}\right)
- \left(\frac{g_B}{100}\right)^\alpha
-+\lambda\sigma\!\left(\gamma\log\frac{r_B}{1-r_B}\right)
- \left(\frac{\ell_B}{100}\right)^\alpha
-\Big].
+\Delta X_1&=X_{1A}-X_{1B},\\
+\Delta X_2&=X_{2A}-X_{2B},\\
+\Delta Q_1&=(3X_{1A}^2-1)-(3X_{1B}^2-1).
 \end{aligned}
-$$
+\]
 
-其中 $L\in\{A,B\}$，概率与补概率按原 CR3 代码分别裁剪：
+**生成公式**
 
-$$
-q_L=\min(1-\varepsilon,\max(\varepsilon,p_L)),\qquad
-r_L=\min(1-\varepsilon,\max(\varepsilon,1-p_L)),\qquad
-\varepsilon=10^{-12}.
-$$
+\[
+\boxed{
+\eta_{\mathrm{C2}}=
+b_1+\sqrt3\,b_2\Delta X_1
++\frac{\sqrt5}{2}b_3\Delta Q_1
++\sqrt3\,b_4\Delta X_2.
+}
+\]
 
-**T11-id** 是上述基础 logit；**T11-sig** 再套最外层 sigmoid，得到原 CR3 的连续概率函数。公式内部用于概率加权的 sigmoid 始终保留。
+这里 \(b_1\) 是选项 A 的截距偏置；\(b_2\) 对应 X1 线性差值；\(b_3\) 对应 X1 二次差值；\(b_4\) 对应 X2 线性差值。**同一个 X1 家族对应不同的参数方向**，是验证函数效应是否可分的一个重要难点。
 
-### 参数、输入与输出范围
+**解析导数结构**：尽管对 X 二次非线性，Logit 对 \(T\) 仍是严格线性，所以 \(H_{TT}(\eta)=0\)；\(H_{TX}(\eta)\) 随 X 变化，\(H_{XX}(\eta)\) 出现非零二次曲率。外层 sigmoid 使 Probability 对 T 的曲率一般非零。
 
-各 Toy 的**每个参数和 X 坐标**都在 $[0,1]$。T11 使用下方定义的物理单位映射。
-
-| ID | 参数 | X | 基础 $\eta_T$ 理论边界 |
-|---|---|---|---|
-| **T1** | $a,b$ | $x$ | $[0,1]$ |
-| **T2** | $a,b,c$ | $x_1,x_2$ | $[0,3]$ |
-| **T3** | $a,b$ | $x_1,x_2$ | $[0,2]$ |
-| **T4** | $a,b,c,d$ | $x_1,x_2$ | $[0,2]$ |
-| **T5** | $a,b,c,d$ | $x_1,x_2$ | $[0,4]$ |
-| **T6** | $a,b,c,d$ | $x_1,x_2$ | $[0,4]$ |
-| **T7** | $a,b$ | $x$ | $[0,e]$ |
-| **T8** | $a,b,c,d$ | $x_1,x_2,x_3$ | $[0,3]$ |
-| **T9** | $b_1,b_2,b_3,b_4$ | $X_{1A},X_{1B},X_{2A},X_{2B}$ | $[-A,1+A]$ |
-| **T10** | $a,b,c,d$ | $x_1,x_2$ | $[0,3]$ |
-| **T11** | $\theta^*_\alpha,\theta^*_\lambda,\theta^*_\gamma,\theta^*_\tau$ | $x_1,\ldots,x_6$ | $\subseteq[-B,B]$ |
-
-其中 $A=2\sqrt3+3\sqrt5/2\approx6.8182$，$B=24\cdot2^{0.999}\approx47.96674$。T11 的 $[-B,B]$ 是**保守输出界**（保证覆盖输出，未必是最窄值域）；T1–T10 给出解析边界。
-
-**T11 的单位映射：** $(g_A,\ell_A,p_A,g_B,\ell_B,p_B)=(200x_1,200x_2,x_3,200x_4,200x_5,x_6)$，其中 $g,\ell$ 是非负美元金额；$\alpha=0.02+0.979\theta^*_\alpha$、$\lambda=0.3+4.7\theta^*_\lambda$、$\gamma=0.02+0.979\theta^*_\gamma$、$\tau=0.5+3.5\theta^*_\tau$。它保留 [原 CR3 数学公式](https://github.com/Cognition-Decision-Modeling-Lab/modlearn-rot-2/blob/main/experiment/choice/research_based/s0_cr2_design_recovery.py)，但使用 Toy 的统一数值求积节点，并非原数据集的 500 个刺激或其参数先验。
-
-**结构速记：** T1/T7 幅度与形状；T2 线性效应；T3 $ab$ 乘积；T4 $cd$ 不可识别；T5 同一 X 的线性与二次效应；T6 $x_1x_2$ 项；T8 为 T4 加入 $cx_3$；T9 原 C2 函数；T10 共享指数及 $ac$ 项；T11 原 CR3 效用差函数。
-
-## 3. 每个 toy 的六种 $Y$ 理论取值范围
-
-令 $S(t)=\sigma(t)$、$Q(t)=\tanh(t)$、$P(t)=\log(1+e^t)$，以及上面定义的 $A=2\sqrt3+3\sqrt5/2$ 和 $B=24\cdot2^{0.999}$。因为 $S,Q,P,\exp$ 都严格单调，所以它们的输出边界直接由 $\eta$ 的边界映射得到。平方版本在跨越零点时要特别处理。
-
-| ID | `-id`：$Y=\eta$ | `-sig`：$Y=S(\eta)$ | `-sq`：$Y=\eta^2$ |
-|---|---|---|---|
-| **T1** | $[0,1]$ | $[\tfrac12,S(1)]$ | $[0,1]$ |
-| **T2** | $[0,3]$ | $[\tfrac12,S(3)]$ | $[0,9]$ |
-| **T3** | $[0,2]$ | $[\tfrac12,S(2)]$ | $[0,4]$ |
-| **T4** | $[0,2]$ | $[\tfrac12,S(2)]$ | $[0,4]$ |
-| **T5** | $[0,4]$ | $[\tfrac12,S(4)]$ | $[0,16]$ |
-| **T6** | $[0,4]$ | $[\tfrac12,S(4)]$ | $[0,16]$ |
-| **T7** | $[0,e]$ | $[\tfrac12,S(e)]$ | $[0,e^2]$ |
-| **T8** | $[0,3]$ | $[\tfrac12,S(3)]$ | $[0,9]$ |
-| **T9** | $[-A,1+A]$ | $[S(-A),S(1+A)]$ | $[0,(1+A)^2]$ |
-| **T10** | $[0,3]$ | $[\tfrac12,S(3)]$ | $[0,9]$ |
-| **T11** | $[-B,B]$ | $[S(-B),S(B)]$ | $[0,B^2]$ |
-
-| ID | `-tanh`：$Y=Q(\eta)$ | `-sp`：$Y=P(\eta)$ | `-exp`：$Y=e^\eta$ |
-|---|---|---|---|
-| **T1** | $[0,Q(1)]$ | $[\log2,P(1)]$ | $[1,e]$ |
-| **T2** | $[0,Q(3)]$ | $[\log2,P(3)]$ | $[1,e^3]$ |
-| **T3** | $[0,Q(2)]$ | $[\log2,P(2)]$ | $[1,e^2]$ |
-| **T4** | $[0,Q(2)]$ | $[\log2,P(2)]$ | $[1,e^2]$ |
-| **T5** | $[0,Q(4)]$ | $[\log2,P(4)]$ | $[1,e^4]$ |
-| **T6** | $[0,Q(4)]$ | $[\log2,P(4)]$ | $[1,e^4]$ |
-| **T7** | $[0,Q(e)]$ | $[\log2,P(e)]$ | $[1,e^e]$ |
-| **T8** | $[0,Q(3)]$ | $[\log2,P(3)]$ | $[1,e^3]$ |
-| **T9** | $[Q(-A),Q(1+A)]$ | $[P(-A),P(1+A)]$ | $[e^{-A},e^{1+A}]$ |
-| **T10** | $[0,Q(3)]$ | $[\log2,P(3)]$ | $[1,e^3]$ |
-| **T11** | $[Q(-B),Q(B)]$ | $[P(-B),P(B)]$ | $[e^{-B},e^B]$ |
-
-**区分理论输出范围和有限数据观察范围：** T1–T10 为解析边界（幂函数端点按极限理解）。T11 六种输出范围由保守界 $[-B,B]$ 映射得到，未必是精确最窄区间。`--u-points` / `--x-points` 只改变数值求积精度；不应该根据样本最小值/最大值重写这里的理论上下界。
-
-另外，以上是**解析生成函数**的严格范围。神经近似 $F$ 的输出头会约束到每种变换本身的值域，但不一定严格满足特定 T 模型更窄的上下界。要检查 $F$ 是否越界，应将神经预测与这些理论范围对照。
-
-## 4. 运算、数值取点和新增模型
-
-- `--models T3-id T3-sig T9-sq`：一次选择多个函数版本；裸 `T3` 是 `T3-id` 的简写。
-- `--u-points 100 --x-points 100`：指定 U/θ 与 X 的数学求积节点数；不是被试或试次。
-- `--x-mode axis_sweeps`：逐一遍历 X 维，每个取固定网格，其他 X 维度固定 0.5。
-- `--pairs all --angles 181`：遍历全部参数轴对的平面旋转。
-- `--analysis-scale raw|log|inverse`：普通指标分析尺度；平方包装不可逆。
-- `--operator-scale raw|inverse`：功能算子（M017–M024）的独立分析尺度。
-
-新增下一项 T12 时，在 `src/rottoy/toy_models/t12.py` 增加一次 `@register_model("T12", k=..., dx=..., description=..., eta_bounds=(L,H))`，无需修改其他模型、输出变换、求积或绘图代码。**必须同步维护本文件：参数/X 取值范围、基础函数、$\eta$ 精确取值范围和六个 $Y$ 版本的输出上下界。**
-
-
+**源代码**：[c2_shared_x_quadratic.py](../np/src/modlearn_rot/generators/choice/c2_shared_x_quadratic.py)。
 
 ---
 
-## 5. 原始生成模型参数的角色速查
+## 4. C3：六参数的双二次作用与 X1×X2 交互
 
-本节是根据以上公式的结构标注，**不是新增模型定义**。所有参数和 X 在 Toy 中均定义于 \([0,1]\)，T11 是先转换回 CR3 物理单位后计算。
+**真实参数有六个**：
 
-| 模型 | 参数含义 | 模型结构要点 |
+\[
+T=(b_1,b_2,b_3,b_4,b_5,b_6),\qquad
+b_j\overset{\text{iid}}{\sim}N(0,0.5^2).
+\]
+
+仍然使用 C2 的四列原始输入 \(X=(X_{1A},X_{1B},X_{2A},X_{2B})\)，每个坐标独立 Uniform(-1,1)，每位被试的每个试次单独采样。
+
+在 C2 的差值基函数之外，增加：
+
+\[
+\Delta Q_2=(3X_{2A}^2-1)-(3X_{2B}^2-1),
+\]
+
+\[
+\Delta C=X_{1A}X_{2A}-X_{1B}X_{2B}.
+\]
+
+**生成公式**
+
+\[
+\boxed{
+\begin{aligned}
+\eta_{\mathrm{C3}}={}&b_1+\sqrt3\,b_2\Delta X_1
++\frac{\sqrt5}{2}b_3\Delta Q_1
++\sqrt3\,b_4\Delta X_2\\
+&+\frac{\sqrt5}{2}b_5\Delta Q_2
++3b_6\Delta C.
+\end{aligned}
+}
+\]
+
+| 参数 | 真实功能 |
+|---|---|
+| \(b_1\) | 整体 choice-bias |
+| \(b_2\) | X1 的线性差值 |
+| \(b_3\) | X1 的二次差值 |
+| \(b_4\) | X2 的线性差值 |
+| \(b_5\) | X2 的二次差值 |
+| \(b_6\) | 同一选项内 X1×X2 的交互差值 |
+
+C3 是 C2 的嵌套扩展：令 \(b_5=b_6=0\) 即恢复 C2 的 Logit。C3 与 C2 的共同点是对真实 T **仍然线性**；其新的难点来自多个 X 维度共享参数作用、两个二次方向和混合 \(X_1X_2\) 作用。
+
+**解析导数结构**：\(H_{TT}(\eta)=0\)，但 \(H_{TX}\) 的 X 依赖和 \(H_{XX}\) 的混合结构更丰富。因此若希望恢复 C3 的六条参数轴，不能仅依靠 Logit 的 \(H_{TT}\) 稀疏性。
+
+**源代码**：[c3_multi_nonlinear_logit.py](../np/src/modlearn_rot/generators/choice/c3_multi_nonlinear_logit.py)。
+
+---
+
+## 5. CR3：CPT-like 四参数选择模型
+
+真实参数为
+
+\[
+T=(\alpha,\lambda,\gamma,\tau).
+\]
+
+**真实先验**（四维独立抽样）：
+
+| 参数 | 原始生成器的分布 | 作用 |
 |---|---|---|
-| T1 | \(a\)：幅度；\(b\)：幂指数 | 幅度与函数形状共同决定 \(a x^b\) |
-| T2 | \(a,b\)：不同 X 的线性系数；\(c\)：截距 | 完全线性的加性对照 |
-| T3 | \(a\)：整体幅度；\(b\)：仅影响第二个 X 作用的相对系数 | \((a,b)\) 通过乘积 \(ab\) 耦合 |
-| T4 | \(a\)：第一项幅度；\(b\)：共享幂指数；\(c,d\)：第二项幅度的乘积分量 | **原代码显式标记 `identifiable=False`**：仅有 \(cd\)，不能把 c/d 单独识别出来 |
-| T5 | \(a\)：\(x_1\) 线性；\(b\)：\(x_1^2\)；\(c\)：\(x_2\)；\(d\)：截距 | 同一 X 上线性与二次共存 |
-| T6 | \(a,b\)：两个 X 主效应；\(c\)：\(x_1x_2\) 交互；\(d\)：截距 | X×X 交互对照 |
-| T7 | \(a\)：幅度；\(b\)：指数速率 | 指数型响应变化 |
-| T8 | 继承 T4 的 \(a,b,c,d\)，额外加入 \(c x_3\) | 给 c 增加独立可观察作用，是原 T4 的可识别性对照 |
-| T9 | \(b_1\)：截距；\(b_2,b_3\)：X1 差值的线性/二次系数；\(b_4\)：X2 差值斜率 | C2 原数学结构的单位立方体 Toy 版本 |
-| T10 | \(a\)：共同幅度；\(b\)：共享幂指数；\(c\)：第二项的相对幅度；\(d\)：截距 | 两项共用 a/b，包含 \(ac\) |
-| T11 | 归一化的 \(\alpha,\lambda,\gamma,\tau\) 分别对应效用幂指数、损失厌恶、概率加权、logit 缩放 | CR3 四参数函数结构、但 Toy 的单位立方体积分/输入设计 |
+| \(\alpha\) | Beta(12,3) | 正负金额的效用幂指数 |
+| \(\lambda\) | Gamma(shape=9, scale=0.22)，超出 [0.3,5] 时重新抽样 | 损失厌恶 |
+| \(\gamma\) | Beta(9,4) | 概率加权形状 |
+| \(\tau\) | Normal(2.2,0.55²)，截断到 [0.5,4] | 效用差转化为 Logit 的尺度 |
 
-### T9 与 C2 的精确关系
+每个 X 行含两个彩票选项，列顺序为
 
-- **相同**：\(\eta\) 的四参数函数形式，以及原始 X 列顺序 \((X_{1A},X_{1B},X_{2A},X_{2B})\)。
-- **不同**：原 C2 的 \(b_j\) 是独立 \(N(0,0.5^2)\)，原 X 列独立 \(\mathrm{Uniform}(-1,1)\)，且按被试/试次重新抽取；Toy T9 的参数及 X 在单位立方体上取值并由 Sobol 网格积分。
-- **因此**：即使函数公式完全相同，Hessian 积分所得均值、稀疏性、Fisher 或旋转损失也可能改变。对比必须控制积分测度。
+\[
+X=(g_A,\ell_A,p_A,g_B,\ell_B,p_B),
+\]
 
-### T11 与 CR3 的精确关系
+其中 \(g\) 为非负 gain 金额，\(\ell\) 为非负 loss magnitude（损失结果为 \(-\ell\)），\(p\) 是获得 gain 的概率。
 
-- **相同**：原 CR3 的 \(\eta=\tau(V_A-V_B)\) 与 \(w(p,\gamma)=\sigma(\gamma\,\mathrm{logit}(\mathrm{clip}(p)))\)，包括对 \(p\) 和 \(1-p\) **分别裁剪**；`T11-sig` 即该函数外套选择概率 sigmoid。
-- **不同**：Toy 的归一化四参数分别**仿射**变到 \(\alpha\in[.02,.999]\)、\(\lambda\in[.3,5]\)、\(\gamma\in[.02,.999]\)、\(\tau\in[.5,4]\)，X 的金额列乘以 200 美元。原 CR3 的参数先验是 Beta / Gamma / Beta / truncated-Normal，X 为固定 500 个经过设计的彩票比较试次；Toy 在单位立方体上使用 Sobol/轴扫描点，不复制真实 500 Xset。
-- **关键结果**：T11 与 CR3 的数学函数结构可同源，但**积分统计量与旋转最小值不必完全相同**。在比较复杂度指标前，最好统一物理坐标、参数积分权重和 X bank。
+首先定义概率加权：
 
-## 6. 放入整体研究框架时的约定
+\[
+c(p)=\operatorname{clip}(p,10^{-12},1-10^{-12}),\qquad
+w(p;\gamma)=\sigma\!\left(\gamma\,\operatorname{logit}(c(p))\right).
+\]
 
-1. **L1 生成函数**：本文件给出 T1–T11 的基础 \(\eta_T\)，以及六种确定性连续 \(Y=g(\eta)\)。
-2. **L3 Hessian 来源**：对 Toy 解析函数直接求导是 oracle；如果另行训练代理函数，则须区分 \(\eta\) / \(\widehat F\) 的预测与导数误差。原 Toy 的神经端是连续输出 MLP；**不可将其称为已经训练的 NP decoder**。
-3. **L4 积分**：记录 \(n_\theta,n_X\)、Sobol seed、X mode、单位立方体坐标与是否做物理尺度映射；Sobol 积分点不是原数据中的“500 次试次”。
-4. **L5 简单性指标**：M001–M024 是另外的指标目录，可参考 [Toy 原始指标 README](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/catalog/README_METRICS.md)；指标成功与否不是生成模型的一部分。
-5. **L6 旋转**：\(\theta\mapsto u=R\theta\)，实际评估 \(\eta_T(R^\top u,X)\)；旋转后 u 不一定在单位立方体内，原坐标 \(\theta\) 仍要处于定义域。两两扫描和三/四维联合旋转只是不同的坐标变换，不是新的 Toy 生成函数。
-6. **未来扩展**：新增 T12 时先在 Toy 源码注册 \(\eta_{12}\) 与理论 \(\eta\) 范围，再同步更新原 Toy 的模型目录和本研究总表；不要仅靠实验输出 CSV 来推断生成公式。
+对于彩票选项 \(L\in\{A,B\}\)，定义
 
-### 溯源链接
+\[
+V_L=w(p_L;\gamma)\left(\frac{g_L}{100}\right)^\alpha
+-\lambda\,w(1-p_L;\gamma)\left(\frac{\ell_L}{100}\right)^\alpha.
+\]
 
-- [原 Toy T1–T11 数学目录](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/catalog/README_TOY_MODELS.md)
-- [Toy 真实生成器实现目录](https://github.com/bs-zhao/modlearn-rot-toy/tree/main/src/rottoy/toy_models)
-- [Toy 的统一输出变换](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/src/rottoy/transforms.py)
-- [Toy 的参数及 X 数值积分节点](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/src/rottoy/sampling.py)
-- [Toy 中 T11 与 CR3 数学公式一致性的测试](https://github.com/bs-zhao/modlearn-rot-toy/blob/main/tests/test_t11_cr3.py)
+最终真实生成公式为
 
-> **一句话**：这 11 个真实解析生成模型、六种输出包装及其定义域/物理映射是 Toy 的 **ground truth**；以后无论换 Hessian 提取器、积分方案、简单性指标还是 SO(d) 旋转，都不应默默改动这层。
+\[
+\boxed{
+\eta_{\mathrm{CR3}}=\tau(V_A-V_B),\quad
+p_{\mathrm{CR3}}=\sigma(\eta_{\mathrm{CR3}}),\quad
+Y\sim\operatorname{Bernoulli}(p_{\mathrm{CR3}}).
+}
+\]
+
+**代码忠实性要求**：\(w(p;\gamma)\) 与 \(w(1-p;\gamma)\) 分别调用，并对 \(p\) 和 \(1-p\) **各自独立裁剪**；不要擅自用 \(1-w(p;\gamma)\) 代替损失项加权。
+
+### CR3 固定 500 试次 Xset
+
+**与 C1–C3 不同，CR3 不为每位被试重新采样 X。** 所有被试使用完全同一个固定 \(500\times6\) 的 bank，来自先前 CR2 四参数固定刺激设计，混入指定的特殊条件，并排除严格一阶随机占优（FOSD）的试次：
+
+| 条件类型 | 固定行数 | 结构 |
+|---|---:|---|
+| gain_only | 60 | 两个选项的 loss magnitude 为 0 |
+| gamma_neutral | 60 | 两个选项的 gain probability 为 0.5 |
+| loss_only | 40 | 两个选项的 gain 金额为 0 |
+| general_CR2 | 340 | 从原 CR2 非支配一般设计中抽样，必要时补充候选 |
+| **总计** | **500** | 全体被试共享同一 Xset |
+
+这里**没有重新做 Fisher 优化**。固定 Xset 的文件为：
+
+outputs/choice/CR3/s0_design/CR3_4P_fixed500.npz
+
+原始设计脚本的默认 design seed 为 20261023；默认 data seed 为 20261028。运行元信息中的实际 seed 和 bank hash 应作为可复现研究的最终记录。
+
+**CR3 Hessian 的特殊难点：**
+
+1. 与 C1–C3 相比，Logit \(\eta_{\mathrm{CR3}}\) 对 T 本身**非线性**，因此 \(H_{TT}(\eta)\) 通常非零。
+2. 当 gain/loss amount 为 0 且 \(\alpha\in(0,1)\) 时，相关 X 金额导数可能未定义。应区分 ZZ 与包含金额 X 导数的 ZX/XX 有效域。
+3. 对 X 求平均时，应明确是使用真实固定 500 行，还是仅使用可微子集；对真实 T 先验积分和对模拟被试的 T 或 NP Z 经验分布求平均是不同实验因素。
+
+**源代码**：[CR3 的固定 Xset 与模拟数据](../np/reference/cr3/s0_s1_cr3.py)、[CR3 的真实先验与效用公式](../np/reference/s0_cr2_design_recovery.py)、[解析 Hessian 实现](../math/04_cr3_zx_hessian_threeway/oracle.py)。
+
+---
+
+## 6. 四个模型在 Hessian 简单性研究中的对照意义
+
+前三个模型都是
+
+\[
+\eta(T,X)=T^\top\phi(X)
+\]
+
+形式。因此必然有
+
+\[
+H_{TT}(\eta)=0,\qquad
+H_{TX}(\eta)=J_\phi(X)^\top,\qquad
+H_{XX}(\eta)=\sum_j T_j H_{XX}(\phi_j).
+\]
+
+但对 \(p=\sigma(\eta)\)，仍有
+
+\[
+H_{TT}(p)=\sigma''(\eta)\,\phi(X)\phi(X)^\top,
+\]
+
+一般非零。因此**Logit 的 ZZ/TT Hessian 完全为零不是参数轴被成功恢复**：它可能使所有旋转方向的指标都相同，无法辨识正确坐标。此时必须考虑 TX/ZX、梯度作用、X 相关导数或函数算子。
+
+| 解析性质 | C1 | C2 | C3 | CR3 |
+|---|---|---|---|---|
+| 参数维度 | 4 | 4 | **6** | 4 |
+| \(H_{TT}(\eta)\) | 零 | 零 | 零 | 通常非零 |
+| \(H_{XX}(\eta)\) | 零 | 有非零二次项 | 有二次和混合项 | 非线性，部分边界未定义 |
+| \(H_{TX}(\eta)\) | 简单、对 X 常量 | 随 X 变 | 随 X 变、结构更复杂 | 非线性 |
+| \(H_{TT}(p)\) | 通常非零 | 通常非零 | 通常非零 | 通常非零 |
+| X 跨被试共享？ | 否 | 否 | 否 | **是** |
+
+### 之后的 NP / Hessian 层不属于真实生成模型本身
+
+每个模型对应独立训练的 NP，但其 latent dimension 要按具体 checkpoint 验证（例如 C3 的真参数为 6，CR3 也存在 L4/L8 的网络配置）。NP 的 \(Z\) **不是**真实参数 \(T\)，可以通过后验线性映射 \(\widehat T=A_*Z+b\) 检验可恢复性。
+
+下游三条 Hessian 计算路径应统一坐标和数值评价点：
+
+- **analytic**：直接对本 README 的 \(\eta\)/\(p\) 求导（在 Z/U 坐标中需相应的 Jacobian 转换）。
+- **formula_y**：本 README 的解析式只负责生成数值 (T,X,Y) 或 (U,X,Y)；同一数据驱动估计器通过数值 Y 拟合函数再求导。
+- **nn_y**：将冻结 NP 的 Z、X 输入 decoder 生成数值 Y，再用同一数据驱动估计器求导；不对 NN 本身求导。
+
+Hessian 估计方式、Xset 积分、参数先验/样本平均、简单性指标、二维/三维/四维旋转都属于**另一个独立实验维度**，详见[研究总体框架](README.md)。
+
+---
+
+## 7. 实现文件与事实来源
+
+| 模型 | 当前仓库的真实生成实现 |
+|---|---|
+| C1 | [np/src/modlearn_rot/generators/choice/c1_linear_logit.py](../np/src/modlearn_rot/generators/choice/c1_linear_logit.py) |
+| C2 | [np/src/modlearn_rot/generators/choice/c2_shared_x_quadratic.py](../np/src/modlearn_rot/generators/choice/c2_shared_x_quadratic.py) |
+| C3 | [np/src/modlearn_rot/generators/choice/c3_multi_nonlinear_logit.py](../np/src/modlearn_rot/generators/choice/c3_multi_nonlinear_logit.py) |
+| CR3 | [np/reference/cr3/s0_s1_cr3.py](../np/reference/cr3/s0_s1_cr3.py)、[np/reference/s0_cr2_design_recovery.py](../np/reference/s0_cr2_design_recovery.py) |
+
+实际按被试抽样/保存的通用实现见 [dataset.py](../np/src/modlearn_rot/generators/dataset.py)，生成入口为 [np/s1_generate.py](../np/s1_generate.py)。原始数据存于 outputs/choice/<MODEL>/，不随代码提交到 GitHub；实际随机种子、数据与 checkpoint hash 应以相应运行 manifest 为准。
+
+**本项目只有 C1、C2、C3、CR3 这四个真实 Toy 生成模型；本 README 不再包含 T1–T11。**
