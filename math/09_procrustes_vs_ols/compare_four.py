@@ -5,6 +5,8 @@ import json
 from pathlib import Path
 
 MODELS = {'C1':4, 'C2':4, 'C3':6, 'CR3':4}
+# C-models use beta=5e-4, but the available frozen CR3 NP uses beta=1e-4.
+DEFAULT_BETA = {'C1':0.0005, 'C2':0.0005, 'C3':0.0005, 'CR3':0.0001}
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -15,7 +17,10 @@ def tag(beta, sparse, cmin, cmax, dim):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--beta',type=float,default=.0005)
+    p.add_argument('--beta',type=float,default=.0005,
+                   help='Beta for C1/C2/C3 (default 0.0005)')
+    p.add_argument('--cr3-beta',type=float,default=.0001,
+                   help='Independent CR3 beta (default 0.0001)')
     p.add_argument('--lambda-sparse',type=float,default=0.)
     p.add_argument('--context-min',type=float,default=.25)
     p.add_argument('--context-max',type=float,default=.80)
@@ -24,12 +29,13 @@ def main():
     args=p.parse_args()
     rows=[]
     for model, dim in MODELS.items():
-        path=args.root/model/tag(args.beta,args.lambda_sparse,args.context_min,args.context_max,dim)/f'repeat{args.repeat:02d}'/'summary.json'
+        beta = args.cr3_beta if model == 'CR3' else args.beta
+        path=args.root/model/tag(beta,args.lambda_sparse,args.context_min,args.context_max,dim)/f'repeat{args.repeat:02d}'/'summary.json'
         if not path.is_file():
             raise FileNotFoundError(f'Run {model} first: {path}')
         report=json.loads(path.read_text(encoding='utf-8'))
         for method, scores in report['test_primary'].items():
-            rows.append(dict(model=model,dim=dim,method=method,**scores))
+            rows.append(dict(model=model,dim=dim,beta=beta,method=method,**scores))
     args.root.mkdir(parents=True,exist_ok=True)
     path=args.root/'four_models_test_comparison.csv'
     with path.open('w',newline='',encoding='utf-8') as f:
@@ -37,7 +43,7 @@ def main():
     print('Wrote',path)
     for model in MODELS:
         items=[r for r in rows if r['model']==model]
-        print(model)
+        print(f"{model} (beta={items[0]['beta']:g})")
         for r in items:
             print(f"  {r['method']:34s} diag|r|={r['abs_diag_mean']:.4f} "
                   f"offdiag-max={r['abs_offdiag_max']:.4f} R2={r['mean_r2']:.4f}")
