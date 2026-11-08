@@ -264,7 +264,7 @@ def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--model',required=True,choices=tuple(MODELS))
     p.add_argument('--beta',type=float,default=None,
-                   help='NP beta; default 0.0005 for C1/C2/C3 and 0.0001 for CR3')
+                   help='NP beta; default 0.0005 for C1/C2/C3 and 0.00005 for CR3')
     p.add_argument('--lambda-sparse',type=float,default=0.)
     p.add_argument('--context-min',type=float,default=.25)
     p.add_argument('--context-max',type=float,default=.80)
@@ -274,7 +274,7 @@ def main(argv=None):
     p.add_argument('--no-plots',action='store_true')
     p.add_argument('--max-scatter',type=int,default=1200)
     args=p.parse_args(argv)
-    if args.beta is None: args.beta = .0001 if args.model == 'CR3' else .0005
+    if args.beta is None: args.beta = .00005 if args.model == 'CR3' else .0005
     if args.latent_dim is None:args.latent_dim=MODELS[args.model]
     if args.latent_dim!=MODELS[args.model]:p.error(f'{args.model} needs dim={MODELS[args.model]}')
     if args.beta<0 or args.lambda_sparse<0 or args.repeat<1 or args.max_scatter<1:p.error('Invalid argument')
