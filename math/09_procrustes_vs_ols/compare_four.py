@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 
 MODELS = {'C1':4, 'C2':4, 'C3':6, 'CR3':4}
-# C-models use beta=5e-4, but the available frozen CR3 NP uses beta=1e-4.
-DEFAULT_BETA = {'C1':0.0005, 'C2':0.0005, 'C3':0.0005, 'CR3':0.0001}
+# C-models use beta=5e-4, but the selected CR3 L4 NP uses beta=5e-5.
+DEFAULT_BETA = {'C1':0.0005, 'C2':0.0005, 'C3':0.0005, 'CR3':0.00005}
 ROOT = Path(__file__).resolve().parents[2]
 
 
@@ -20,7 +20,7 @@ def main():
     p.add_argument('--beta',type=float,default=DEFAULT_BETA['C1'],
                    help='Beta for C1/C2/C3 (default 0.0005)')
     p.add_argument('--cr3-beta',type=float,default=DEFAULT_BETA['CR3'],
-                   help='Independent CR3 beta (default 0.0001)')
+                   help='Independent CR3 beta (default 0.00005)')
     p.add_argument('--lambda-sparse',type=float,default=0.)
     p.add_argument('--context-min',type=float,default=.25)
     p.add_argument('--context-max',type=float,default=.80)
