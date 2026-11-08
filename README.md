@@ -1,5 +1,7 @@
 # mod-rot-3
 
+**New research plan:** [Orthogonal rotation, scale-invariant Hessian, and parameter-axis identifiability](readmes/ORTHOGONAL_ROTATION_AND_HESSIAN_PLAN.md) — detailed mathematical search space, six-angle SO(4)/full O(d), signed permutations, Z-score Hessian invariances, supervised-oracle limits, and G0–G4 validation roadmap.
+
 **Research architecture:** [readmes/README.md](readmes/README.md) — 中文研究总览：C1/C2/C3/CR3 生成模型、NP/Z、Y 类型、三条 Hessian 计算路径、积分/平均、Hessian 准确性、简单性指标、旋转与验证分层。
 
 **Ground-truth generators:** [readmes/TOY_GENERATIVE_MODELS.md](readmes/TOY_GENERATIVE_MODELS.md) — **本项目 C1/C2/C3/CR3** 的真实公式、参数先验、X 设计、logit/probability/choice 和 Hessian 结构。
