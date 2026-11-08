@@ -55,9 +55,9 @@ class RefinementTests(unittest.TestCase):
             s1=run_analysis('CR3',source,p/'refine1',plots=False,restarts=0,maxiter=60)
             expected=s1['models']['direct_ols_oracle']['B']
             np.testing.assert_array_equal(expected,original)
-            sol=s1['joint_fit']
-            self.assertGreaterEqual(s1['models']['procrustes_od_scaled']
-                                     ['train_metrics']['mean_r2']-(-1),0)
+            self.assertGreaterEqual(
+                s1['models']['joint_orthogonal_scaled']['train_metrics']['mean_r2'] + 1e-8,
+                s1['models']['procrustes_od_scaled']['train_metrics']['mean_r2'])
             # Optimization uses TRAIN only; changing TEST T cannot affect Q.
             t2=t.copy()
             t2[ids['test']]=rng.normal(0,7,size=(len(ids['test']),d))
