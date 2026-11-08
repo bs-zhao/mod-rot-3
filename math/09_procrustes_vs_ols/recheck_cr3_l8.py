@@ -1,6 +1,6 @@
-"""Reproduce the previous CR3 L8 supervised Oracle; do not retrain the NP.
+"""Optional exploratory CR3 L8 baseline; NOT the confirmed L4 Oracle run.
 
-IMPORTANT: CR3 beta=0.0001, latent_dim=8, theta_dim=4.
+This optional script targets CR3 beta=0.0001, latent_dim=8, theta_dim=4.\nThe confirmed L4 CR3 Oracle uses beta=0.00005 and the main run.py.
 Direct OLS, S7-equivalent Ridge, and rectangular orthonormal Procrustes
 are compared on the SAME frozen Z, theta, and subject splits. The original
 L4 Procrustes results are left untouched. True theta is used only as an
