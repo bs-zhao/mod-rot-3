@@ -15,7 +15,7 @@ The loader checks S3 checkpoint SHA, S1 dataset SHA, context mode, and subject s
 | C1 | 4 | 0.0005 | 0 | 0.25–0.80 |
 | C2 | 4 | 0.0005 | 0 | 0.25–0.80 |
 | C3 | **6** | 0.0005 | 0 | 0.25–0.80 |
-| CR3 | 4 | 0.0005 | 0 | 0.25–0.80 |
+| CR3 | 4 | **0.0001** | 0 | 0.25–0.80 |
 
 ## Math and leakage control
 
@@ -50,9 +50,11 @@ python -m unittest discover -s math/09_procrustes_vs_ols -p "test_*.py" -v
 python math/09_procrustes_vs_ols/run.py --model C1 --beta 0.0005 --latent-dim 4
 python math/09_procrustes_vs_ols/run.py --model C2 --beta 0.0005 --latent-dim 4
 python math/09_procrustes_vs_ols/run.py --model C3 --beta 0.0005 --latent-dim 6
-python math/09_procrustes_vs_ols/run.py --model CR3 --beta 0.0005 --latent-dim 4
+python math/09_procrustes_vs_ols/run.py --model CR3 --beta 0.0001 --latent-dim 4
 python math/09_procrustes_vs_ols/compare_four.py
 ```
+
+The single-model script now selects beta by model when `--beta` is omitted: **0.0005 for C1/C2/C3, 0.0001 for CR3**. The summary script uses independent `--beta` (C models) and `--cr3-beta` (CR3), with the same defaults. If all four result folders already exist, simply run `python math/09_procrustes_vs_ols/compare_four.py`; there is no need to rerun the four analyses.
 
 Additional flags: `--lambda-sparse`, `--context-min`, `--context-max`, `--repeat`, `--output`, `--no-plots`, `--max-scatter`. Z dimensions auto-select 4/4/6/4 when omitted.
 
@@ -69,4 +71,4 @@ Each model: `outputs/math/09_procrustes_vs_ols/<MODEL>/<CONDITION>/repeatXX/`
 
 `compare_four.py` **only summarizes already saved results** into `four_models_test_comparison.csv` and `.png`. It never fits or reruns experiments.
 
-Interpretation: OLS minimizes TRAIN squared error, not necessarily TEST r or R². Near-standard-normal marginal Z does not imply identity *joint* covariance; whitening checks this. This supervised oracle control does **not** demonstrate that a no-T simplicity objective can discover the alignment. Real four-model results require the user's locally saved frozen Z data.
+Interpretation: A poor SO(d) fit in the presence of a good O(d) fit often means the optimal alignment contains an odd reflection/sign flip; latent-axis signs are generally arbitrary. OLS minimizes TRAIN squared error, not necessarily TEST r or R². Near-standard-normal marginal Z does not imply identity *joint* covariance; whitening checks this. This supervised oracle control does **not** demonstrate that a no-T simplicity objective can discover the alignment. Real four-model results require the user's locally saved frozen Z data.
