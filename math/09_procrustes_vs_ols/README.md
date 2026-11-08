@@ -111,11 +111,14 @@ python math/09_procrustes_vs_ols/refine_existing.py --model C2
 python math/09_procrustes_vs_ols/refine_existing.py --model C3
 python math/09_procrustes_vs_ols/refine_existing.py --model CR3
 python math/09_procrustes_vs_ols/compare_four.py
+python math/09_procrustes_vs_ols/compare_refinements.py
 ```
 
 The first four commands **only read** already saved Stage-1 results
 (including CR3 beta5em05...L4). `compare_four.py` continues to summarize
-the **unchanged Stage-1 six-method comparison**, while each Stage-2 analysis
+the **unchanged Stage-1 six-method comparison**, while `compare_refinements.py` summarizes the new optimized results in
+`four_models_stage2_comparison.csv`, `four_models_stage2_per_parameter.csv`,
+and `four_models_stage2_comparison.png`. Each Stage-2 analysis
 produces its own new results under:
 
 `outputs/math/09_procrustes_vs_ols/<MODEL>/<CONDITION>/repeat01/stage2_joint_orthogonal_scaled/`
