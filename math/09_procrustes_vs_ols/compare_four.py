@@ -17,9 +17,9 @@ def tag(beta, sparse, cmin, cmax, dim):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--beta',type=float,default=.0005,
+    p.add_argument('--beta',type=float,default=DEFAULT_BETA['C1'],
                    help='Beta for C1/C2/C3 (default 0.0005)')
-    p.add_argument('--cr3-beta',type=float,default=.0001,
+    p.add_argument('--cr3-beta',type=float,default=DEFAULT_BETA['CR3'],
                    help='Independent CR3 beta (default 0.0001)')
     p.add_argument('--lambda-sparse',type=float,default=0.)
     p.add_argument('--context-min',type=float,default=.25)
