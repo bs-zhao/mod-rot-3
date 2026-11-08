@@ -384,13 +384,13 @@ r_{\rm off,max}=\max_{i,j\ne\pi^*(i)} C_{ij},\quad
 
 进一步的 whitened polar 审计表明，C2/C3/CR3 的监督 OLS 映射能很好地用“白化 + 正交 + 逐轴尺度”近似；但**whitening 改变了原坐标几何**，且“用 T 学得的方向接近 OLS”完全不等价于“无 T 的简单性函数能发现这些方向”。
 
-### 7.1 新增：rot3 Ridge 与 rot2 \`supervised_train_oracle\` 的同数据监督对照
+### 7.1 新增：rot3 Ridge 与 rot2 `supervised_train_oracle` 的同数据监督对照
 
-> **证据状态**：以下流水线与 TEST 数值由研究者提供（2026-11-08）；此 README 更新没有重新读取两边的原始预测数组、执行代码或复算 Pearson 矩阵。**这是同数据监督后处理对照，不是无监督旋转成果。** 与上表 \`math/09_procrustes_vs_ols\` 的六类 Oracle 不能简单视为同一个 estimator 或互相替换。
+> **证据状态**：以下流水线与 TEST 数值由研究者提供（2026-11-08）；此 README 更新没有重新读取两边的原始预测数组、执行代码或复算 Pearson 矩阵。**这是同数据监督后处理对照，不是无监督旋转成果。** 与上表 `math/09_procrustes_vs_ols` 的六类 Oracle 不能简单视为同一个 estimator 或互相替换。
 
 两套方法实际使用**相同被试的 Z、相同真实参数 θ、相同 TRAIN/VALIDATION/TEST 划分**；差别是特征变换、拟合流程、正交化与作图量：
 
-| 比较维度 | rot3 本次回归流程 | rot2 \`supervised_train_oracle\` |
+| 比较维度 | rot3 本次回归流程 | rot2 `supervised_train_oracle` |
 |---|---|---|
 | 回归输入 | 方差解释占比 > 0.05 的 **PC1–PC4**（本次满足阈值者为前四个 PC；框架也允许用筛选后的原始 Z） | **前四个 PC**，并先作白化 |
 | 真值监督 | 每个 θ 一套 Ridge 回归 | 用 θ 在 TRAIN 做 OLS |
@@ -405,7 +405,7 @@ r_{\rm off,max}=\max_{i,j\ne\pi^*(i)} C_{ij},\quad
 |---|---:|---:|---:|
 | rot3 原 Ridge | **0.0636** | **0.1491** | **0.8727** |
 | rot3 原 Ridge + **仅加 SVD** | **0.0439** | **0.1159** | **0.8715** |
-| rot2 \`supervised_train_oracle\` | **0.0445** | **0.1162** | 本次对照未单独提供统一的对角平均 \(r\) |
+| rot2 `supervised_train_oracle` | **0.0445** | **0.1162** | 本次对照未单独提供统一的对角平均 \(r\) |
 
 结论及边界：
 
