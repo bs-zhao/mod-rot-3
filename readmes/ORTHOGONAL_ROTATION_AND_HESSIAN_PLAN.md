@@ -180,13 +180,13 @@ d=4 时，连续自由度：\(O(4)\) 为 6；\(DR\) 为 \(6+4=10\)（非零 D）
 
 \[
 \boxed{
-|\operatorname{Corr}(DRV,T)|=|\operatorname{Corr}(V,T)|
+|\operatorname{Corr}(DRZ_0,T)|=|\operatorname{Corr}(RZ_0,T)|
 }
 \]
 
-上式首项只表示“在 V 之上额外逐轴缩放”；在实际统一记号中最终变换是 \(DRZ_0\)。因此 **D 不影响绝对 U–T 相关矩阵、最优一一匹配、相关性分离度；D 会影响数值校准、MSE 和未校准的 R²**。
+这里 \(V=RZ_0\)，D 只在 R 所确定的输出轴上逐维缩放。因此 **D 不影响绝对 U–T 相关矩阵、最优一一匹配、相关性分离度；D 会影响数值校准、MSE 和未校准的 R²**。
 
-如果理想情况下 \(T_{\rm std}=DRV+b\)（这里令 V=Z_0，等价写作 \(T_{\rm std}=DRZ_0+b\)），由于 T_std 各维标准差为 1：
+如果理想情况下 \(T_{\rm std}=DRZ_0+b\)，由于 T_std 各维标准差为 1：
 
 \[
 |d_i|=\frac1{\operatorname{SD}((RZ_0)_i)}.
@@ -366,7 +366,7 @@ r_{\rm off,max}=\max_{i,j\ne\pi^*(i)} C_{ij},\quad
 
 来源：[`math/09_procrustes_vs_ols`](../math/09_procrustes_vs_ols/README.md) 及已运行的用户 TEST 汇总。它们使用 T 来拟合方向，**不是无监督旋转成绩**。
 
-| 模型 | 监督方法 | TEST 平均匹配/原编号 \(|r|\) | TEST 最大非对角 \(|r|\) | TEST 平均 R² |
+| 模型 | 监督方法 | TEST 平均对角 \(|r|\)（监督拟合原编号） | TEST 最大非对角 \(|r|\) | TEST 平均 R² |
 |---|---|---:|---:|---:|
 | C1 | direct OLS Oracle | 0.9694 | 0.0221 | 0.9395 |
 | C1 | O(d) + scales | 0.9694 | 0.0433 | 0.9396 |
