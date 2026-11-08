@@ -75,7 +75,11 @@ def run_analysis(z,t,ids,output,*,s5_source='synthetic',original_s7=None,
         raise ValueError('Near-constant variable in TRAIN')
     zs=(z-mu_z)/sd_z;ts=(t-mu_t)/sd_t
     B_train=np.linalg.lstsq(zs[tr],ts[tr],rcond=None)[0]
-    B_fitval=np.linalg.lstsq(zs[fit_ids],ts[fit_ids],rcond=None)[0]
+    # Unlike TRAIN, TRAIN+VALIDATION is not necessarily centered. Fit its intercept.
+    coef_fitval=np.linalg.lstsq(np.column_stack((zs[fit_ids],np.ones(len(fit_ids)))),
+                                ts[fit_ids],rcond=None)[0]
+    B_fitval=coef_fitval[:8]
+    b_fitval=coef_fitval[8]
     Q=rectangular_procrustes(zs[tr],ts[tr])
     B_scaled,scale=scaled_axis_fit(zs,ts,tr,Q)
     pcs=np.linalg.svd(zs[tr],full_matrices=False)[2][:4].T
@@ -87,7 +91,7 @@ def run_analysis(z,t,ids,output,*,s5_source='synthetic',original_s7=None,
 
     U=dict(
         direct_ols_train=zs@B_train,
-        direct_ols_trainval=zs@B_fitval,
+        direct_ols_trainval=zs@B_fitval+b_fitval,
         s7_exact_ridge=np.full_like(ts,np.nan),
         rectangular_procrustes=zs@Q,
         rectangular_procrustes_scaled=zs@B_scaled,
@@ -115,10 +119,11 @@ def run_analysis(z,t,ids,output,*,s5_source='synthetic',original_s7=None,
         normalizers=dict(z_mean=mu_z,z_std=sd_z,t_mean=mu_t,t_std=sd_t),
         matrices=dict(
             B_direct_ols_train=B_train,B_direct_ols_trainval=B_fitval,
+            b_direct_ols_trainval_std=b_fitval,
             Q_rectangular_procrustes=Q,B_rectangular_scaled=B_scaled,
             procrustes_scale=scale,PC4_basis=pcs,B_PC4_to_Tstd=B_pc,
             A_raw_Z_to_T=sd_t[:,None]*(B_train.T/sd_z[None,:]),
-            b_raw_Z_to_T=mu_t-sd_t*(B_train.T/sd_z[None,:])@mu_z,
+            b_raw_Z_to_T=mu_t-(sd_t[:,None]*(B_train.T/sd_z[None,:]))@mu_z,
         ),
         validation_selected_ridge_alpha=ridge['selected_ridge_alpha'],
         validation_ridge_r2=ridge['validation_r2']
@@ -177,6 +182,7 @@ def run_analysis(z,t,ids,output,*,s5_source='synthetic',original_s7=None,
         train_ids=tr,validation_ids=va,test_ids=te,
         z_train_mean=mu_z,z_train_std=sd_z,t_train_mean=mu_t,t_train_std=sd_t,
         B_direct_ols_train=B_train,B_direct_ols_trainval=B_fitval,
+        b_direct_ols_trainval_std=b_fitval,
         Q_rectangular_procrustes=Q,B_rectangular_procrustes_scaled=B_scaled,
         test_T_true=t[te],**{'test_U_std__'+k:v[te] for k,v in U.items()})
     (output/'summary.json').write_text(json.dumps(as_json(summary),indent=2)+'\n',encoding='utf-8')
