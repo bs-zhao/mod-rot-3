@@ -10,7 +10,7 @@ Each experiment is its **own runnable Python file**, with actual stage logic in 
 | 4 | `np/s4_evaluate.py` | Saved NP validation/test accuracy, CE, KL, learning curves; if S5 exists, also posterior-Z histograms, per-axis variance and KL | S3 checkpoint; S5 optional for Z diagnostics |
 | 5 | `np/s5_extract_z.py` | Encode every subject using **ALL observed trials**, save frozen posterior-mean Z | S3 checkpoint and S1 dataset |
 | 6 | `np/s6_pca.py` | TRAIN-only PCA, FastICA and FactorAnalysis; threshold-selected PC/Z pair plots plus TEST PC/IC/FA-to-theta heatmaps and all-pair scatter | S5 Z |
-| 7 | `np/s7_regression.py` | Full-Z and top-k-PC Ridge regression to simulator theta; validation-selected alpha; held-out test | S5 Z and S6 PCA |
+| 7 | `np/s7_regression.py` | Ridge predictions of every true theta from all Z / TRAIN-variance-filtered Z / TRAIN-ratio-filtered PCs; full 4×4 TEST true-theta × theta-hat correlations, plus existing diagnostics | S5 Z and S6 PCA |
 
 Run commands **one at a time** from repository root, e.g. for CR3 beta=0 L8:
 
@@ -158,3 +158,57 @@ they are not forced to match the generating theta. Four factors extracted
 from **four** original Z variables are generally an underidentified factor
 model. The correlations are descriptive comparisons, not evidence of
 uniquely recovered causal latent factors.
+
+
+### S7: three predictor sets and full true-theta × predicted-theta matrices
+
+Rerun S7 on any completed S5/S6 condition, no NP retraining:
+
+```cmd
+python np/s7_regression.py --model CR3 --beta 0.00005 --latent-dim 4 --pca-threshold 0.05 --z-var-threshold 0.01
+```
+
+There are exactly three **independently refitted** Ridge representations:
+
+1. `full_z`: use ALL original Z coordinates.
+2. `selected_z`: use original Z coordinates with **TRAIN**
+   between-subject sample variance (ddof=1) strictly greater than
+   `--z-var-threshold` (default 0.01).
+3. `selected_pc`: use PCs with individual **TRAIN**
+   explained-variance ratio strictly greater than `--pca-threshold`
+   (S7 existing default 0.10; pass 0.05 to agree with an S6 0.05 choice).
+
+For each representation, fit a separate Ridge regression for every true
+parameter. Features and targets are standardized on TRAIN; the Ridge alpha
+for each target is selected on VALIDATION; the final fit uses TRAIN+VALIDATION
+and produces **TEST-only** theta-hat predictions.
+
+The full signed Pearson matrix for each representation is
+`corr(theta_true_TEST, theta_hat_TEST)`, **rows indexed by true parameter**
+and **columns indexed by predicted parameter**. The diagonal tests
+intended parameter recovery, while off-diagonal entries measure
+cross-parameter contamination. Both signed r and the distinct matched
+TEST Ridge R² statistics are reported, not confused.
+
+Files in `outputs/choice/<MODEL>/s12_z_diagnostics/<CONDITION>/repeatXX/`:
+
+* `s12__theta_hat_corr_full_z.csv/png`
+* `s12__theta_hat_corr_selected_z.csv/png`
+* `s12__theta_hat_corr_selected_pc.csv/png`
+* `s12__theta_hat_corr_3way.png`: three true-theta × theta-hat heatmaps
+  with the same fixed color scale and highlighted diagonal.
+* `s12__theta_hat_corr_3way.json`: all three numeric matrices, matched and
+  off-diagonal summaries, thresholds, selected axes, plus the TEST
+  true-theta × true-theta sample-correlation baseline.
+* `s12__theta_hat_ridge_3way.csv`: 3 × (# true parameters) Ridge metrics,
+  with selected predictor names.
+* `s12__theta_hat_test_predictions.npz`: TEST ids, TEST true theta,
+  and all three estimated theta-hat matrices.
+
+No change to existing `s12__pca.npz`,
+`s12__pca_threshold_ridge.csv`, `s12__full_z_ridge.csv`,
+or the older two-way regression comparison CSV. S7 does not change any
+trained model or rotate the latents. Low off-diagonal correlations are
+desirable only relative to the finite-sample correlations of true theta;
+the JSON includes that baseline to avoid interpreting sampling noise as
+parameter leakage.
