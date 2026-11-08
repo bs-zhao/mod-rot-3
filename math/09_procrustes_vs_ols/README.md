@@ -137,3 +137,76 @@ recover T without supervision; this is a geometry control only.
 `recheck_cr3_l8.py` is an **optional separate L8-to-T4 audit** and is
 NOT the source of the confirmed successful **L4 beta=0.00005** Oracle.
 Do not confuse L4 and L8 NP checkpoints or corresponding beta values.
+
+
+## Stage 3: Closed-form polar proof + paired TEST bootstrap (no refitting)
+
+Stage-2 showed that joint orthogonal-plus-scale optimization is almost
+indistinguishable from Stage-1 Procrustes-plus-scale, and all are close to
+the **unchanged direct OLS Oracle**. We now audit exactly why, rather than
+running more optimization searches.
+
+On TRAIN-standardized posterior Z and true T, let
+
+\[
+W = Z_{\rm std}\Sigma_Z^{-1/2},\quad
+C = \tfrac{1}{n} W^\top T_{\rm std}.
+\]
+
+The TRAIN-covariance of W is the identity. C is exactly the OLS matrix
+from **whitened** W to T_std. Its full polar decomposition is
+
+\[
+C=QH,\quad Q^\top Q=I,\quad H=(C^\top C)^{1/2}=D+E,
+\]
+
+where D is diagonal and E has zero diagonal. Hence
+
+\[
+U_{\rm OLS}=WQD+WQE.
+\]
+
+The following identity must hold up to floating point accuracy on TRAIN:
+
+\[
+\boxed{\mathrm{MSE}(WQD,T)-\mathrm{MSE}(WC,T)=
+       \|E\|_F^2/d.}
+\]
+
+The script asserts this equality, and verifies both WC and WQD against
+the **already saved original** `ols_affine__U_std` and
+`whiten_procrustes_od_scaled__U_std`, respectively. Any disagreement
+raises an exception instead of silently changing the original Oracle.
+
+Run, individually, using already saved Stage-1 files:
+
+```cmd
+git pull origin main
+python -m unittest discover -s math/09_procrustes_vs_ols -p "test_*.py" -v
+python math/09_procrustes_vs_ols/polar_audit.py --model C1 --bootstrap-reps 1000
+python math/09_procrustes_vs_ols/polar_audit.py --model C2 --bootstrap-reps 1000
+python math/09_procrustes_vs_ols/polar_audit.py --model C3 --bootstrap-reps 1000
+python math/09_procrustes_vs_ols/polar_audit.py --model CR3 --beta 0.00005 --bootstrap-reps 1000
+```
+
+Each creates `stage3_polar_audit/` next to `stage2_joint_orthogonal_scaled/`.
+It produces `summary.json`, `H_symmetric_scale_mixing.csv`,
+`E_necessary_extra_mixing.csv`, `polar_H_and_extra_mixing.png`,
+`bootstrap_metric_deltas_vs_ols.csv`,
+`bootstrap_per_parameter_r2_deltas.csv`, and `test_comparison.png`.
+
+Inspect these especially:
+
+- `H_offdiag_energy_fraction`: squared off-diagonal Frobenius energy
+  divided by the full squared energy of H. **Small means little additional
+  TRAIN linear mixing is needed beyond whitened rotation and axis scales.**
+- `train_mse_gap_observed` and `train_mse_gap_theory`: independently
+  computed values, which must agree precisely.
+- Paired 95% bootstrap confidence intervals for **TEST** mean R², mean
+  diagonal |r| and max non-diagonal |r| differences from direct OLS.
+  Bootstrap draws resample held-out subjects **but never refit matrices**.
+
+Caution: TEST bootstrap intervals are descriptive and do not correct for
+multiple comparisons. A low residual E is a fact about **supervised T-based
+regression geometry**; it does *not* prove an unlabeled simple-function
+criterion can discover Q or identify the true parameter axes.
