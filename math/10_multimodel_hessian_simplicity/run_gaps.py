@@ -111,7 +111,7 @@ def curve_metrics(zz,zx,R,allowed):
     return {k:metrics[k] for k in allowed if k in metrics}
 
 
-def make_curves(model,method,ref,fit,angles,shortlist):
+def make_curves(model,method,ref,fit,angles,shortlist,planes="all"):
     """All channels/sources computed from exactly the SAME TEST W anchors."""
     d=ref["logit"][0].shape[1]
     curves=[]
@@ -126,6 +126,8 @@ def make_curves(model,method,ref,fit,angles,shortlist):
     for i in range(d):
         for j in range(i+1,d):
             plane=f"{i+1}{j+1}"
+            if planes!="all" and plane not in planes.split(","):
+                continue
             for angle in angles:
                 R=rotation(d,i,j,angle)
                 for ch in CHANNELS:
@@ -281,7 +283,7 @@ def process_model(model,args,root,out):
             for block,v in compare_field(candidate[ch],nn[ch]).items():
                 accuracy.append(dict(model=model,method=method,channel=ch,
                                      comparison="gap3_vs_gap2",block=block,**v))
-        rows=make_curves(model,method,test_oracle,fit,angles_from_spec(args.angles),selected)
+        rows=make_curves(model,method,test_oracle,fit,angles_from_spec(args.angles),selected,args.planes)
         available=set(rows[0])-{"model","method","channel","source","plane","angle"}
         missing=[m for m in selected if m not in available]
         write_csv(base_dir/f"{method}__missing_oracle_metrics.csv",
@@ -351,6 +353,7 @@ def parse_args(argv=None):
     p.add_argument("--device",default="auto")
     p.add_argument("--decoder-batch",type=int,default=32)
     p.add_argument("--angles",default="0:90:10")
+    p.add_argument("--planes",default="all",help="all (default), or 1-based pair identifiers 12,13")
     p.add_argument("--endpoint-tolerance",type=float,default=10.)
     p.add_argument("--top-per-model",type=int,default=30)
     p.add_argument("--top-global",type=int,default=50)
