@@ -15,6 +15,7 @@ UX_VARIANTS={f'ux_{stat}_{score}':(stat,score) for stat in ['rms','sd','absmean'
 METRICS=METRICS+tuple(COMBINATIONS)+tuple(UX_VARIANTS)
 METRICS=METRICS+('conditional_relative_directions','conditional_relative_dual','conditional_relative_cumulant')
 METRICS=METRICS+('transport_profile','transport_concentration')
+METRICS=METRICS+('conditional_fingerprint',)
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -96,6 +97,9 @@ class Loss:
             result['capabilities']='F1 only; Hessian blocks unavailable, not zero'
         if self.metric.startswith('transport_'):
             result['transport_vector_grams']=self.fields['transport_vector_grams']
+        if self.metric=='conditional_fingerprint':
+            cross=r@self.fields['fingerprint_cross']
+            result['algebraic_fingerprint_correlation']=cross/np.sqrt(np.diag(r@self.cov@r.T)[:,None]*self.fields['fingerprint_variance'][None])
         return result
 
     def __call__(self, r):
@@ -106,6 +110,13 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind=='conditional_fingerprint':
+            cross=r@self.fields['fingerprint_cross'];axis=np.diag(r@self.cov@r.T)
+            corr2=np.clip(cross*cross/np.maximum(axis[:,None]*self.fields['fingerprint_variance'][None],1e-30),0,1)
+            absence=np.einsum('ia,ab,ib->i',a,self.group_gram[1],a)/np.maximum(np.einsum('ia,ab,ib->i',a,self.gradient_gram,a),1e-30)
+            similarity=np.column_stack((corr2,1-absence))
+            i,j=linear_sum_assignment(-similarity)
+            return float(len(j)-similarity[i,j].sum())
         if kind=='transport_profile':
             axis_energy=np.einsum('ia,nab,ib->ni',a,self.fields['transport_gram'],a,optimize=True)
             cross=np.einsum('ia,nak->nik',a,self.fields['transport_cross'],optimize=True)
