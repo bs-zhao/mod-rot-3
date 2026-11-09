@@ -129,11 +129,14 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
     bank=data['x'][indices];trial=data['trial_index'][indices]
     if len(bank)!=500 or not np.array_equal(trial,np.arange(500)): raise ValueError('Wrong bank indexing')
     xs=(bank-protocol['x_mean'])/protocol['x_sd'];tables=[];ids_used=[]
+    subject_index=data['subject_index']
+    grouped=bool(np.all(np.diff(subject_index)>=0))
+    boundaries=np.r_[0,np.cumsum(np.bincount(subject_index))] if grouped else None
     for split,n in [('train',args.train_subjects),('validation',args.validation_subjects)]:
         ids=rng.choice(c['splits'][split],min(n,len(c['splits'][split])),replace=False);ids_used.append(ids)
         # Verify fixed X bank for the subjects used, not just subject zero.
         for sid in ids:
-            ix=np.flatnonzero(data['subject_index']==sid)
+            ix=np.arange(boundaries[sid],boundaries[sid+1]) if grouped else np.flatnonzero(subject_index==sid)
             ix=ix[np.argsort(data['trial_index'][ix])]
             if not np.array_equal(data['x'][ix],bank): raise ValueError('Subject does not share CR3 bank')
         query=np.concatenate((np.repeat(v[ids],500,axis=0),np.tile(xs,(len(ids),1))),axis=1)
@@ -248,6 +251,7 @@ def main():
                 gap1_strict_pass=bool(strict_pass) if args.source=='formula' else None,
                 evaluation=evaluation,elapsed_seconds=time.time()-started)
     result['estimator_info']=estimator_info
+    result['field_cache']=str(cache)
     result['code_hashes']={f.name:sha(f) for f in Path(__file__).resolve().parent.glob('*.py')}
     result['near10_diagnostic']=bool(best['axis_min']>np.cos(np.deg2rad(10)) and min(ranges)>1e-5*(1+abs(truth)))
     dump(out/'summary.json',result)
