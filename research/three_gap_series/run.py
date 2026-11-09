@@ -341,6 +341,8 @@ def main():
     p.add_argument('--relative-cutoff',type=float,default=.1)
     p.add_argument('--q-weight',choices=['uniform','fisher'],default='uniform')
     p.add_argument('--fisher-power',type=float,default=1.)
+    p.add_argument('--transport-power',type=float,default=1.)
+    p.add_argument('--transport-ridge',type=float,default=1e-6)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -359,10 +361,12 @@ def main():
     if args.q_weight!='uniform' and (not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.subject_mean or args.field_mean or args.estimator not in ['direct','finite_difference','stimulus']):
         raise ValueError('Fisher-Q currently supports point/local original-bank conditional fields only')
     if not np.isfinite(args.fisher_power) or args.fisher_power<=0:raise ValueError('Fisher power must be positive')
+    if args.metric.startswith('transport_') and (args.model!='CR3' or args.channel!='logit' and args.structure_link!='log_odds'):
+        raise ValueError('Current transport dictionary requires CR3 canonical log odds')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
-    config['field_protocol']=('anchors' if args.metric=='conditional_anchor' else 'relative' if args.metric.startswith('conditional_relative') else 'original')
+    config['field_protocol']=('transport' if args.metric.startswith('transport_') else 'anchors' if args.metric=='conditional_anchor' else 'relative' if args.metric.startswith('conditional_relative') else 'original')
     config_hash=hashlib.sha256(json.dumps(config,sort_keys=True).encode()).hexdigest()[:12]
     # Compact directories avoid Windows MAX_PATH problems. Full flags in summary.
     out=out.with_name(f's{args.seed}_n{args.samples}_cfg{config_hash}')
@@ -377,11 +381,15 @@ def main():
     if cache.exists():
         with np.load(cache) as saved:
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
-            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram','value','weights','latent_train'] if k in saved.files}
+            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram','value','weights','latent_train','full_g','transport_gram','transport_cross','transport_energy','transport_vector_grams'] if k in saved.files}
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.metric.startswith('conditional_relative'):
+        if args.metric.startswith('transport_'):
+            from transport import transport_fields
+            fields,estimator_info=transport_fields(args,c,structure_function(fn,args),v,protocol)
+            dump(cache.with_suffix('.json'),estimator_info)
+        elif args.metric.startswith('conditional_relative'):
             fields,estimator_info=relative_fields(args,c,fn,v,protocol)
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.center_point and args.estimator!='stimulus':

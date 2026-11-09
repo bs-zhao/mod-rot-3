@@ -14,6 +14,7 @@ UX_VARIANTS={f'ux_{stat}_{score}':(stat,score) for stat in ['rms','sd','absmean'
              for score in ['l1','gini','column_entropy','row_entropy']}
 METRICS=METRICS+tuple(COMBINATIONS)+tuple(UX_VARIANTS)
 METRICS=METRICS+('conditional_relative_directions','conditional_relative_dual','conditional_relative_cumulant')
+METRICS=METRICS+('transport_profile','transport_concentration')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -23,12 +24,15 @@ def entropy(v, axis):
 class Loss:
     def __init__(self, fields, covariance, d, metric):
         self.fields=fields; self.cov=covariance; self.d=d; self.metric=metric
-        weights=fields.get('weights',np.ones(len(fields['h'])))
+        self.has_hessian='h' in fields
+        if not self.has_hessian and not metric.startswith('transport_'):raise ValueError('This loss requires F2')
+        raw_h=fields['h'] if self.has_hessian else np.zeros((len(fields['g']),d,d))
+        weights=fields.get('weights',np.ones(len(raw_h)))
         weights=weights/weights.sum()
-        h=fields['h'][:,:d,:d].reshape(len(fields['h']),d*d)
+        h=raw_h[:,:d,:d].reshape(len(raw_h),d*d)
         self.hm=(weights@h).reshape(d,d)
         self.hh=h.T@(h*weights[:,None])
-        ux=fields['h'][:,:d,d:]
+        ux=raw_h[:,:d,d:]
         self.ux_moment=np.einsum('n,nap,nbp->pab',weights,ux,ux)
         self.uxmean=np.einsum('n,nap->ap',weights,ux)
         sig=[(weights@fields['g'][:,:d])[:,None], self.uxmean]
@@ -87,6 +91,11 @@ class Loss:
             result['relative_gradient_covariance']=a@self.fields['relative_cov']@a.T
             result['relative_gradient_gram']=a@self.fields['relative_gram']@a.T
         if hasattr(self,'direction_diagnostics'):result['inferred_direction_diagnostics']=self.direction_diagnostics
+        if not self.has_hessian:
+            for key in ['zz_signed_mean','zz_rms','zz_variance','self_rms','ux_signed_mean','ux_rms']:result.pop(key)
+            result['capabilities']='F1 only; Hessian blocks unavailable, not zero'
+        if self.metric.startswith('transport_'):
+            result['transport_vector_grams']=self.fields['transport_vector_grams']
         return result
 
     def __call__(self, r):
@@ -97,6 +106,18 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind=='transport_profile':
+            axis_energy=np.einsum('ia,nab,ib->ni',a,self.fields['transport_gram'],a,optimize=True)
+            cross=np.einsum('ia,nak->nik',a,self.fields['transport_cross'],optimize=True)
+            similarity=np.mean(np.clip(cross*cross/np.maximum(axis_energy[:,:,None]*self.fields['transport_energy'][:,None,:],1e-30),0,1),axis=0)
+            i,j=linear_sum_assignment(-similarity)
+            return float(len(j)-similarity[i,j].sum())
+        if kind=='transport_concentration':
+            av=r/sd[:,None]
+            energy=np.maximum(np.einsum('ia,kab,ib->ik',av,self.fields['transport_vector_grams'],av,optimize=True),0)
+            similarity=energy/np.maximum(energy.sum(0,keepdims=True),1e-30)
+            i,j=linear_sum_assignment(-similarity)
+            return float(len(j)-similarity[i,j].sum())
         if kind in ['conditional_relative_directions','conditional_relative_dual','conditional_relative_cumulant']:
             normalized=a/np.linalg.norm(a,axis=1,keepdims=True)
             similarity=(normalized@self.direction_targets.T)**2
