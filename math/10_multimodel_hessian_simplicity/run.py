@@ -182,21 +182,43 @@ def global_ranking(out, models):
             rows=list(csv.DictReader(f))
         for r in rows:
             buckets.setdefault(r["metric"],[]).append(r)
+    # Count multi-axis random rotations that beat the original theory axes.
+    # They are counterexamples for the sampled directions, not a full SO(d) proof.
+    multi={}
+    for model in models:
+        path=out/model/"multiway_comparison.csv"
+        if not path.is_file():
+            continue
+        with path.open(newline="",encoding="utf-8") as f:
+            for r in csv.DictReader(f):
+                key=(model,r["channel"],r["metric"])
+                old=multi.get(key,(0,0))
+                multi[key]=(old[0]+int(r["random_below_identity"]),
+                            old[1]+int(r["n_random"]))
     report=[]
     for metric,rows in buckets.items():
         mod={r["model"] for r in rows}
         frac=[float(r["success_fraction"]) for r in rows]
+        near=[float(r["near_success_fraction"]) for r in rows]
         fl=[int(r["flat_planes"]) for r in rows]
         full=(len(mod)==len(models) and len(rows)==2*len(models))
+        draws=sum(multi.get((r["model"],r["channel"],metric),(0,0))[1] for r in rows)
+        beaten=sum(multi.get((r["model"],r["channel"],metric),(0,0))[0] for r in rows)
         report.append(dict(metric=metric,models_covered=len(mod),
                            conditions_covered=len(rows),full_coverage=int(full),
                            mean_success_fraction=float(np.mean(frac)),
                            min_success_fraction=float(np.min(frac)),
+                           mean_near_success_fraction=float(np.mean(near)),
+                           min_near_success_fraction=float(np.min(near)),
                            max_success_fraction=float(np.max(frac)),
                            conditions_all_planes_success=int(sum(x==1.0 for x in frac)),
-                           total_flat_planes=sum(fl)))
+                           total_flat_planes=sum(fl),
+                           multiway_better_than_true=beaten,
+                           multiway_random_draws=draws,
+                           multiway_failure_fraction=float(beaten/draws) if draws else float("nan")))
     report.sort(key=lambda r:(-r["full_coverage"],-r["min_success_fraction"],
-                              -r["mean_success_fraction"],r["total_flat_planes"],r["metric"]))
+                              -r["mean_success_fraction"],r["multiway_better_than_true"],
+                              r["total_flat_planes"],r["metric"]))
     write_csv(out/"cross_model_ranking.csv",report)
     return report
 
