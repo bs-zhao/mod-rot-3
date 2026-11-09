@@ -130,3 +130,19 @@ h09 严格保持这一 inference 与 loss，换冻结 decoder：CR3 匹配均值
 `hs_uu_third_repeat_l1 = E |d_(U_j) H_(U_i,U_i)|` 保留所有 j；不同于只看 own third d_i H_ii。
 乘积 z0*z1*z2 的控制例子说明，旋转 z0/z1 后 own third 仍为0，但 d_z2 H_ii 可以检测
 新增自身曲率。这一单项先做 G1，只有观察到与 UX 单项的互补，才考虑新的组合。
+
+## h12 / h13：从单项互补重新开始
+
+h12 的 curvature-modulation 单项在 CR3 上除 alpha–gamma（42.5°）外，五平面均0°；
+C1–C3 恒零。因此它和 h04 的 UX-Hessian profile JD 再次显示明确互补。
+它用 `d_j H_ii`（所有 j），不读取梯度或模型专属算子。
+四模型单项曲线给出的统一充分权重区间为 [81.81755,98.49323]，几何中心89.769，
+取所有数据库固定 **weight=90**；不是无依据地扫权重。
+新组合 `hs_jd_profile1_strength0_repeat_w90` 的证据见
+[rationales/h13_jd_modulation.json](rationales/h13_jd_modulation.json)。
+先重新确认 G1，只有四模型通过才用同一个 generic inference 跑 G2，随后才允许 G3。
+
+当前阶段数据与失败位置见 [逐关台账](results/hessian_search/REPORT.md)，
+单项互补图见 [CR3 图](results/hessian_search/complementarity_cr3.png)。
+旧 h01/h02 exact-zero 筛选296条单列为旧规则，不冒充现行6°规则的结论；
+早期未经单项证据的组合也单列。原始数值不删除，当前候选以完整全维与逐关证据为准。

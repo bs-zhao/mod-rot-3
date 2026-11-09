@@ -1,0 +1,22 @@
+{
+  "component_runs": [
+    "results/h12_curvature_modulation_single/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfg2167b0977b79/summary.json",
+    "results/h12_curvature_modulation_single/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfgd42088721817/summary.json",
+    "results/h12_curvature_modulation_single/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfg213fa2d30281/summary.json",
+    "results/h12_curvature_modulation_single/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfgb8586ed65d2b/summary.json",
+    "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfge39f5b343922/summary.json",
+    "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd1f842f81486/summary.json",
+    "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd909fc250745/summary.json",
+    "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+  ],
+  "complementarity": "h12 curvature modulation E|d_j H_ii| recovers all five CR3 planes where pure UX-Hessian profile JD fails, but fails alpha-gamma where JD succeeds. C1-C3 modulation is zero and JD identifies the axes. Unlike self curvature itself, this component ignores constant-in-U quadratic bias. h09/h11 show decoder failure of the prior self-curvature combination, motivating this change.",
+  "weight_rule": "Using only the eight single-loss analytic runs at the same Q and seed, the common sufficient weight interval against every plane grid rotation beyond six degrees is [81.8175501680,98.4932302783]. Its geometric midpoint is 89.769, rounded to fixed 90 for every dataset. No arbitrary weight grid and no decoder T selection. Confirm full-space G1 before inference.",
+  "weight": 90,
+  "source_labels": [
+    "h04_single_components",
+    "h12_curvature_modulation_single"
+  ],
+  "confirmation_label": "h13_modulation_combination_g1",
+  "channel": "logit",
+  "scope": "Hessian functional profiles plus Hessian third-order modulation only"
+}

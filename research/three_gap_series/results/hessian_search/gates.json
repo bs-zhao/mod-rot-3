@@ -1,0 +1,389 @@
+[
+  {
+    "metric": "hs_jd_profile1_strength0_selfl1_w0",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h03_g1_angle5_jd/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfge091db985860/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfsoft003_w0",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h03_g1_angle5_jd/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfsoft003_w0/s20261127_n1024_cfge091db985860/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_off_rms_l1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_off_rms_l1/s20261127_n1024_cfge39f5b343922/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_off_rms_l1/s20261127_n1024_cfgd1f842f81486/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_off_rms_l1/s20261127_n1024_cfgd909fc250745/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_off_rms_l1/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_self_local_l1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfge39f5b343922/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfgd1f842f81486/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfgd909fc250745/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_third_mixed_l1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_third_mixed_l1/s20261127_n1024_cfge39f5b343922/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_third_mixed_l1/s20261127_n1024_cfgd1f842f81486/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_third_mixed_l1/s20261127_n1024_cfgd909fc250745/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_third_mixed_l1/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_ux_profile1_l1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_ux_profile1_l1/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_ux_rms_l1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_ux_rms_l1/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfl1_w8",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G3",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 256, \"rbf_length\": 0.5, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g3_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G3",
+        "result": "results/h09_g3_frozen_decoder/CR3_beta5e-05_zdim4_pca0/decoder/logit/tensor/hs_jd_profile1_strength0_selfl1_w8/s20261128_n4096_cfg4f7f77ff1e10/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfl1_w8",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G2",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 64, \"rbf_length\": 1.0, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G2",
+        "result": "results/h07_g2_tensor/CR3_beta5e-05_zdim4_pca0/formula/logit/tensor/hs_jd_profile1_strength0_selfl1_w8/s20261128_n4096_cfgab0a0e9a4e18/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfl1_w0",
+    "channel": "probability",
+    "seed": 20261129,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/CR3_beta5e-05_zdim4_pca0/formula/probability/direct/hs_jd_profile1_strength0_selfl1_w0/s20261129_n2048_cfgbc31dab78887/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_off_rms_l1",
+    "channel": "probability",
+    "seed": 20261129,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C1_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_off_rms_l1/s20261129_n2048_cfg27eb02fd0019/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C2_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_off_rms_l1/s20261129_n2048_cfg809b5a6c9d55/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C3_beta0.0005_zdim6_pca0/formula/probability/direct/hs_uu_off_rms_l1/s20261129_n2048_cfgaf8cba2e724e/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/CR3_beta5e-05_zdim4_pca0/formula/probability/direct/hs_uu_off_rms_l1/s20261129_n2048_cfgbc31dab78887/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_off_rms_soft01",
+    "channel": "probability",
+    "seed": 20261129,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C1_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_off_rms_soft01/s20261129_n2048_cfg27eb02fd0019/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C2_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_off_rms_soft01/s20261129_n2048_cfg809b5a6c9d55/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C3_beta0.0005_zdim6_pca0/formula/probability/direct/hs_uu_off_rms_soft01/s20261129_n2048_cfgaf8cba2e724e/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/CR3_beta5e-05_zdim4_pca0/formula/probability/direct/hs_uu_off_rms_soft01/s20261129_n2048_cfgbc31dab78887/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_self_local_l1",
+    "channel": "probability",
+    "seed": 20261129,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C1_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_self_local_l1/s20261129_n2048_cfg27eb02fd0019/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C2_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_self_local_l1/s20261129_n2048_cfg809b5a6c9d55/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/C3_beta0.0005_zdim6_pca0/formula/probability/direct/hs_uu_self_local_l1/s20261129_n2048_cfgaf8cba2e724e/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h10_native_probability_singles/CR3_beta5e-05_zdim4_pca0/formula/probability/direct/hs_uu_self_local_l1/s20261129_n2048_cfgbc31dab78887/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_third_repeat_l1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h12_curvature_modulation_single/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h12_curvature_modulation_single/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h12_curvature_modulation_single/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h12_curvature_modulation_single/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  }
+]

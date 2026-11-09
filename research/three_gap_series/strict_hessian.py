@@ -55,6 +55,11 @@ for kind in ['self','mixed','repeat']:
 # Added only after h04 single-loss complementarity and a feasible common
 # analytic weight interval were measured; this is not another weight grid.
 register('jd_profile1_strength0_selfl1_w8',family='jd',degree=1,strength=0.,self_score='l1',weight=8.)
+# h12 single-loss evidence: a common sufficient plane interval [81.82,98.49]
+# supports its rounded geometric midpoint, 90, before the new joint G1 test.
+register('jd_profile1_strength0_repeat_w90',family='jd',degree=1,strength=0.,
+         self_score='l1',weight=90.,curvature_component='repeat')
+CATALOG['hs_jd_profile1_strength0_repeat_w90']['order']=3
 
 
 def is_combination(metric):
@@ -96,6 +101,7 @@ class HessianLoss:
         u=self.uu*sd[None,:,None]*sd[None,None,:];x=self.ux*sd[None,:,None]
         self.scale=max(float(np.sqrt(np.mean(np.sum(u*u,axis=(1,2)))+np.mean(np.sum(x*x,axis=(1,2))))),1e-12)
         self.third=fields.get('uu_t',fields.get('third'))
+        self.third_is_zero=self.third is not None and not np.any(self.third)
         if self.spec['order']==3 and self.third is None:raise ValueError('Third derivative of Hessian required')
         self.profiles={}
         for degree in [1,2]:
@@ -156,16 +162,10 @@ class HessianLoss:
             transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
             off=transformed[:,~np.eye(self.d,dtype=bool)]
             joint=float(self.jd_weights@np.sum(off*off,axis=1))
-            return joint+s['weight']*penalty(self._uu(a,'local','self'),s['self_score'])
+            curvature=self._third_values(a,'repeat') if s.get('curvature_component')=='repeat' else self._uu(a,'local','self')
+            return joint+s['weight']*penalty(curvature,s['self_score'])
         if family=='third':
-            t=self.third[:,:self.d,:self.d,:self.d]
-            transformed=np.einsum('ia,jb,kc,nabc->nijk',a,a,a,t,optimize=True)/self.scale
-            if s['kind']=='self':v=transformed[:,np.arange(self.d),np.arange(self.d),np.arange(self.d)]
-            elif s['kind']=='repeat':v=transformed[:,np.arange(self.d),np.arange(self.d),:]
-            else:
-                mask=np.ones((self.d,)*3,dtype=bool);mask[np.arange(self.d),np.arange(self.d),np.arange(self.d)]=False
-                v=transformed[:,mask]
-            return penalty(v,s['score'])
+            return penalty(self._third_values(a,s['kind']),s['score'])
         ux=penalty(self._ux(a,s['ux']),'l1')
         if family=='joint_sparse':return ux+s['weight']*penalty(self._uu(a,'local',s['part']),s['score'])
         if family=='joint':return ux+s['weight']*penalty(self._uu(a,'rms',s['part']),'l1')
@@ -179,9 +179,25 @@ class HessianLoss:
             return ux+s['weight']*penalty(v,'l1')
         raise ValueError(family)
 
+    def _third_values(self,a,kind):
+        if self.third_is_zero:return np.zeros((1,self.d,self.d))
+        t=self.third[:,:self.d,:self.d,:self.d]
+        transformed=np.einsum('ia,jb,kc,nabc->nijk',a,a,a,t,optimize=True)/self.scale
+        if kind=='self':return transformed[:,np.arange(self.d),np.arange(self.d),np.arange(self.d)]
+        if kind=='repeat':return transformed[:,np.arange(self.d),np.arange(self.d),:]
+        mask=np.ones((self.d,)*3,dtype=bool);mask[np.arange(self.d),np.arange(self.d),np.arange(self.d)]=False
+        return transformed[:,mask]
+
     def describe(self,r):
         sd=np.sqrt(np.diag(r@self.cov@r.T));a=sd[:,None]*np.linalg.inv(r).T
-        return dict(category='Hessian-only, model-blind M1/M3',specification=self.spec,
+        parts=None
+        if self.spec['family']=='jd':
+            transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
+            joint=float(self.jd_weights@np.sum(transformed[:,~np.eye(self.d,dtype=bool)]**2,axis=1))
+            curvature=self._third_values(a,'repeat') if self.spec.get('curvature_component')=='repeat' else self._uu(a,'local','self')
+            raw=penalty(curvature,self.spec['self_score'])
+            parts=dict(hessian_profile_jd=joint,curvature_raw=raw,curvature_weight=self.spec['weight'],curvature_weighted=self.spec['weight']*raw,total=joint+self.spec['weight']*raw)
+        return dict(category='Hessian-only, model-blind M1/M3',specification=self.spec,loss_components=parts,
                     joint_operators=self.joint_operators,
                     fixed_block_scale=self.scale,uu_diag_rms=self._uu(a,'rms','self'),
                     uu_off_rms=self._uu(a,'rms','off'),ux_rms=self._ux(a,'rms'),
