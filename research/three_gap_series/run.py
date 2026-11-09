@@ -124,12 +124,13 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
     if args.model!='CR3' or not args.metric.startswith('conditional_'):
         raise ValueError('Fixed-bank sieve currently supports CR3 conditional loss only')
     rng=np.random.default_rng(args.seed+411);d=c['d'];data=c['data']
-    indices=np.flatnonzero(data['subject_index']==0)
-    order=np.argsort(data['trial_index'][indices]);indices=indices[order]
-    bank=data['x'][indices];trial=data['trial_index'][indices]
+    # NpzFile re-decompresses a member on EVERY subscription. Cache once.
+    subject_index=data['subject_index'];all_trials=data['trial_index'];all_x=data['x']
+    indices=np.flatnonzero(subject_index==0)
+    order=np.argsort(all_trials[indices]);indices=indices[order]
+    bank=all_x[indices];trial=all_trials[indices]
     if len(bank)!=500 or not np.array_equal(trial,np.arange(500)): raise ValueError('Wrong bank indexing')
     xs=(bank-protocol['x_mean'])/protocol['x_sd'];tables=[];ids_used=[]
-    subject_index=data['subject_index']
     grouped=bool(np.all(np.diff(subject_index)>=0))
     boundaries=np.r_[0,np.cumsum(np.bincount(subject_index))] if grouped else None
     for split,n in [('train',args.train_subjects),('validation',args.validation_subjects)]:
@@ -137,8 +138,8 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
         # Verify fixed X bank for the subjects used, not just subject zero.
         for sid in ids:
             ix=np.arange(boundaries[sid],boundaries[sid+1]) if grouped else np.flatnonzero(subject_index==sid)
-            ix=ix[np.argsort(data['trial_index'][ix])]
-            if not np.array_equal(data['x'][ix],bank): raise ValueError('Subject does not share CR3 bank')
+            ix=ix[np.argsort(all_trials[ix])]
+            if not np.array_equal(all_x[ix],bank): raise ValueError('Subject does not share CR3 bank')
         query=np.concatenate((np.repeat(v[ids],500,axis=0),np.tile(xs,(len(ids),1))),axis=1)
         values=[]
         with torch.no_grad():
@@ -149,7 +150,7 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
     hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d)
     train,y=tables[0];val,vy=tables[1]
     sieve=BankSieve(args.degree,args.ridge,args.channel).fit(train@hidden.T,y,val@hidden.T,vy)
-    sieve.eval_stimulus=data['trial_index'][rows].astype(int)
+    sieve.eval_stimulus=all_trials[rows].astype(int)
     f=sieve.fields(w[:,:d]@hidden.T,False,args.structure_link)
     fields=dict(g=f['g']@hidden,h=np.einsum('ai,nab,bj->nij',hidden,f['h'],hidden,optimize=True))
     reference=derivatives(structure_function(fn,args),w,d,False,True)
