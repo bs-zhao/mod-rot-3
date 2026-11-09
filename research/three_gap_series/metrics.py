@@ -3,7 +3,7 @@ import numpy as np
 
 METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
-           'ux_mean_l1', 'signature_l1', 'signature_column_entropy', 'zzx_mixed_rms')
+           'ux_mean_l1', 'signature_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -23,6 +23,9 @@ class Loss:
         if 'third' in fields:
             sig.append(fields['third'][:,:d,d:,d:].mean(0).reshape(d,-1))
         self.signature=np.concatenate(sig,axis=1)
+        if 'groups' in fields:
+            self.group_gram=np.array([fields['g'][fields['groups']==k,:d].T@fields['g'][fields['groups']==k,:d]/np.sum(fields['groups']==k)
+                                      for k in np.unique(fields['groups'])])
 
     def __call__(self, r):
         d=self.d
@@ -32,6 +35,12 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind=='conditional_soft_count':
+            energies=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
+            score=np.sum(energies/(energies+1e-3*energies.mean(axis=1,keepdims=True)+1e-30))
+            k=np.einsum('ia,ib->iab',a,a).reshape(d,d*d)
+            diag=np.maximum(np.einsum('ia,ab,ib->i',k,self.hh,k),0)
+            return float(score+np.sum(diag/(diag+1e-3*diag.mean()+1e-30)))
         if kind.startswith('uu_'):
             k=np.einsum('ia,jb->ijab',a,a).reshape(d*d,d*d)
             energy=np.maximum(np.einsum('ia,ab,ib->i',k,self.hh,k),0).reshape(d,d)
@@ -56,9 +65,12 @@ class Loss:
             v=a@self.signature
             # Each effect column carries equal weight; all-zero columns excluded.
             norm=np.linalg.norm(v,axis=0)
-            v=v[:,norm>1e-10]/norm[norm>1e-10]
+            # Avoid assigning full weight to noise in mathematically zero effects.
+            floor=.01*max(norm.max(),1e-20)
+            v=v/np.maximum(norm,floor)
             if kind=='signature_l1': return float(abs(v).sum())
-            return entropy(v*v,0)
+            prob=np.divide(v*v,np.sum(v*v,axis=0,keepdims=True),out=np.zeros_like(v),where=np.sum(v*v,axis=0,keepdims=True)>1e-28)
+            return float(-np.sum(prob*np.log(np.maximum(prob,1e-30))*np.minimum(norm/floor,1.)[None,:]**2))
         if kind=='zzx_mixed_rms':
             h=self.fields['third'][:,:d,:d,d:]
             u=np.einsum('ia,nabp,jb->nijp',a,h,a,optimize=True)

@@ -102,8 +102,15 @@ def decoder(context):
         return out[1]-out[0]
     return fn
 
-def derivatives(fn, w, d, third=False):
+def derivatives(fn, w, d, third=False, latent_only=False):
     """F1/F2 and optionally F3; derivatives are in supplied input units."""
+    if latent_only:
+        def fixed(z,x): return fn(torch.cat((z,x)))
+        grad=torch.func.jacrev(fixed,argnums=0)
+        hess=torch.func.jacfwd(grad,argnums=0)
+        wt=torch.as_tensor(w,dtype=torch.float64)
+        return {name:np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in wt.split(32)])
+                for name,op in [('g',grad),('h',hess)]}
     grad = torch.func.jacrev(fn)
     hess = torch.func.jacfwd(grad)
     wt = torch.as_tensor(w, dtype=torch.float64)

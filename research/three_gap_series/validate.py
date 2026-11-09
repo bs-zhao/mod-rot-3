@@ -12,7 +12,7 @@ def main():
     p.add_argument('--model',choices=DIMS,required=True)
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
-    a=p.parse_args(); torch.set_num_threads(2); c=load(a)
+    a=p.parse_args();a.metric='uu_off_rms'; torch.set_num_threads(2); c=load(a)
     rng=np.random.default_rng(13); rows=rng.choice(len(c['data']['x']),1000,replace=False)
     data=c['data']; t=torch.tensor(data['parameters'][data['subject_index'][rows]])
     x=torch.tensor(data['x'][rows]); eta=torch.vmap(lambda t,x:formula(a.model,t,x))(t,x)

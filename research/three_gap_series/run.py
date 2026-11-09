@@ -18,24 +18,25 @@ def rotation(angles, d):
         r[i]=c*rowi-s*rowj; r[j]=s*rowi+c*rowj
     return r
 
-def numerical_fields(fn, w, d, step, third=False):
+def numerical_fields(fn, w, d, step, third=False,latent_only=False):
     """E09 query-access central differences. Receives only point->value oracle.
 
     Does not access any expression or derivative. Not an original-table estimator.
     """
     if third: raise ValueError('F3 finite differences not implemented')
-    n,p=w.shape
+    n,width=w.shape
+    p=d if latent_only else width
     def query(v):
         with torch.no_grad():
             return torch.vmap(fn)(torch.tensor(v,dtype=torch.float64)).numpy()
     f=query(w); g=np.zeros((n,p)); h=np.zeros((n,p,p))
     for i in range(p):
-        vi=np.eye(p)[i]*step
+        vi=np.eye(width)[i]*step
         plus,minus=query(w+vi),query(w-vi)
         g[:,i]=(plus-minus)/(2*step)
         h[:,i,i]=(plus-2*f+minus)/step**2
         for j in range(i):
-            vj=np.eye(p)[j]*step
+            vj=np.eye(width)[j]*step
             mixed=(query(w+vi+vj)-query(w+vi-vj)-query(w-vi+vj)+query(w-vi-vj))/(4*step**2)
             h[:,i,j]=h[:,j,i]=mixed
     return dict(g=g,h=h)
@@ -47,7 +48,7 @@ def prepare(args, c):
     candidates=np.flatnonzero(np.isin(subject,train))
     x=data['x']
     # G1/G2 derivative protocol: CR3 positive-money interior domain only.
-    if args.model=='CR3':
+    if args.model=='CR3' and args.metric!='conditional_soft_count':
         selected=x[candidates]
         mask=(selected[:,[0,1,3,4]]>1.).all(1)&(selected[:,[2,5]]>.03).all(1)&(selected[:,[2,5]]<.97).all(1)
         candidates=candidates[mask]
@@ -68,7 +69,16 @@ def prepare(args, c):
     else:
         def fn(w): return torch.sigmoid(base(w))
     w=np.concatenate((v[subject[rows]],xs),axis=1)
-    return fn,w,np.cov(v[train],rowvar=False,bias=True),v,rows,dict(x_mean=xm,x_sd=sx,domain_fraction=len(candidates)/np.isin(subject,train).sum())
+    groups=None
+    if args.metric=='conditional_soft_count':
+        if args.model!='CR3': raise ValueError('This conditional candidate is CR3-design-specific')
+        xx=x[rows]
+        groups=np.full(len(rows),3)
+        groups[(xx[:,[0,3]]==0).all(1)]=2
+        groups[(xx[:,[2,5]]==.5).all(1)]=1
+        groups[(xx[:,[1,4]]==0).all(1)]=0
+        if len(np.unique(groups))<4: raise ValueError('All four CR3 design groups must be sampled')
+    return fn,w,np.cov(v[train],rowvar=False,bias=True),v,rows,dict(x_mean=xm,x_sd=sx,domain_fraction=len(candidates)/np.isin(subject,train).sum(),groups=groups)
 
 def polynomial_fields(args,c,fn,w,v,protocol,third):
     from estimators import PolynomialSieve
@@ -94,7 +104,9 @@ def polynomial_fields(args,c,fn,w,v,protocol,third):
     f=sieve.fields(w@b.T,third)
     fields=dict(g=f['g']@b,h=np.einsum('ai,nab,bj->nij',b,f['h'],b,optimize=True))
     if third: fields['third']=np.einsum('ai,bj,ck,nabc->nijk',b,b,b,f['third'],optimize=True)
-    reference=derivatives(fn,w,d,third)
+    if args.metric=='conditional_soft_count':
+        fields=dict(g=fields['g'][:,:d],h=fields['h'][:,:d,:d])
+    reference=derivatives(fn,w,d,third,args.metric=='conditional_soft_count')
     errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
     info=dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_row_hash=__import__('hashlib').sha256(selected_rows[0].tobytes()).hexdigest(),
               validation_row_hash=__import__('hashlib').sha256(selected_rows[1].tobytes()).hexdigest(),
@@ -125,7 +137,8 @@ def main():
     # One field cache shared among candidate losses, no fitted R or T labels.
     third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms'
     fn,w,cov,v,rows,protocol=prepare(args,c)
-    cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}.npz'
+    latent_only=args.metric=='conditional_soft_count'
+    cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}.npz'
     estimator_info=None
     if cache.exists():
         with np.load(cache) as saved:
@@ -138,9 +151,10 @@ def main():
         if args.estimator=='polynomial':
             fields,estimator_info=polynomial_fields(args,c,fn,w,v,protocol,third)
             dump(cache.with_suffix('.json'),estimator_info)
-        else: fields=(derivatives(fn,w,d,third) if args.estimator=='direct' else numerical_fields(fn,w,d,args.step,third))
+        else: fields=(derivatives(fn,w,d,third,latent_only) if args.estimator=='direct' else numerical_fields(fn,w,d,args.step,third,latent_only))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
+    if latent_only: fields['groups']=protocol['groups']
     loss=Loss(fields,cov,d,args.metric)
     rng=np.random.default_rng(args.seed+1)
     # Mathematical invariance audit over arbitrary signed scales, permutations and rotations.
