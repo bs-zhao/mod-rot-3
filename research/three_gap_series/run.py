@@ -151,12 +151,37 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
     train,y=tables[0];val,vy=tables[1]
     sieve=BankSieve(args.degree,args.ridge,args.channel).fit(train@hidden.T,y,val@hidden.T,vy)
     sieve.eval_stimulus=all_trials[rows].astype(int)
-    f=sieve.fields(w[:,:d]@hidden.T,False,args.structure_link)
+    if args.subject_mean:
+        f=sieve.mean_fields(v[c['splits']['train']]@hidden.T)
+    else: f=sieve.fields(w[:,:d]@hidden.T,False,args.structure_link)
     fields=dict(g=f['g']@hidden,h=np.einsum('ai,nab,bj->nij',hidden,f['h'],hidden,optimize=True))
-    reference=derivatives(structure_function(fn,args),w,d,False,True)
-    errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
+    if args.subject_mean:
+        fields['groups']=group_labels(bank)
+        errors=None
+    else:
+        reference=derivatives(structure_function(fn,args),w,d,False,True)
+        errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
     return fields,dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_ids=ids_used[0],validation_ids=ids_used[1],
                        structure_link=args.structure_link)
+
+def group_labels(xx):
+    labels=np.full(len(xx),3)
+    labels[(xx[:,[0,3]]==0).all(1)]=2
+    labels[(xx[:,[2,5]]==.5).all(1)]=1
+    labels[(xx[:,[1,4]]==0).all(1)]=0
+    return labels
+
+def direct_mean_fields(args,c,fn,v,protocol):
+    data=c['data'];d=c['d'];sub=data['subject_index']
+    ix=np.flatnonzero(sub==0);ix=ix[np.argsort(data['trial_index'][ix])]
+    bank=data['x'][ix];x=(bank-protocol['x_mean'])/protocol['x_sd']
+    rng=np.random.default_rng(args.seed+912)
+    ids=rng.choice(c['splits']['train'],min(args.mean_subjects,len(c['splits']['train'])),replace=False)
+    query=np.concatenate((np.repeat(v[ids],500,axis=0),np.tile(x,(len(ids),1))),axis=1)
+    fields=derivatives(structure_function(fn,args),query,d,False,True)
+    fields={k:value.reshape(len(ids),500,*value.shape[1:]).mean(0) for k,value in fields.items()}
+    fields['groups']=group_labels(bank)
+    return fields,dict(aggregation='subject mean of signed fields first, then stimulus energy',mean_subject_ids=ids)
 
 def main():
     p=argparse.ArgumentParser(__doc__)
@@ -175,23 +200,29 @@ def main():
     p.add_argument('--train-rows',type=int,default=32000);p.add_argument('--validation-rows',type=int,default=8000)
     p.add_argument('--train-subjects',type=int,default=1024);p.add_argument('--validation-subjects',type=int,default=256)
     p.add_argument('--structure-link',choices=['native','log_odds'],default='native')
+    p.add_argument('--subject-mean',type=int,choices=[0,1],default=0)
+    p.add_argument('--mean-subjects',type=int,default=128)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
+    if args.subject_mean and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.estimator not in ['direct','stimulus'] or (args.channel!='logit' and args.structure_link!='log_odds')):
+        raise ValueError('Subject-mean currently requires CR3 conditional canonical-logit direct or bank fields')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     out=out.with_name(out.name+f'_n{args.samples}_starts{args.starts}_degree{args.degree}_ridge{args.ridge:g}_link{args.structure_link}_nt{args.train_rows}_nv{args.validation_rows}_ns{args.train_subjects}_vs{args.validation_subjects}_h{args.step:g}')
+    if args.subject_mean: out=out.with_name(out.name+f'_subjectmean{args.mean_subjects}')
     out.mkdir(parents=True,exist_ok=True)
     # One field cache shared among candidate losses, no fitted R or T labels.
     third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms'
     fn,w,cov,v,rows,protocol=prepare(args,c)
     latent_only=args.metric.startswith('conditional_')
     cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
+    if args.subject_mean:cache=cache.with_name(cache.stem+f'_subjectmean{args.mean_subjects}.npz')
     estimator_info=None
     if cache.exists():
         with np.load(cache) as saved:
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
-            fields={k:saved[k] for k in ['g','h','third'] if k in saved.files}
+            fields={k:saved[k] for k in ['g','h','third','groups'] if k in saved.files}
         if cache.with_suffix('.json').exists():
             import json
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
@@ -202,12 +233,15 @@ def main():
         elif args.estimator=='stimulus':
             fields,estimator_info=bank_fields(args,c,fn,w,v,protocol,rows)
             dump(cache.with_suffix('.json'),estimator_info)
+        elif args.subject_mean:
+            fields,estimator_info=direct_mean_fields(args,c,fn,v,protocol)
+            dump(cache.with_suffix('.json'),estimator_info)
         else:
             target=structure_function(fn,args)
             fields=(derivatives(target,w,d,third,latent_only) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
-    if latent_only: fields['groups']=protocol['groups']
+    if latent_only and 'groups' not in fields: fields['groups']=protocol['groups']
     loss=Loss(fields,cov,d,args.metric)
     rng=np.random.default_rng(args.seed+1)
     # Mathematical invariance audit over arbitrary signed scales, permutations and rotations.

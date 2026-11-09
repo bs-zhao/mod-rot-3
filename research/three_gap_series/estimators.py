@@ -109,3 +109,17 @@ class BankSieve(PolynomialSieve):
     def raw_derivative(self,w,indices):
         values=super().raw_derivative(w,indices)
         return values[np.arange(len(w)),self.eval_stimulus]
+
+    def mean_fields(self,w):
+        """A01 over subjects FIRST, then graph/curvature energies over stimuli.
+
+        A different M1 estimand from E_subject,stimulus[g g.T].
+        Canonical logit structure only; the outer sigmoid is not averaged away.
+        """
+        p=w.shape[1];stimuli=self.coef.shape[1]
+        g=np.empty((stimuli,p));h=np.empty((stimuli,p,p))
+        for i in range(p): g[:,i]=super().raw_derivative(w,(i,)).mean(0)
+        for i,j in itertools.combinations_with_replacement(range(p),2):
+            values=super().raw_derivative(w,(i,j)).mean(0)
+            h[:,i,j]=h[:,j,i]=values
+        return dict(g=g,h=h)
