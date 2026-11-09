@@ -21,9 +21,26 @@ import numeric
 from oracle import DIMENSIONS, values
 from run import rotation,rotate_h
 from metrics import compute_metrics
+from selected_metrics import compute_selected
 
 
 class NumericalHessians(unittest.TestCase):
+    def test_selected_metrics_identical_to_full_catalog(self):
+        rng=np.random.default_rng(2026)
+        d,p,n=4,6,25
+        z=rng.normal(size=(n,d,d));z=(z+z.transpose(0,2,1))/2
+        x=rng.normal(size=(n,d,p))
+        full=compute_metrics(z,x)
+        wanted=[name for name in full if
+                (name.startswith(("zz_","zx_")) and
+                 ("third" not in name and "fourth" not in name))]
+        fast=compute_selected(z,x,wanted)
+        unsupported=set(wanted)-set(fast)
+        self.assertFalse(unsupported,f"Unsupported numeric metric keys: {sorted(unsupported)[:20]}")
+        for key in wanted:
+            self.assertAlmostEqual(full[key],fast[key],delta=1e-8*max(1,abs(full[key])),
+                                   msg=key)
+
     def test_sieve_recovers_known_quadratic_hessians(self):
         rng=np.random.default_rng(9)
         n=600; p=3
