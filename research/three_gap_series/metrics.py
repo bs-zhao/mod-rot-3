@@ -4,7 +4,7 @@ import itertools
 
 METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
-           'ux_mean_l1', 'signature_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios')
+           'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -74,6 +74,7 @@ class Loss:
             return float((energy/(energy+.01*scale+1e-30)).sum())
         if kind.startswith('signature_'):
             v=a@self.signature
+            if kind=='signature_plain_l1': return float(abs(v).sum())
             # Each effect column carries equal weight; all-zero columns excluded.
             norm=np.linalg.norm(v,axis=0)
             # Avoid assigning full weight to noise in mathematically zero effects.
