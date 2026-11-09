@@ -1002,3 +1002,184 @@ $$
 ### 本 README 最终一句话
 
 > 以固定被试 Z、各人 X 和冻结 decoder 为基础，对每个正交旋转 R 定义 \(U=RZ\) 与 \(W=[U,X]\)。从 WY 或解析生成函数取得 Hessian/高阶导数字段，经**独立的 M1 结构聚合、M2 统计推断与 M3 简单性定义**生成无监督损失并搜索 R；再使用只在评价阶段可见的真实 T 检查是否找到了与认知参数一一对应的轴。所有纳入 R-only 优化的损失必须对旋转后的逐维缩放 D、轴符号和轴排列不变，同时必须通过解析真轴最小性和 numeric/decoder 迁移三重检验。
+
+---
+
+## 11. 四个 Toy Model 的冻结 NP / Z 地址与所有后续实验统一的配置参数
+
+### 11.1 当前研究使用的四组已训练配置
+
+本 README 的第一波实验直接使用 **S3 已训练好的 NP checkpoint（包含 encoder 和 decoder）** 以及 **S5 用每位被试全部观察试次提取的、冻结的后验均值 Z**。不重新训练 NP，也不将真实 T 送入神经网络。默认参数维度 \(d_T\)、NP 原始 latent dimension `zdim`（CLI 中也叫 `--latent-dim`）和 β 如下：
+
+| Model | 真实 T 参数维数 \(d_T\) | 本轮默认 `zdim` | β（NP 训练 KL 系数） | 默认 PCA |
+|---|---:|---:|---:|---|
+| **C1** | 4 | **4** | **0.0005** | 关闭 |
+| **C2** | 4 | **4** | **0.0005** | 关闭 |
+| **C3** | **6** | **6** | **0.0005** | 关闭 |
+| **CR3** | 4 | **4** | **0.00005** | 关闭 |
+
+本阶段默认同时固定 `lambda_sparse=0`、`context_min=0.25`、`context_max=0.80`、`repeat=1`；这几个参数**也参与 checkpoint 目录路径的计算**。因此，“给定 model、β、zdim 就能找到对应网络”仅在这些其他条件固定时成立。若日后改变稀疏惩罚、context 范围或重复实验编号，必须用完整训练元数据准确定位 checkpoint，不能只凭 β 和 zdim 猜测路径。
+
+**准确的本地路径模板**（从仓库根目录起算）：
+
+~~~text
+outputs/choice/<MODEL>/s3_train/<CONDITION>/repeat01/s3_train__checkpoint.pt
+outputs/choice/<MODEL>/s4_evaluate/<CONDITION>/repeat01/s4_evaluate__latent.npz
+~~~
+
+其中 `<CONDITION>` 的构造来自 `np/src/modrot3/pipeline.py` 调用的 `training_condition_tag`：
+
+~~~text
+beta<beta_tag>_lambda<lambda_tag>_ctx<context_min_tag>to<context_max_tag>_L<zdim>
+~~~
+
+在上述四组固定默认配置下，准确路径为：
+
+**C1（zdim=4, β=0.0005）**
+
+~~~text
+outputs/choice/C1/s3_train/beta0p0005_lambda0_ctx0p25to0p8_L4/repeat01/s3_train__checkpoint.pt
+outputs/choice/C1/s4_evaluate/beta0p0005_lambda0_ctx0p25to0p8_L4/repeat01/s4_evaluate__latent.npz
+~~~
+
+**C2（zdim=4, β=0.0005）**
+
+~~~text
+outputs/choice/C2/s3_train/beta0p0005_lambda0_ctx0p25to0p8_L4/repeat01/s3_train__checkpoint.pt
+outputs/choice/C2/s4_evaluate/beta0p0005_lambda0_ctx0p25to0p8_L4/repeat01/s4_evaluate__latent.npz
+~~~
+
+**C3（zdim=6, β=0.0005）**
+
+~~~text
+outputs/choice/C3/s3_train/beta0p0005_lambda0_ctx0p25to0p8_L6/repeat01/s3_train__checkpoint.pt
+outputs/choice/C3/s4_evaluate/beta0p0005_lambda0_ctx0p25to0p8_L6/repeat01/s4_evaluate__latent.npz
+~~~
+
+**CR3（zdim=4, β=0.00005）**
+
+~~~text
+outputs/choice/CR3/s3_train/beta5em05_lambda0_ctx0p25to0p8_L4/repeat01/s3_train__checkpoint.pt
+outputs/choice/CR3/s4_evaluate/beta5em05_lambda0_ctx0p25to0p8_L4/repeat01/s4_evaluate__latent.npz
+~~~
+
+**路径与文件存在性的区别**：这里列出的是**当前代码确定的预期本地保存地址**，并非已经验证这八个文件都存在于某台运行电脑。仓库的 `.gitignore` 明确排除了 `outputs/`，所以 GitHub 本身**不提供这些 checkpoint/Z 文件的公开下载链接**；实际运行前要检查路径存在，并核对 checkpoint hash、数据 hash、模型配置和 subject split。不能只因 README 列出路径便假定网络文件已随仓库克隆。
+
+- `s3_train__checkpoint.pt`：冻结 NP 的权重与配置；从该文件加载 `DiscreteNeuralProcess` 并调用 decoder。
+- `s4_evaluate__latent.npz`：S5 保存的数据，至少包含 `z`、`z_logvar`、`train_ids`、`validation_ids`、`test_ids`、`checkpoint_sha256` 等。**旋转优化不能读取其中 `theta_true` 字段**；该字段只能用于监督 Oracle 或训练完成后的 TEST 评价。
+- 在调用 decoder 时应按 checkpoint 原模型的输入 X 与 Z 顺序、原始数值尺度和 logits 语义计算，不能将 PCA 的 PC 或旋转后的 U 直接塞给原 decoder。
+
+### 11.2 所有后续实验脚本都必须可指定的三个参数
+
+**从此以后所有新写的 Hessian / WY inference / simplicity / rotation 实验脚本，必须显式接受以下三个用户参数**，不能把某组 β、zdim 或是否使用 PCA 写死：
+
+| CLI 参数 | 含义 | 约束 |
+|---|---|---|
+| **`--beta <float>`** | 选取哪个 β 下训练完成的 NP checkpoint 和对应 Z | 必须匹配同一完整 condition |
+| **`--zdim <int>`** | **原始 NP checkpoint 的 latent dimension**，不是 PCA 后维数 | 非 PCA 模式要求 `zdim == d_T`；PCA 模式要求 `zdim >= d_T` |
+| **`--pca 0/1`** | `0`：直接使用原始 Z；`1`：从原始全部 Z 维度做 PCA，取前 `d_T` 个 PC 代替 Z 进入后续 R 搜索 | PCA 只能使用 TRAIN 被试拟合，参数应用到全体被试 |
+
+推荐新实验的调用界面（示意，**不是说当前全部旧脚本已经实现了这些新 flags**）：
+
+~~~cmd
+python rotations/<独立套餐>/run.py --model C1 --beta 0.0005 --zdim 4 --pca 0
+python rotations/<独立套餐>/run.py --model C2 --beta 0.0005 --zdim 4 --pca 0
+python rotations/<独立套餐>/run.py --model C3 --beta 0.0005 --zdim 6 --pca 0
+python rotations/<独立套餐>/run.py --model CR3 --beta 0.00005 --zdim 4 --pca 0
+~~~
+
+如果实验套餐改用 PCA，则把末尾改为 `--pca 1`，其他参数不变；未来也允许 `zdim > d_T` 的 checkpoint 经 PCA 降到 `d_T`。需要避免将“原始潜变量维数”“PCA 后搜索维数”“真实参数维数”当成同一个参数：本节定义 `zdim` 是**读取原始模型和 Z 的维数**，而无监督旋转搜索使用的维数固定为 \(k=d_T\)。
+
+### 11.3 `--pca 0`：不做 PCA，直接在原始 Z 上旋转
+
+对从 S5 提取的 \(Z_{\mathrm{raw}}\in\mathbb R^{N\times\mathrm{zdim}}\)：
+
+1. 验证 `zdim == d_T`，否则抛出明确错误；
+2. 按 TRAIN 被试计算潜变量均值 \(\mu_Z\)，并令 \(Z_c=Z_{\mathrm{raw}}-\mu_Z\)；
+3. 用 \(V=Z_c\) 作为后续旋转的输入：\(U=RV\)；
+4. 保存来源 checkpoint、split、输入维度和中心化参数。
+
+这一模式中，R 作用于原始 NP latent 坐标系（除固定中心化）。其中二阶统计相关性和非正交性均由实际学到的 Z 决定，**不能假定原始 Z 自动正交/独立**。
+
+### 11.4 `--pca 1`：PCA 取前 \(d_T\) 个 PC 代替 Z
+
+1. 验证原始 `zdim >= d_T`；**如果原始 Z 维度不足，则不能凭 PCA 生成额外有效维度**。
+2. 使用原始 Z 的**全部 zdim 个输入坐标**，只在 TRAIN 被试上拟合 PCA；不要用 TEST 参与拟合 PC 方向。
+3. 按解释方差从大到小排序，**明确取前 \(k=d_T\) 个 PC**，不采用 `explained_variance_ratio > 0.05` 之类可能产生可变维度的阈值选择。
+4. 将同一个 TRAIN 拟合的 PCA 应用到 TRAIN、VALIDATION 和 TEST 中全部被试，得到：
+
+$$
+\boxed{
+V_s=C_k(Z_{\mathrm{raw},s}-\mu_Z),
+\qquad C_k\in\mathbb R^{k\times\mathrm{zdim}},\quad k=d_T.
+}
+$$
+
+随后搜索 \(R\in O(k)\)，令 \(U_s=RV_s\)。
+
+5. **PCA 不是 whitening**：本参数仅旋转到 PC 坐标并按解释方差取前 k 个，不默认再除以 PC 标准差/特征值平方根。是否白化属于额外独立实验条件，未来需要时另加参数，不能暗中改变 `--pca` 的含义。
+6. 同时保存 `components`、`train_mean`、`explained_variance_ratio`、实际输入/输出维数、`source_latent_sha256` 等，确保可重建、可验证；PC 的正负号由固定 PCA 算法确定，后续对应关系允许符号翻转。
+
+**现有 S6 已实现 TRAIN-only PCA**，文件路径：
+
+~~~text
+outputs/choice/<MODEL>/s12_z_diagnostics/<CONDITION>/repeat01/s12__pca.npz
+~~~
+
+其中 `components` 保存所有原始 PC 方向，`transformed_z` 保存**全部被试**投影到所有原始 PC 后的得分，`train_mean` 为 TRAIN 的拟合均值。后续实验可直接读取 `transformed_z[:, :d_T]`，但必须核验 checkpoint/latent hash 和选取条件一致。若 S6 尚未运行，可以在新实验的**数据加载层**以相同 TRAIN-only 规则拟合并保存 PCA；此时不同代码不应使用彼此不一致的 PCA 预处理。
+
+#### 关键：被 PCA 丢弃的 Z 维度如何影响 decoder 调用？
+
+当 `zdim == d_T` 时，全部 PC 均被保留，PCA 只是**可逆的正交换基**，不会丢失 Z 信息。可以从 U 通过 \(R^\top\)、PC 逆变换和 TRAIN 均值**精确恢复**原始 Z 再调用冻结 decoder。
+
+当 `zdim > d_T` 时，前 k 个 PC **不能独自精确恢复原始 Z**。分解：
+
+$$
+Z_{\mathrm{raw},s}
+=
+\mu_Z+C_k^\top V_s+r_s,
+\qquad
+r_s=Z_{\mathrm{raw},s}-\mu_Z-C_k^\top V_s.
+$$
+
+如果选择保留每位被试原来的残差 \(r_s\)，则逆向调用：
+
+$$
+\boxed{
+Z_{\mathrm{raw},s}
+=
+\mu_Z+C_k^\top R^\top U_s+r_s.
+}
+$$
+
+在每位被试的对应位置上**精确保留原 decoder 输出**，但这个查询函数事实上还依赖固定的被试残差 \(r_s\)，不能声称它是一个全局只依赖 \((U,X)\) 的函数。若设 \(r_s=0\)，就得到**截断 PCA 近似 decoder**，其输出不再保证与原模型相同，必须额外审计预测误差与导数失真；这会给三个技术鸿沟增加一个**PCA 降维误差**，不应混入原定的 Gap 3 而不报告。
+
+所以：
+
+- **本轮默认等维 zdim=d_T**：`--pca 0` 与 `--pca 1` 都能用可逆坐标变化保持 decoder 的预测一致性；二者对应**不同的 R 搜索坐标系**，应当分别评估，不能合并角度或监督 R*。
+- **未来如果 zdim>d_T 且 pca=1**：必须明确选 `residual-preserved` 或 `residual-zero` 的 decoder 查询协议，记录额外误差；在没有选定协议时应停止并提示，而不是无声丢弃后面的 PC 维度。
+
+### 11.5 旧流水线脚本与新实验脚本的接口区别
+
+现有原始 NP 训练/提取脚本仍使用 `--latent-dim`，而不是 `--zdim`；本节的三个统一参数是**新研究/旋转实验脚本必须遵守的接口要求**，不是对现有代码已完成改造的声明。已有 NP 运行示例：
+
+~~~cmd
+python np/s5_extract_z.py --model C1 --beta 0.0005 --latent-dim 4 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --repeat 1
+python np/s5_extract_z.py --model C2 --beta 0.0005 --latent-dim 4 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --repeat 1
+python np/s5_extract_z.py --model C3 --beta 0.0005 --latent-dim 6 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --repeat 1
+python np/s5_extract_z.py --model CR3 --beta 0.00005 --latent-dim 4 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --repeat 1
+~~~
+
+如果还需要生成已有 S6 PCA 文件，可在对应模型执行 `np/s6_pca.py`，参数与 S5 保持完全一致；上述 s5 命令在 checkpoint 已存在时**只提取 Z，不会重新训练 NP**。
+
+任何新 rotation/统计模块读取模型时，都必须验证：
+
+- **model / β / 原始 zdim / condition / repeat** 和 checkpoint 配置一致；
+- S5 `checkpoint_sha256` 与真实 S3 checkpoint 完全一致，`context_mode` 是 `all_observed_trials`；
+- PCA（如果开启）`source_latent_sha256` 与所加载 S5 latent 文件匹配；
+- 所有拟合均值、PCA 方向只来自 TRAIN；TEST T 只用于旋转固定后的报告；
+- 后续实验目录需同时编码 `beta`、`zdim` 和 `pca`，避免不同设置覆盖输出结果；
+- 未满足以上条件时**明确失败**，不要回退到另一套 checkpoint、另一批 Z 或默认 `pca` 状态。
+
+**本节只为接下来实现代码建立统一数据加载与三参数接口约定。本次 README 更新不改变现有训练脚本、S5/S6 文件、decoder 权重或任一旋转实验。**
+
