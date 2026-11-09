@@ -88,5 +88,20 @@ def varL1(B):
     return v.clamp_min(0).sqrt().sum() / (v.sum().sqrt() + EPS)
 
 
+def _softL0k(k):
+    def f(B):
+        E2 = _E2(B)
+        tau2 = (k * k) * E2.mean()
+        return (E2 / (E2 + tau2 + EPS)).sum()
+    f.__name__ = f"softL0_{int(round(k * 100)):02d}"
+    return f
+
+
+def logSp(B):
+    E2 = _E2(B)
+    return torch.log(E2 / (E2.mean() + EPS) + 1e-3).mean()
+
+
 LOSSES = {f.__name__: f for f in (rmsL1, absL1, colL1L2, rowNeff, cellNeff, softL0, quartimax,
-                                  localL1, localHoyer, kurtMax, kurtMin, varL1)}
+                                  localL1, localHoyer, kurtMax, kurtMin, varL1, logSp,
+                                  _softL0k(0.03), _softL0k(0.1), _softL0k(0.3))}

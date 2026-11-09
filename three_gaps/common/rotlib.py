@@ -30,12 +30,56 @@ VIEWS = {
     "TUUXd/pool": ("Tttx", 2, "diag2", "pool"),
     "TUXX/pool": ("Ttxx", 1, None, "pool"),
     "TUUUd/pool": ("Tttt", 3, "diag3", "pool"),
+    # projected onto an orthonormal stimulus basis Psi (cells = basis functions);
+    # for a fixed bank Psi = trial indicators, so these equal the */trial views.
+    "GP": ("gP", 1, None, "trial"),
+    "HUXP": ("HtxP", 1, None, "trial"),
+    "HUUP": ("HttP", 2, None, "trial"),
+    "HUUdP": ("HttP", 2, "diag2", "trial"),
+    "HUUoP": ("HttP", 2, "off2", "trial"),
 }
 
 
 def add_centered(base):
     if "g" in base:
         base["gc"] = base["g"] - base["g"].mean(1, keepdim=True)
+    return base
+
+
+def legendre_basis(X, deg):
+    """Orthonormal (under U(-1,1)^p) tensor Legendre basis, total degree <= deg. X (K,p)->(K,nb)."""
+    import itertools as it
+    K, p = X.shape
+    P = [torch.ones_like(X), X]
+    for n in range(1, deg):
+        P.append(((2 * n + 1) * X * P[n] - n * P[n - 1]) / (n + 1))
+    P = [P[n] * math.sqrt(2 * n + 1) for n in range(deg + 1)]
+    cols, names = [], []
+    for total in range(deg + 1):
+        for c in it.combinations_with_replacement(range(p), total):
+            e = [0] * p
+            for k in c:
+                e[k] += 1
+            col = torch.ones(K, dtype=X.dtype, device=X.device)
+            for j, ej in enumerate(e):
+                col = col * P[ej][:, j]
+            cols.append(col); names.append(tuple(e))
+    return torch.stack(cols, 1), names
+
+
+def add_projected(base, X, bank, deg=3):
+    """Project derivative fields over the K stimuli onto basis Psi (least squares).
+    bank=True: Psi = indicators (projection = identity)."""
+    if bank:
+        for src, dst in (("g", "gP"), ("Htx", "HtxP"), ("Htt", "HttP")):
+            if src in base:
+                base[dst] = base[src]
+        return base
+    Psi, _ = legendre_basis(X.to(base["g"].dtype), deg)
+    Pm = torch.linalg.pinv(Psi)  # (nb, K)
+    for src, dst in (("g", "gP"), ("Htx", "HtxP"), ("Htt", "HttP")):
+        if src in base:
+            base[dst] = torch.einsum("bk,sk...->sb...", Pm, base[src])
     return base
 
 
