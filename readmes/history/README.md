@@ -1,5 +1,8 @@
 # Hessian 指标研究历程与完整方法档案（截至 2026-11-09）
 
+> **新专题（2026-11-09）**：[旋转简单性与稀疏损失：CR3 06/07 实证、Toy M001–M024、ZZ/ZX 高阶结构和三个技术 gap](README_SPARSITY_SIMPLICITY_AND_FUNCTIONAL_ROTATION_20261109.md)。聚焦“多主作用 + 小残余”的 L1/L2/Top-k/Soft-L0/Log-sum/Capped 惩罚，并区分解析成功、Formula-Y 回归成功及 NN-Y 成功。
+
+
 > **新专题（2026-11-09）**：[从 Hessian 函数到数值指标：非线性、交互、条件主效应与 RMS](README_HESSIAN_FUNCTIONAL_METRICS_AND_EFFECTS_20261109.md)。重点归档本轮对话逐步推导的例子、三种曲率能量的精确分解、RMS 为什么不抵消符号，以及数学领域中的典型用途。
 >
 > **性质**：研究讨论的历史汇总（history），不是最终定论、运行命令、实验结果汇报或已经全部实现的算法。收录本项目截至目前围绕 Hessian 的**数学对象、统计量、可优化简单性指标、数值估计、旋转、函数交互、与 Sobol 的关系及反例**。为便于回溯，也记录与 Hessian 紧密相关的梯度、ANOVA、Sobol 等**非 Hessian** 对照指标，但明确标注其类别。
