@@ -18,6 +18,7 @@ from pathlib import Path
 import numpy as np
 from oracle import DIMENSIONS, derivatives, valid_x_mask
 from metrics import compute_metrics, metric_descriptor, INVARIANT_DIAGNOSTICS
+from functional import controlled_effects
 
 ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_OUT = ROOT/"outputs"/"math"/"10_multimodel_hessian_simplicity"
@@ -375,6 +376,8 @@ def run_one(model,args,out,seed):
               binary_choice_note="Analytic Hessian of Bernoulli choice is undefined; E[choice|T,X]=p",
               third_derivatives="finite differences of exact analytic second derivatives" if args.higher else "disabled",
               fourth_derivatives="finite differences of exact analytic Hessian" if args.fourth else "disabled",
+              function_value_contrasts="local 3-point/4-corner exact function evaluations; NOT Sobol" if args.functional else "disabled",
+              function_value_anchors=args.function_anchors, function_value_step=args.function_step,
               angle_grid=angles_from_spec(args.angles),
               planes=[f"{i+1}{j+1}" for i,j in planes],zero_angle="original TRUE T parameter axes",
               supervision_note="TRUE T oracle only: no learned Z, no NN, no WY Hessian estimator")
@@ -387,12 +390,16 @@ def run_one(model,args,out,seed):
         for angle in angles:
             R=rotation(d,i,j,angle)
             fourth=fourth_metrics(t,x,model,R,st,sx,args.fd_step) if args.fourth else None
+            functional, n_function_anchors = (
+                controlled_effects(t,x,model,R,st,sx,args.function_step,args.function_anchors,
+                                   args.relative_threshold) if args.functional else ({},0))
             for ch in ("logit","probability"):
                 zz,zx=rotate_h(*raw[ch],R)
                 high=higher_metrics(hd[ch],R) if hd is not None else {}
                 if fourth is not None:
                     high.update(fourth[ch])
                 score=compute_metrics(zz,zx,threshold=args.relative_threshold,higher=high)
+                score.update(functional.get(ch,{}))
                 metrics_seen.update(score)
                 rows.append(dict(model=model,channel=ch,plane=label,angle=float(angle),**score))
         print(f"    plane {label}: {len(angles)} angles x 2 channels",flush=True)
@@ -449,6 +456,10 @@ def main(argv=None):
     a.add_argument("--relative-threshold",type=float,default=.10)
     a.add_argument("--fd-step",type=float,default=.01)
     a.add_argument("--higher",action=argparse.BooleanOptionalAction,default=True)
+    a.add_argument("--functional",action=argparse.BooleanOptionalAction,default=True,
+                   help="Exact oracle 3-point self and 4-corner interactions, NOT Sobol")
+    a.add_argument("--function-anchors",type=int,default=24)
+    a.add_argument("--function-step",type=float,default=.04)
     a.add_argument("--fourth",action="store_true",help="Slow fourth derivative finite difference extension")
     a.add_argument("--multiway",type=int,default=6,help="Random SO(3), SO(4), SO(d) rotations per group")
     a.add_argument("--plots",type=int,default=3,help="Top metric plots per model/channel; 0 disables")
@@ -457,7 +468,8 @@ def main(argv=None):
     a.add_argument("--synthetic-debug",action="store_true",
                    help="Debug C1-C3 only; never count this as a real scientific run")
     args=a.parse_args(argv)
-    if args.subjects<3 or args.trials_per_subject<2 or args.fd_step<=0 or args.relative_threshold<=0 or args.multiway<0:
+    if (args.subjects<3 or args.trials_per_subject<2 or args.fd_step<=0 or args.relative_threshold<=0
+        or args.multiway<0 or args.function_anchors<2 or args.function_step<=0):
         a.error("subjects>=3, trials-per-subject>=2, fd-step/threshold>0, multiway>=0")
     models,alias=models_from_args(args.models)
     out=Path(args.output).resolve()
