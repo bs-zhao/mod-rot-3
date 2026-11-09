@@ -10,6 +10,8 @@ def main():
         s=json.loads(path.read_text(encoding='utf8'));a=s['args'];b=s['best']
         rows.append(dict(round=a['label'],model=a['model'],pca=a['pca'],source=a['source'],channel=a['channel'],
                          estimator=a['estimator'],metric=a['metric'],seed=a['seed'],samples=a['samples'],
+                         degree=a.get('degree'),ridge=a.get('ridge'),structure_link=a.get('structure_link','native'),
+                         train_rows=a.get('train_rows'),train_subjects=a.get('train_subjects'),
                          strict=s['gap1_strict_pass'],near10=bool(b['axis_min']>np.cos(np.deg2rad(10)) and min(s['plane_ranges'])>1e-5*(1+abs(s['truth_loss']))),
                          axis_min=b['axis_min'],truth=s['truth_loss'],best=b['loss'],improvement=s['truth_loss']-b['loss'],
                          failed_optimizers=sum(not x['success'] for x in s['solutions']),invariance=s['invariance_max'],

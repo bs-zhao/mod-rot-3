@@ -6,7 +6,7 @@ import sys
 import numpy as np
 import torch
 from scipy.stats import truncnorm
-from core import load,DIMS,sha,formula,dump,correspondence
+from core import load,DIMS,sha,formula,dump,correspondence,corr
 
 def main():
     p=argparse.ArgumentParser(__doc__)
@@ -66,6 +66,7 @@ def main():
                   fresh_T_sha256=__import__('hashlib').sha256(t.tobytes()).hexdigest(),
                   evaluation=evaluation,rotation=r,protocol='New independent subjects and Bernoulli responses; frozen original encoder; no refit/selection')
     metadata['supervised_oracle_fresh']=correspondence(v@np.asarray(oracle['rotation']).T,t) if oracle else None
+    metadata['true_parameter_correlations']=corr(t,t)
     dump(out/f'seed{a.seed}_{result["args"]["metric"]}_{result["args"]["channel"]}_{locked_hash[:8]}.json',metadata)
     print(a.model,evaluation['matched_mean'],evaluation['matched_min'],evaluation['off_max'],flush=True)
 
