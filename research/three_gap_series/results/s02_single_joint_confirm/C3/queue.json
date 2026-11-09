@@ -1,0 +1,11 @@
+{
+  "metrics": [
+    "hs_ux_rms_soft003",
+    "hs_full_rms_soft003"
+  ],
+  "completed": [
+    "hs_ux_rms_soft003",
+    "hs_full_rms_soft003"
+  ],
+  "starts": 64
+}

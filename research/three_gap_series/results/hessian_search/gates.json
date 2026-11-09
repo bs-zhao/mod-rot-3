@@ -184,6 +184,63 @@
     "metric": "hs_jd_profile1_strength0_selfl1_w8",
     "channel": "logit",
     "seed": 20261128,
+    "state": "STOPPED_G2",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 64, \"rbf_length\": 1.0, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G2",
+        "result": "results/h07_g2_tensor/CR3_beta5e-05_zdim4_pca0/formula/logit/tensor/hs_jd_profile1_strength0_selfl1_w8/s20261128_n4096_cfgab0a0e9a4e18/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfl1_w8",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G3",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 2, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 256, \"rbf_length\": 0.5, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g3_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G3",
+        "result": "results/h22_lower_order_g3/CR3_beta5e-05_zdim4_pca0/decoder/logit/tensor/hs_jd_profile1_strength0_selfl1_w8/s20261128_n4096_cfgee5d08b66c53/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfl1_w8",
+    "channel": "logit",
+    "seed": 20261128,
     "state": "STOPPED_G3",
     "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 256, \"rbf_length\": 0.5, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
     "models_g1_passed": [
@@ -208,32 +265,6 @@
         "model": "CR3",
         "stage": "G3",
         "result": "results/h09_g3_frozen_decoder/CR3_beta5e-05_zdim4_pca0/decoder/logit/tensor/hs_jd_profile1_strength0_selfl1_w8/s20261128_n4096_cfg4f7f77ff1e10/summary.json"
-      }
-    ]
-  },
-  {
-    "metric": "hs_jd_profile1_strength0_selfl1_w8",
-    "channel": "logit",
-    "seed": 20261128,
-    "state": "STOPPED_G2",
-    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 64, \"rbf_length\": 1.0, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
-    "models_g1_passed": [
-      "C1",
-      "C2",
-      "C3",
-      "CR3"
-    ],
-    "models_g2_passed": [
-      "C1",
-      "C2",
-      "C3"
-    ],
-    "models_g3_passed": [],
-    "failures": [
-      {
-        "model": "CR3",
-        "stage": "G2",
-        "result": "results/h07_g2_tensor/CR3_beta5e-05_zdim4_pca0/formula/logit/tensor/hs_jd_profile1_strength0_selfl1_w8/s20261128_n4096_cfgab0a0e9a4e18/summary.json"
       }
     ]
   },
@@ -383,6 +414,689 @@
         "model": "CR3",
         "stage": "G1",
         "result": "results/h12_curvature_modulation_single/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_third_repeat_l1/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_repeat_w90",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h13_modulation_combination_g1/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_repeat_w90/s20261128_n4096_cfga0cb24882665/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_modulation_cap_t0.03",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.03/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.03/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.03/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.03/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_modulation_log_t0.03",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_log_t0.03/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_log_t0.03/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_modulation_log_t0.03/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_log_t0.03/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_modulation_soft_t0.03",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_soft_t0.03/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_soft_t0.03/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_modulation_soft_t0.03/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_soft_t0.03/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_self_cap_t0.03",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_self_log_t0.03",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_log_t0.03/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_log_t0.03/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_self_log_t0.03/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_log_t0.03/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_self_soft_t0.03",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_soft_t0.03/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_soft_t0.03/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_self_soft_t0.03/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_soft_t0.03/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_mean_profile1_strength0",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_mean_profile1_strength0/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_modulation_cap_t0.1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.1/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.1/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.1/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_modulation_cap_t0.1/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_nonlinearity_self_cap_t0.1",
+    "channel": "logit",
+    "seed": 20261127,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.1/s20261127_n1024_cfg2167b0977b79/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.1/s20261127_n1024_cfgd42088721817/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.1/s20261127_n1024_cfg213fa2d30281/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h18_support_threshold_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.1/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfcap03_w9",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h19_capped_self_g1/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfcap03_w9/s20261128_n4096_cfg53dfa7018475/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_jd_profile1_strength0_selfcap03_w20",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G3",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 256, \"rbf_length\": 0.5, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g3_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G3",
+        "result": "results/h25_capped_joint_g3/CR3_beta5e-05_zdim4_pca0/decoder/logit/tensor/hs_jd_profile1_strength0_selfcap03_w20/s20261128_n4096_cfg67f4a50f33ef/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_graph_entries_cap_t0.03",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_cap_t0.03/s20261128_n4096_cfgfe1f4632b322/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_cap_t0.03/s20261128_n4096_cfg3f18f575ba53/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_graph_entries_cap_t0.03/s20261128_n4096_cfgb215fcf3d2a6/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_cap_t0.03/s20261128_n4096_cfgc1693238fb37/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_graph_entries_log_t0.03",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_log_t0.03/s20261128_n4096_cfgfe1f4632b322/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_log_t0.03/s20261128_n4096_cfg3f18f575ba53/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_graph_entries_log_t0.03/s20261128_n4096_cfgb215fcf3d2a6/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_log_t0.03/s20261128_n4096_cfgc1693238fb37/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_graph_entries_soft_t0.03",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_soft_t0.03/s20261128_n4096_cfgfe1f4632b322/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_soft_t0.03/s20261128_n4096_cfg3f18f575ba53/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_graph_entries_soft_t0.03/s20261128_n4096_cfgb215fcf3d2a6/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_graph_entries_soft_t0.03/s20261128_n4096_cfgc1693238fb37/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_graph_rows_cap_t0.03",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_cap_t0.03/s20261128_n4096_cfgfe1f4632b322/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_cap_t0.03/s20261128_n4096_cfg3f18f575ba53/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_graph_rows_cap_t0.03/s20261128_n4096_cfgb215fcf3d2a6/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_cap_t0.03/s20261128_n4096_cfgc1693238fb37/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_graph_rows_log_t0.03",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_log_t0.03/s20261128_n4096_cfgfe1f4632b322/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_log_t0.03/s20261128_n4096_cfg3f18f575ba53/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_graph_rows_log_t0.03/s20261128_n4096_cfgb215fcf3d2a6/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_log_t0.03/s20261128_n4096_cfgc1693238fb37/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_graph_rows_soft_t0.03",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_soft_t0.03/s20261128_n4096_cfgfe1f4632b322/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_soft_t0.03/s20261128_n4096_cfg3f18f575ba53/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_graph_rows_soft_t0.03/s20261128_n4096_cfgb215fcf3d2a6/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/h26_UU_graph_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_graph_rows_soft_t0.03/s20261128_n4096_cfgc1693238fb37/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_full_rms_soft003",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/s02_single_joint_confirm/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_full_rms_soft003/s20261128_n4096_cfgf69d0c8cf05f/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_ux_rms_soft003",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G2",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 256, \"rbf_length\": 0.5, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [
+      "C1",
+      "C2",
+      "C3"
+    ],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G2",
+        "result": "results/s05_single_soft003_g2/CR3_beta5e-05_zdim4_pca0/formula/logit/tensor/hs_ux_rms_soft003/s20261128_n4096_cfg887b7c52ede9/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_ux_rms_soft003",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G2",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 512, \"rbf_length\": 1.5, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-07}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G2",
+        "result": "results/s08_single_soft003_g2_smoother/CR3_beta5e-05_zdim4_pca0/formula/logit/tensor/hs_ux_rms_soft003/s20261128_n4096_cfg829ee2dd782b/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_ux_rms_soft003",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G2",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 2, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 256, \"rbf_length\": 0.5, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-05}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G2",
+        "result": "results/s06_single_soft003_g2_degree2/CR3_beta5e-05_zdim4_pca0/formula/logit/tensor/hs_ux_rms_soft003/s20261128_n4096_cfg9dfee68b9f6c/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_ux_rms_soft003",
+    "channel": "logit",
+    "seed": 20261128,
+    "state": "STOPPED_G2",
+    "inference": "{\"bandwidth\": 1.0, \"degree\": 3, \"estimator\": \"tensor\", \"neighbors\": 2048, \"rbf_centers\": 512, \"rbf_length\": 1.0, \"ridge\": 1e-06, \"train_rows\": 32000, \"train_subjects\": 3500, \"utility_ridge\": 1e-07}",
+    "models_g1_passed": [
+      "C1",
+      "C2",
+      "C3",
+      "CR3"
+    ],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "CR3",
+        "stage": "G2",
+        "result": "results/s07_single_soft003_g2_fullrbf/CR3_beta5e-05_zdim4_pca0/formula/logit/tensor/hs_ux_rms_soft003/s20261128_n4096_cfgbc5112461a4c/summary.json"
+      }
+    ]
+  },
+  {
+    "metric": "hs_uu_third_repeat_l1",
+    "channel": "probability",
+    "seed": 20261128,
+    "state": "STOPPED_G1",
+    "inference": "not_run",
+    "models_g1_passed": [],
+    "models_g2_passed": [],
+    "models_g3_passed": [],
+    "failures": [
+      {
+        "model": "C1",
+        "stage": "G1",
+        "result": "results/s03_probability_fields/C1_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_third_repeat_l1/s20261128_n4096_cfg564989dd7527/summary.json"
+      },
+      {
+        "model": "C2",
+        "stage": "G1",
+        "result": "results/s03_probability_fields/C2_beta0.0005_zdim4_pca0/formula/probability/direct/hs_uu_third_repeat_l1/s20261128_n4096_cfg0fbf9f940176/summary.json"
+      },
+      {
+        "model": "C3",
+        "stage": "G1",
+        "result": "results/s03_probability_fields/C3_beta0.0005_zdim6_pca0/formula/probability/direct/hs_uu_third_repeat_l1/s20261128_n4096_cfg0dc75bca9db2/summary.json"
+      },
+      {
+        "model": "CR3",
+        "stage": "G1",
+        "result": "results/s03_probability_fields/CR3_beta5e-05_zdim4_pca0/formula/probability/direct/hs_uu_third_repeat_l1/s20261128_n4096_cfg2304eca6f3e0/summary.json"
       }
     ]
   }

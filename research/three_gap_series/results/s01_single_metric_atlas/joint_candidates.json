@@ -1,0 +1,10 @@
+{
+  "channel": "logit",
+  "seed": 20261128,
+  "complete": true,
+  "metrics": [
+    "hs_ux_rms_soft003",
+    "hs_full_rms_soft003"
+  ],
+  "rule": "Same single objective survives all four analytic plane screens; controls excluded. No G1 success claimed."
+}
