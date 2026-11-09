@@ -228,7 +228,6 @@ def main():
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
             fields={k:saved[k] for k in ['g','h','third','groups'] if k in saved.files}
         if cache.with_suffix('.json').exists():
-            import json
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
         if args.estimator=='polynomial':
