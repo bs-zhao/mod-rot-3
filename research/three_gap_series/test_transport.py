@@ -6,6 +6,18 @@ from transport import operator_targets,flow_input
 from metrics import Loss
 
 class EquivarianceTests(unittest.TestCase):
+    def test_transport_dual_recovers_covectors_and_is_scale_permutation_invariant(self):
+        mixing=np.array([[1.,.6,.1,0.],[.2,1.,.4,.1],[0.,.1,1.,.5],[.3,0.,.2,1.]])
+        forward=mixing.T
+        fields=dict(g=np.ones((8,4)),transport_vector_grams=np.einsum('ka,kb->kab',forward,forward))
+        loss=Loss(fields,mixing@mixing.T,4,'transport_dual_cosine')
+        recovery=np.linalg.inv(mixing)
+        self.assertLess(abs(loss(recovery)),1e-12)
+        self.assertGreater(loss(forward),.1)
+        q,_=np.linalg.qr(np.random.default_rng(98).normal(size=(4,4)))
+        changed=(np.array([.001,-200.,-.7,4.])[:,None]*q)[[2,0,3,1]]
+        self.assertAlmostEqual(loss(q),loss(changed),places=12)
+
     def test_flow_generators_include_zero_amount_trials(self):
         x=np.array([[100,0,.5,0,0,.5],[50,0,.3,100,0,.7],[0,100,.5,0,50,.5],[80,20,.2,100,50,.8]],float)
         t=torch.tensor([.8,2.,.7,2.2],dtype=torch.float64)

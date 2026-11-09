@@ -1,5 +1,14 @@
 # Sequential three-gap experiments
 
+**Completed result (2026-11-09):** `transport_dual_cosine` with structured
+numerical-WY estimators meets the requested mean-correlation gap <= 0.01
+against each model's supervised reference on four fresh cohorts of 2,000
+subjects. See [the final report](results/final/REPORT.md), including the
+stimulus priors, channel restrictions, negative results and reproducible commands.
+This uses first-order functional transports, not a pure Hessian loss.
+`make_report.py` and its older figures describe an earlier exploratory snapshot;
+use `final_report.py` for the frozen final protocol.
+
 All code and generated artifacts for this series stay inside this directory.
 Original NP weights, data, Z, and other experiments are read-only.
 
