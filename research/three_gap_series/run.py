@@ -12,7 +12,7 @@ from scipy.optimize import minimize
 from scipy.special import expit
 from core import DIMS, load, dump, formula, decoder, derivatives, correspondence, sha
 from metrics import METRICS, Loss
-from strict_hessian import CATALOG as HESSIAN_CATALOG, HessianLoss
+from strict_hessian import CATALOG as HESSIAN_CATALOG, HessianLoss,is_combination
 
 def rotation(angles, d):
     r=np.eye(d)
@@ -382,7 +382,22 @@ def main():
     p.add_argument('--hessian-grid',type=int,default=0,help='Subjects in a TRAIN product evaluation grid; generic Hessian profile JD only')
     p.add_argument('--grid-stimuli',type=int,default=64)
     p.add_argument('--g1-angle-tolerance',type=float,default=5.,help='User-accepted maximum axis error in degrees, after sign/permutation matching')
+    p.add_argument('--combination-rationale',help='JSON evidence file with single-loss runs, complementarity and a common weight rule; required for combined candidates')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
+    if args.metric in HESSIAN_CATALOG and is_combination(args.metric):
+        if not args.combination_rationale:raise ValueError('User requires observed complementarity before combining losses; supply --combination-rationale')
+        evidence_path=Path(args.combination_rationale).resolve()
+        if not evidence_path.is_relative_to(Path(__file__).resolve().parent):raise ValueError('Combination evidence must stay within this experiment directory')
+        evidence=json.loads(evidence_path.read_text(encoding='utf8'))
+        if not evidence.get('component_runs') or not evidence.get('complementarity') or not evidence.get('weight_rule'):
+            raise ValueError('Combination evidence needs actual component runs, complementarity and a common weight rule')
+        for relative_path in evidence['component_runs']:
+            component_path=(Path(__file__).resolve().parent/relative_path).resolve()
+            if not component_path.is_relative_to(Path(__file__).resolve().parent):raise ValueError('Component evidence outside experiment directory')
+            component=json.loads(component_path.read_text(encoding='utf8'))
+            ca=component['args']
+            if ca['source']!='formula' or ca['estimator']!='direct' or ca['metric'] not in HESSIAN_CATALOG or is_combination(ca['metric']):
+                raise ValueError('Combination rationale must cite actual single-loss analytic experiments')
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus','local']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
     if args.subject_mean and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.estimator not in ['direct','stimulus'] or (args.channel!='logit' and args.structure_link!='log_odds')):
