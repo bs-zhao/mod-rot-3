@@ -112,7 +112,8 @@ def load_all(model, beta, zdim, pca, repeat=1, need_checkpoint=True, whiten=0):
         V = V @ Wz.T
         Minv = C.T @ np.linalg.inv(Wz)
     data = np.load(p["dataset"], allow_pickle=False)
-    out = dict(model=model, condition=p["condition"] + ("_white" if whiten else ""), paths={k: str(v) for k, v in p.items() if k != "condition"},
+    tag = p["condition"] + (f"_rep{repeat:02d}" if repeat != 1 else "") + ("_white" if whiten else "")
+    out = dict(model=model, condition=tag, repeat=repeat, paths={k: str(v) for k, v in p.items() if k != "condition"},
                z=z, mu_z=mu_z, C=C, Minv=Minv, V=V, whiten=whiten, train_ids=tr, val_ids=va, test_ids=te,
                x=np.asarray(data["x"], np.float64), y=np.asarray(data["y"]).reshape(-1),
                subject_index=np.asarray(data["subject_index"]),

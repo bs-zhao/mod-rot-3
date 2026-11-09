@@ -41,6 +41,12 @@ three_gaps/
 
 所有损失对逐轴尺度 D、符号、置换严格不变（G0 审计误差 ≤ 4e-6）。T 只在 R 固定后用于 TEST 评价。
 
+结果（EXP07/EXP08）：C1–C3 在 logit / prob / binary 三通道上跨过全部三个鸿沟，并在**两次独立训练的 NP**
+（repeat 1、2）上都达到监督 Oracle；CR3 在两次训练中都停在 ≈0.80（Oracle ≈0.87），见 EXPERIMENT_LOG.md。
+
+新 NP 确认（顺序执行，避免占满资源）：`bash three_gaps/exp08_fresh_np/pipeline.sh <py11 的 python.exe>`，
+然后 `python three_gaps/exp08_fresh_np/run.py`。`--repeat N≠1` 的输出目录带 `_repNN` 后缀。
+
 ```cmd
 python three_gaps/exp00_oracle/run.py    --model CR3 --beta 0.00005 --zdim 4 --pca 0
 python three_gaps/exp06_two_stage/run.py --model CR3 --beta 0.00005 --zdim 4 --pca 0 --view GCat --losses absL1,rmsL1 --tag final

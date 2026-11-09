@@ -96,6 +96,28 @@ RMS→L1 产生尖点，并且按 Birkhoff 凹性论证真轴是全局极小。
 - 不用阶段 A（B-only）：C1–C3 结论相同（阶段 A 对 C 模型非必需）；CR3 降到 0.60/0.66。
   ⇒ 阶段 A 的增益轴是 CR3 从 ~0.60 提升到 ~0.80 的主要来源。
 
+## EXP08 — 新训练 NP 上的独立确认（repeat 2）
+
+方法完全冻结（GCat 视图 / absL1 / 阶段 A 阈值 / 种子、起点、步数均与 EXP07 相同）；只换 NP：
+`np/s3_train.py --repeat 2`（新训练种子，其余超参与 repeat 1 相同）→ S5 全试次 Z → EXP00 → EXP06。
+Gap 1/2 不依赖 NP（在真 Tstd 坐标中），只重跑 decoder 来源。判据不变：TEST MCC ≥ Oracle − 0.02。
+（注：4 个训练并行会让笔记本卡死；`exp08_fresh_np/pipeline.sh` 改为顺序执行、每个进程 4 线程。）
+
+| model, channel | Gap3 rep1 | **Gap3 rep2（新 NP）** | 与 Oracle 夹角 rep1 / rep2 |
+|---|---|---|---|
+| C1 logit / prob / binary | PASS 0.969/0.969 | **PASS 0.969/0.970** | 1.9–2.1° / 1.5° |
+| C2 logit / prob / binary | PASS 0.971/0.971 | **PASS 0.970/0.971** | 2.2–2.4° / 2.4–2.6° |
+| C3 logit / prob / binary | PASS 0.962–0.963/0.963 | **PASS 0.965/0.965** | 3.5–3.6° / 2.5–3.4° |
+| CR3 logit | fail 0.805/0.872 | fail 0.807/0.869 | 30.4° / 29.8° |
+| CR3 prob | fail 0.792/0.872 | fail 0.803/0.869 | 34.5° / 31.3° |
+| CR3 binary | fail 0.708/0.872 | fail 0.700/0.869 | 48.7° / 48.8° |
+
+- 新 NP 的恒等 MCC：C1 0.686，C2 0.919（仍近对齐），C3 0.664，CR3 0.709 ⇒ C1、C3 仍是真正的旋转恢复检验。
+- 阶段 A 在两次训练中检测到同样的轴（C：平移 e1 ≤ 0.09；CR3 logit/prob：增益 e1 ≈ 0.11/0.18；
+  CR3 binary：无），decoder autodiff 与 decoder-WY→sieve 再次几乎一致。
+- **结论被复现**：C1–C3 在新 NP 上三通道全部达到 Oracle；CR3 在两次训练中都稳定停在 ≈0.80（Oracle 的 92%），
+  失败模式相同 ⇒ CR3 的瓶颈是系统性的 decoder 失真，不是某一次训练的偶然。
+
 ## 结论（当前）
 
 1. **C1、C2、C3：同一个冻结指标（刺激基投影梯度 × absL1，可选阶段 A）连续跨过三个鸿沟**，
@@ -106,4 +128,5 @@ RMS→L1 产生尖点，并且按 Birkhoff 凹性论证真轴是全局极小。
    + 正交补（α）；只有组合起来才能在解析式上恢复。decoder 上一阶零模式只以相对对比形式保留，
    二阶零模式（对 λ/τ 线性）完全消失；最好结果约 0.80（Oracle 0.872 的 92%，恒等 0.573）。
    decoder-WY→sieve 与 decoder autodiff 几乎一致 ⇒ 瓶颈是 **decoder 函数失真（Gap 3）**，不是 M2 估计。
-3. 不是独立验证：所有设计决策都在同一批数据/checkpoint 上做出；需要新训练的 NP 重复确认。
+3. ~~不是独立验证~~ → **EXP08 已在新训练的 NP（repeat 2）上原样复现**：C1–C3 全部 PASS，CR3 同样 ≈0.80 失败。
+   仍然共享同一个生成数据集（S1）与 train/test 划分；未在新数据集上复现。
