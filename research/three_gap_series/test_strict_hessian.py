@@ -42,5 +42,14 @@ class StrictHessianTests(unittest.TestCase):
         self.assertAlmostEqual(own(r),own(np.eye(d)),places=12)
         self.assertGreater(modulation(r),modulation(np.eye(d)))
 
+    def test_subject_averaging_before_and_after_outer_product_are_distinct(self):
+        n=24;h=np.zeros((n,3,3));h[:12,0,2]=h[:12,2,0]=1.;h[12:,1,2]=h[12:,2,1]=1.
+        fields=dict(h=h,strict_x=np.tile(np.linspace(-1,1,12),2)[:,None],strict_subject_groups=np.repeat([0,1],12))
+        late=HessianLoss(fields,np.eye(2),2,'hs_jd_profile1_strength0_selfl1_w0')
+        early=HessianLoss(fields,np.eye(2),2,'hs_jd_mean_profile1_strength0')
+        r=np.array([[1.,1.],[-1.,1.]])/np.sqrt(2)
+        self.assertAlmostEqual(late(np.eye(2)),late(r),places=10)
+        self.assertGreater(early(np.eye(2)),early(r)+.1)
+
 
 if __name__=='__main__':unittest.main()

@@ -60,6 +60,10 @@ register('jd_profile1_strength0_selfl1_w8',family='jd',degree=1,strength=0.,self
 register('jd_profile1_strength0_repeat_w90',family='jd',degree=1,strength=0.,
          self_score='l1',weight=90.,curvature_component='repeat')
 CATALOG['hs_jd_profile1_strength0_repeat_w90']['order']=3
+for degree in [1,2]:
+    for strength in [0.,1.]:
+        register(f'jd_mean_profile{degree}_strength{strength:g}',family='jd',degree=degree,
+            strength=strength,self_score='l1',weight=0.,aggregation='mean_then_outer')
 
 
 def is_combination(metric):
@@ -119,7 +123,10 @@ class HessianLoss:
                 cp=np.linalg.solve(gram,phi.T@self.ux[mask].reshape(mask.sum(),-1)/mask.sum())
                 coefs.append(cp.reshape(-1,d,self.ux.shape[2]).transpose(1,0,2).reshape(d,-1))
             coefficients=np.asarray(coefs)
-            operators=np.einsum('saq,sbq->qab',coefficients,coefficients)/len(ids)
+            if self.spec.get('aggregation')=='mean_then_outer':
+                average=coefficients.mean(0)
+                operators=np.einsum('aq,bq->qab',average,average)
+            else:operators=np.einsum('saq,sbq->qab',coefficients,coefficients)/len(ids)
             trace=np.trace(operators,axis1=1,axis2=2)
             active=trace>1e-3*max(float(trace.max()),1e-30)
             if not active.any():raise ValueError('No nonzero Hessian-profile operators')
@@ -182,9 +189,14 @@ class HessianLoss:
     def _third_values(self,a,kind):
         if self.third_is_zero:return np.zeros((1,self.d,self.d))
         t=self.third[:,:self.d,:self.d,:self.d]
+        if kind=='repeat':
+            # Contract only T_iij, not the unused full rotated cubic tensor.
+            # Algebraically identical, substantially cheaper for multistart.
+            square=np.einsum('ia,ib->iab',a,a)
+            contracted=np.einsum('iab,nabc->nic',square,t,optimize=True)
+            return np.einsum('nic,jc->nij',contracted,a,optimize=True)/self.scale
+        if kind=='self':return np.einsum('ia,ib,ic,nabc->ni',a,a,a,t,optimize=True)/self.scale
         transformed=np.einsum('ia,jb,kc,nabc->nijk',a,a,a,t,optimize=True)/self.scale
-        if kind=='self':return transformed[:,np.arange(self.d),np.arange(self.d),np.arange(self.d)]
-        if kind=='repeat':return transformed[:,np.arange(self.d),np.arange(self.d),:]
         mask=np.ones((self.d,)*3,dtype=bool);mask[np.arange(self.d),np.arange(self.d),np.arange(self.d)]=False
         return transformed[:,mask]
 
