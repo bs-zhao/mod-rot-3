@@ -4,7 +4,7 @@ import itertools
 
 METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
-           'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios','conditional_anchor')
+           'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios','conditional_anchor','conditional_bilinear','conditional_bilinear_hrow')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -42,7 +42,7 @@ class Loss:
             energy=energy/np.maximum(energy.sum(axis=1,keepdims=True),1e-30)
             return float(min(4-energy[0,tau]-(energy[1,tau]+energy[1,lam])-(energy[2,tau]+energy[2,alpha])-(energy[3,tau]+energy[3,gamma])
                              for tau,lam,alpha,gamma in itertools.permutations(range(d))))
-        if kind=='conditional_ratios':
+        if kind in ['conditional_ratios','conditional_bilinear','conditional_bilinear_hrow']:
             energy=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
             total=np.maximum(np.einsum('ia,ab,ib->i',a,self.gradient_gram,a),1e-30)
             k=np.einsum('ia,ib->iab',a,a).reshape(d,d*d)
@@ -50,6 +50,12 @@ class Loss:
             absence_gain=energy[0]/total
             absence_neutral=energy[1]/total
             linearity=self_energy/total
+            if kind=='conditional_bilinear_hrow':
+                kk=np.einsum('ia,jb->ijab',a,a).reshape(d*d,d*d)
+                all_energy=np.maximum(np.einsum('ia,ab,ib->i',kk,self.hh,kk),0).reshape(d,d)
+                linearity=self_energy/np.maximum(all_energy.sum(1),1e-30)
+            if kind.startswith('conditional_bilinear'):
+                return float(min(absence_gain[i]+absence_neutral[j]+linearity[i]+linearity[k] for i,j,k in itertools.permutations(range(d),3)))
             return float(min(absence_gain[i]+absence_neutral[j]+linearity[k] for i,j,k in itertools.permutations(range(d),3)))
         if kind=='conditional_soft_count':
             energies=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
