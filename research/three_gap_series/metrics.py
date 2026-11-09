@@ -4,7 +4,7 @@ import itertools
 
 METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
-           'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios')
+           'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios','conditional_anchor')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -37,6 +37,11 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind=='conditional_anchor':
+            energy=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
+            energy=energy/np.maximum(energy.sum(axis=1,keepdims=True),1e-30)
+            return float(min(4-energy[0,tau]-(energy[1,tau]+energy[1,lam])-(energy[2,tau]+energy[2,alpha])-(energy[3,tau]+energy[3,gamma])
+                             for tau,lam,alpha,gamma in itertools.permutations(range(d))))
         if kind=='conditional_ratios':
             energy=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
             total=np.maximum(np.einsum('ia,ab,ib->i',a,self.gradient_gram,a),1e-30)

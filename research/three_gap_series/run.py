@@ -185,6 +185,43 @@ def direct_mean_fields(args,c,fn,v,protocol):
     fields['groups']=group_labels(bank)
     return fields,dict(aggregation='subject mean of signed fields first, then stimulus energy',mean_subject_ids=ids)
 
+def anchor_fields(args,c,fn,v,protocol):
+    """Additional MODEL-INFORMED query experiment, outside original X bank.
+
+    These anchors use neutral amounts/probabilities. Some are dominated;
+    decoder extrapolation is explicitly part of this additional experiment.
+    No claim of observational-only inference or generic model-free discovery.
+    """
+    anchors=[[100,0,.5,0,0,.5],[100,100,.5,100,0,.5]]
+    groups=[0,1]
+    for gain in [20,50,80,125,150]:anchors.append([gain,0,.5,0,0,.5]);groups.append(2)
+    for prob in [.1,.2,.35,.65,.8,.9]:anchors.append([100,0,prob,0,0,.5]);groups.append(3)
+    anchors=np.asarray(anchors,float);groups=np.asarray(groups)
+    xs=(anchors-protocol['x_mean'])/protocol['x_sd'];k=len(xs);d=c['d']
+    rng=np.random.default_rng(args.seed+461);ids=rng.choice(c['splits']['train'],min(args.mean_subjects,len(c['splits']['train'])),replace=False)
+    query=np.concatenate((np.repeat(v[ids],k,axis=0),np.tile(xs,(len(ids),1))),axis=1)
+    target=structure_function(fn,args)
+    if args.estimator in ['direct','finite_difference']:
+        f=derivatives(target,query,d,False,True) if args.estimator=='direct' else numerical_fields(target,query,d,args.step,False,True)
+        fields={key:value.reshape(len(ids),k,*value.shape[1:]).mean(0) for key,value in f.items()}
+        info={}
+    elif args.estimator=='stimulus':
+        from estimators import BankSieve
+        tables=[]
+        for split,num in [('train',args.train_subjects),('validation',args.validation_subjects)]:
+            use=rng.choice(c['splits'][split],min(num,len(c['splits'][split])),replace=False)
+            wq=np.concatenate((np.repeat(v[use],k,axis=0),np.tile(xs,(len(use),1))),axis=1)
+            with torch.no_grad(): yy=torch.vmap(fn)(torch.tensor(wq)).numpy().reshape(len(use),k)
+            if args.channel=='binary': yy=rng.binomial(1,yy).astype(float)
+            tables.append((v[use],yy))
+        sieve=BankSieve(args.degree,args.ridge,args.channel).fit(*tables[0],*tables[1])
+        fields=sieve.mean_fields(v[ids]);info=sieve.info
+    else: raise ValueError('Anchor candidate supports direct, finite_difference or stimulus query sieve')
+    fields['groups']=groups
+    info.update(anchors=anchors,mean_subject_ids=ids,protocol='MODEL-INFORMED counterfactual query anchors; outside original design; signed subject means first',
+                warning='Some anchors are dominated/degenerate lotteries absent from training; extrapolation, not original-table inference')
+    return fields,info
+
 def main():
     p=argparse.ArgumentParser(__doc__)
     p.add_argument('--repo',default=str(Path(__file__).resolve().parents[2]))
@@ -209,9 +246,12 @@ def main():
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
     if args.subject_mean and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.estimator not in ['direct','stimulus'] or (args.channel!='logit' and args.structure_link!='log_odds')):
         raise ValueError('Subject-mean currently requires CR3 conditional canonical-logit direct or bank fields')
+    if args.metric=='conditional_anchor' and args.channel!='logit' and args.structure_link!='log_odds':
+        raise ValueError('Additional anchor experiment currently targets canonical log odds only')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
+    config['field_protocol']='anchors' if args.metric=='conditional_anchor' else 'original'
     config_hash=hashlib.sha256(json.dumps(config,sort_keys=True).encode()).hexdigest()[:12]
     # Compact directories avoid Windows MAX_PATH problems. Full flags in summary.
     out=out.with_name(f's{args.seed}_n{args.samples}_cfg{config_hash}')
@@ -230,7 +270,10 @@ def main():
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.estimator=='polynomial':
+        if args.metric=='conditional_anchor':
+            fields,estimator_info=anchor_fields(args,c,fn,v,protocol)
+            dump(cache.with_suffix('.json'),estimator_info)
+        elif args.estimator=='polynomial':
             fields,estimator_info=polynomial_fields(args,c,fn,w,v,protocol,third)
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.estimator=='stimulus':
