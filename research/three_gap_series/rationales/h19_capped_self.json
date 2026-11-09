@@ -1,0 +1,22 @@
+{
+  "component_runs": [
+    "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfge39f5b343922/summary.json",
+    "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd1f842f81486/summary.json",
+    "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd909fc250745/summary.json",
+    "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfg5e0f134adf1b/summary.json",
+    "results/h16_support_aggregation_singles/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfg2167b0977b79/summary.json",
+    "results/h16_support_aggregation_singles/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfgd42088721817/summary.json",
+    "results/h16_support_aggregation_singles/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfg213fa2d30281/summary.json",
+    "results/h16_support_aggregation_singles/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_nonlinearity_self_cap_t0.03/s20261127_n1024_cfgb8586ed65d2b/summary.json"
+  ],
+  "complementarity": "h16 capped nonlinear-axis support identifies the five CR3 planes missed by h04 UX-Hessian profile JD, while being exactly flat in alpha-gamma where JD is informative. C1-C3 support is zero, and JD identifies all axes. Saturation prevents reducing large genuine nonlinearities from compensating for loss of linear axes, unlike previous amplitude sums.",
+  "weight_rule": "Same coefficient for all models: twice the sufficient lower bound derived from every single-loss plane outside six degrees, rounded to 9. For self the lower bound is 4.3416587580; for modulation it is 71.8641001789. No finite upper constraint because the complementary alpha-gamma support curve is flat. Require new full-dimensional G1 and then identical-inference G2 before G3.",
+  "weight": 9,
+  "component": "self",
+  "threshold": 0.03,
+  "source_labels": [
+    "h04_single_components",
+    "h16_support_aggregation_singles"
+  ],
+  "scope": "Only Hessian RMS self curvature or Hessian modulation support plus Hessian profile JD; no parameter labels or model-specific operators"
+}

@@ -453,6 +453,7 @@ def main():
     p.add_argument('--combination-rationale',help='JSON evidence file with single-loss runs, complementarity and a common weight rule; required for combined candidates')
     p.add_argument('--rbf-centers',type=int,default=64)
     p.add_argument('--rbf-length',type=float,default=1.)
+    p.add_argument('--field-reference',help='Reuse fixed numerical fields from a compatible Hessian-only summary; no old R or T evaluation is consumed')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.metric in HESSIAN_CATALOG and is_combination(args.metric):
         if not args.combination_rationale:raise ValueError('User requires observed complementarity before combining losses; supply --combination-rationale')
@@ -523,6 +524,11 @@ def main():
     latent_only=args.metric.startswith('conditional_')
     cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
     cache=cache.with_name(f'fields_{config_hash}_third{int(third)}_latent{int(latent_only)}.npz')
+    field_provenance=None
+    if args.field_reference:
+        if args.metric not in HESSIAN_CATALOG:raise ValueError('Field-reference reuse is restricted to the Hessian-only study')
+        from field_reference import validate_reference
+        cache,field_provenance=validate_reference(args,c,protocol,w.shape,full_rows,third)
     estimator_info=None
     if cache.exists():
         with np.load(cache) as saved:
@@ -740,6 +746,7 @@ def main():
     result['plane_counterexample']=plane_counterexample
     result['scope']='hessian_only' if args.metric in HESSIAN_CATALOG else 'historical_catalogue'
     result['field_cache']=str(cache)
+    result['field_provenance']=field_provenance
     result['code_hashes']={f.name:sha(f) for f in Path(__file__).resolve().parent.glob('*.py')}
     result['near10_diagnostic']=bool(best['axis_min']>np.cos(np.deg2rad(10)) and min(ranges)>1e-5*(1+abs(truth)))
     result['preprocessing']=dict(train_mean=c['mean'],components=c['components'],

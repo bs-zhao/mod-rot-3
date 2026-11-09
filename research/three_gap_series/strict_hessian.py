@@ -70,6 +70,14 @@ for component in ['self','modulation']:
             name=f'nonlinearity_{component}_{score}_t{threshold:g}'
             register(name,family='curvature_support',component=component,score=score,threshold=threshold)
             if component=='modulation':CATALOG['hs_'+name]['order']=3
+# Evidence from h16: these capped supports have exactly the missing five
+# plane preferences and no alpha/gamma preference. Coefficients are twice
+# the sufficient common lower bounds from the single-loss curves, rounded.
+register('jd_profile1_strength0_selfcap03_w9',family='jd',degree=1,strength=0.,self_score='cap',
+    weight=9.,curvature_component='support_self',curvature_threshold=.03)
+register('jd_profile1_strength0_modcap03_w144',family='jd',degree=1,strength=0.,self_score='cap',
+    weight=144.,curvature_component='support_modulation',curvature_threshold=.03)
+CATALOG['hs_jd_profile1_strength0_modcap03_w144']['order']=3
 
 
 def is_combination(metric):
@@ -177,21 +185,15 @@ class HessianLoss:
         if family=='profile':return penalty(self._ux(a,f'profile{s["degree"]}'),s['score'],-2,s.get('k',1))
         if family=='uu':return penalty(self._uu(a,s['stat'],s['part']),s['score'])
         if family=='curvature_support':
-            if s['component']=='self':
-                energy=self.uu_energy;curvature=self._uu(a,'rms','self')*self.scale
-            else:
-                energy=self.third_energy;value=self._third_values(a,'repeat')*self.scale
-                curvature=np.sqrt(np.mean(value*value,axis=(0,2)))
-            strength=energy/max(energy+self.uu_energy+self.ux_energy if s['component']=='modulation' else self.uu_energy+self.ux_energy,1e-30)
-            ratio=curvature/max(s['threshold']*np.sqrt(energy),1e-30)
-            if s['score']=='soft':score=np.mean(ratio*ratio/(1+ratio*ratio))
-            elif s['score']=='cap':score=np.mean(np.minimum(ratio,1))
-            else:score=np.mean(np.log1p(ratio))
-            return float(strength*score)
+            return self._support_value(a,s['component'],s['score'],s['threshold'])
         if family=='jd':
             transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
             off=transformed[:,~np.eye(self.d,dtype=bool)]
             joint=float(self.jd_weights@np.sum(off*off,axis=1))
+            if s['weight']==0:return joint
+            if s.get('curvature_component','').startswith('support_'):
+                component=s['curvature_component'].removeprefix('support_')
+                return joint+s['weight']*self._support_value(a,component,s['self_score'],s['curvature_threshold'])
             curvature=self._third_values(a,'repeat') if s.get('curvature_component')=='repeat' else self._uu(a,'local','self')
             return joint+s['weight']*penalty(curvature,s['self_score'])
         if family=='third':
@@ -208,6 +210,20 @@ class HessianLoss:
                 v=transformed[:,mask]
             return ux+s['weight']*penalty(v,'l1')
         raise ValueError(family)
+
+    def _support_value(self,a,component,score,threshold):
+        if component=='self':
+            energy=self.uu_energy;curvature=self._uu(a,'rms','self')*self.scale
+        else:
+            energy=self.third_energy;value=self._third_values(a,'repeat')*self.scale
+            curvature=np.sqrt(np.mean(value*value,axis=(0,2)))
+        denominator=energy+self.uu_energy+self.ux_energy if component=='modulation' else self.uu_energy+self.ux_energy
+        strength=energy/max(denominator,1e-30)
+        ratio=curvature/max(threshold*np.sqrt(energy),1e-30)
+        if score=='soft':value=np.mean(ratio*ratio/(1+ratio*ratio))
+        elif score=='cap':value=np.mean(np.minimum(ratio,1))
+        else:value=np.mean(np.log1p(ratio))
+        return float(strength*value)
 
     def _third_values(self,a,kind):
         if self.third_is_zero:return np.zeros((1,self.d,self.d))
@@ -229,8 +245,11 @@ class HessianLoss:
         if self.spec['family']=='jd':
             transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
             joint=float(self.jd_weights@np.sum(transformed[:,~np.eye(self.d,dtype=bool)]**2,axis=1))
-            curvature=self._third_values(a,'repeat') if self.spec.get('curvature_component')=='repeat' else self._uu(a,'local','self')
-            raw=penalty(curvature,self.spec['self_score'])
+            if self.spec.get('curvature_component','').startswith('support_'):
+                raw=self._support_value(a,self.spec['curvature_component'].removeprefix('support_'),self.spec['self_score'],self.spec['curvature_threshold'])
+            else:
+                curvature=self._third_values(a,'repeat') if self.spec.get('curvature_component')=='repeat' else self._uu(a,'local','self')
+                raw=penalty(curvature,self.spec['self_score'])
             parts=dict(hessian_profile_jd=joint,curvature_raw=raw,curvature_weight=self.spec['weight'],curvature_weighted=self.spec['weight']*raw,total=joint+self.spec['weight']*raw)
         return dict(category='Hessian-only, model-blind M1/M3',specification=self.spec,loss_components=parts,
                     block_energy_reference=dict(uu=self.uu_energy,ux=self.ux_energy,third=self.third_energy),
