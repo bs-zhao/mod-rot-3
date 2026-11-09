@@ -16,7 +16,7 @@
 - **每个试次的输入**：\(X_{st}\)，来自模型指定的输入生成规则；有的模型每次重新抽样，有的模型使用所有被试共享的固定刺激集合。
 - **已知的真实解析式**：\(\eta_m(T_s,X_{st})\)，表示生成选择的 logit。
 - **真实选择概率**：\(p_{st}=\sigma(\eta_m(T_s,X_{st}))\)，其中 \(\sigma(v)=1/(1+\exp(-v))\)。
-- **实际观察到的选择**：\(Y_{st}\mid T_s,X_{st}\sim\operatorname{Bernoulli}(p_{st})\)。
+- **实际观察到的选择**：\(Y_{st}\mid T_s,X_{st}\sim\mathrm{Bernoulli}(p_{st})\)。
 
 统一写作：
 
@@ -27,7 +27,7 @@ T_s&\sim\pi_m(T),\\
 X_{st}&\sim\mathcal D_m\quad\text{或来自固定试次集合},\\
 \eta_{st}&=\eta_m(T_s,X_{st}),\\
 p_{st}&=\sigma(\eta_{st}),\\
-Y_{st}\mid T_s,X_{st}&\sim\operatorname{Bernoulli}(p_{st}).
+Y_{st}\mid T_s,X_{st}&\sim\mathrm{Bernoulli}(p_{st}).
 \end{aligned}}
 $$
 
@@ -67,7 +67,7 @@ $$
 
 $$
 X_{st}=(x_{1,st},x_{2,st},x_{3,st}),\qquad
-x_{k,st}\overset{\mathrm{iid}}{\sim}\operatorname{Uniform}(-1,1).
+x_{k,st}\overset{\mathrm{iid}}{\sim}\mathrm{Uniform}(-1,1).
 $$
 
 每位被试、每个试次的三个 X 都重新抽样，不存在跨被试共享的固定 X 矩阵。
@@ -84,7 +84,7 @@ $$
 $$
 p_{\mathrm{C1}}(T,X)=\sigma\!\left(\eta_{\mathrm{C1}}(T,X)\right),
 \qquad
-Y\sim\operatorname{Bernoulli}(p_{\mathrm{C1}}).
+Y\sim\mathrm{Bernoulli}(p_{\mathrm{C1}}).
 $$
 
 其中 \(b_1\) 控制总体选择偏置，\(b_2,b_3,b_4\) 分别控制三个 X 输入的作用强度。设计式中的 \(\sqrt3\) 是生成器原有的特征尺度因子。
@@ -106,7 +106,7 @@ $$
 X=(X_{1A},X_{1B},X_{2A},X_{2B}).
 $$
 
-四个原始属性分别独立服从 \(\operatorname{Uniform}(-1,1)\)，并对每个被试的每个试次重新抽样。
+四个原始属性分别独立服从 \(\mathrm{Uniform}(-1,1)\)，并对每个被试的每个试次重新抽样。
 
 定义原始属性的差异特征：
 
@@ -131,7 +131,7 @@ $$
 
 $$
 p_{\mathrm{C2}}(T,X)=\sigma(\eta_{\mathrm{C2}}(T,X)),
-\qquad Y\sim\operatorname{Bernoulli}(p_{\mathrm{C2}}).
+\qquad Y\sim\mathrm{Bernoulli}(p_{\mathrm{C2}}).
 $$
 
 四个参数分别控制：总体选择偏置、X1 线性差值、X1 二次差值、X2 线性差值。**NP 只接受四个原始 X 值，不接受专为解析模型构造的差异或二次基函数。**
@@ -155,7 +155,7 @@ $$
 X=(X_{1A},X_{1B},X_{2A},X_{2B}),
 $$
 
-全部独立服从 \(\operatorname{Uniform}(-1,1)\)，每位被试、每个试次重新抽样。
+全部独立服从 \(\mathrm{Uniform}(-1,1)\)，每位被试、每个试次重新抽样。
 
 沿用 C2 的 \(\Delta X_1,\Delta X_2,\Delta Q_1\)，再定义：
 
@@ -182,7 +182,7 @@ $$
 
 $$
 p_{\mathrm{C3}}(T,X)=\sigma(\eta_{\mathrm{C3}}(T,X)),
-\qquad Y\sim\operatorname{Bernoulli}(p_{\mathrm{C3}}).
+\qquad Y\sim\mathrm{Bernoulli}(p_{\mathrm{C3}}).
 $$
 
 六个参数的真实意义：
@@ -212,9 +212,9 @@ $$
 
 | 参数 | 真实生成分布 | 在函数中的含义 |
 |---|---|---|
-| \(\alpha\) | \(\operatorname{Beta}(12,3)\) | 金额效用的幂指数 |
-| \(\lambda\) | \(\operatorname{Gamma}(\mathrm{shape}=9,\mathrm{scale}=0.22)\)，只保留 \([0.3,5]\) 范围内的值（超出则重抽） | 损失厌恶 |
-| \(\gamma\) | \(\operatorname{Beta}(9,4)\) | 概率加权形状 |
+| \(\alpha\) | \(\mathrm{Beta}(12,3)\) | 金额效用的幂指数 |
+| \(\lambda\) | \(\mathrm{Gamma}(\mathrm{shape}=9,\mathrm{scale}=0.22)\)，只保留 \([0.3,5]\) 范围内的值（超出则重抽） | 损失厌恶 |
+| \(\gamma\) | \(\mathrm{Beta}(9,4)\) | 概率加权形状 |
 | \(\tau\) | 截断正态 \(\mathcal N(2.2,0.55^2)\)，取值限制在 \([0.5,4]\) | 价值差的 logit 尺度 |
 
 **每个试次包含两个彩票选项 A 与 B**。原始 X 的六列顺序为：
@@ -237,12 +237,12 @@ CR3 的 X **不是对每位被试重新随机生成的连续独立输入**。所
 
 该设计混合不同条件，并排除严格一阶随机占优的试次；不是通过每人独立均匀采样得到的 500 个 X。
 
-定义概率加权函数（\(\operatorname{clip}\) 防止 logit 在数值端点无定义）：
+定义概率加权函数（\(\mathrm{clip}\) 防止 logit 在数值端点无定义）：
 
 $$
 \begin{aligned}
-c(p)&=\operatorname{clip}(p,10^{-12},1-10^{-12}),\\
-w(p;\gamma)&=\sigma\bigl(\gamma\,\operatorname{logit}(c(p))\bigr).
+c(p)&=\mathrm{clip}(p,10^{-12},1-10^{-12}),\\
+w(p;\gamma)&=\sigma\bigl(\gamma\,\mathrm{logit}(c(p))\bigr).
 \end{aligned}
 $$
 
@@ -262,7 +262,7 @@ $$
 \begin{aligned}
 \eta_{\mathrm{CR3}}(T,X)&=\tau\bigl(V_A(T,X)-V_B(T,X)\bigr),\\
 p_{\mathrm{CR3}}(T,X)&=\sigma(\eta_{\mathrm{CR3}}(T,X)),\\
-Y&\sim\operatorname{Bernoulli}(p_{\mathrm{CR3}}(T,X)).
+Y&\sim\mathrm{Bernoulli}(p_{\mathrm{CR3}}(T,X)).
 \end{aligned}}
 $$
 
@@ -296,7 +296,7 @@ q_\phi(Z_s\mid \mathcal D_{s,\mathrm{context}})
 =
 \mathcal N\!\left(
 \mu_{\phi,s},
-\operatorname{diag}(\exp(\ell_{\phi,s}))
+\mathrm{diag}(\exp(\ell_{\phi,s}))
 \right)
 }
 $$
@@ -311,7 +311,7 @@ $$
 \boxed{
 \widehat{\boldsymbol\eta}_{st}
 =
-\operatorname{MLP}_\psi([Z_s,X_{st}])
+\mathrm{MLP}_\psi([Z_s,X_{st}])
 }
 $$
 
@@ -516,7 +516,7 @@ $$
 对每一个 \(i\)，存在某个真实参数索引 \(j\)，使：
 
 $$
-|\operatorname{Corr}(U_i,T_j)|\text{ 尽可能接近 }1.
+|\mathrm{Corr}(U_i,T_j)|\text{ 尽可能接近 }1.
 $$
 
 绝对相关系数用于允许坐标轴正负号翻转。
@@ -526,7 +526,7 @@ $$
 如果 \(U_i\) 对应 \(T_j\)，则希望：
 
 $$
-|\operatorname{Corr}(U_i,T_k)|\text{ 尽可能接近 }0,\qquad k\ne j.
+|\mathrm{Corr}(U_i,T_k)|\text{ 尽可能接近 }0,\qquad k\ne j.
 $$
 
 这意味着一个 U 轴应尽量只表达一个真实参数，而不是多个参数的混合。
@@ -551,7 +551,7 @@ $$
 令
 
 $$
-C_{ij}=|\operatorname{Corr}(U_i,T_j)|,
+C_{ij}=|\mathrm{Corr}(U_i,T_j)|,
 \qquad C\in[0,1]^{d\times d}.
 $$
 
