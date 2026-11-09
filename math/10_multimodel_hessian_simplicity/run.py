@@ -276,7 +276,7 @@ def sample_rotations(d,num,rng):
             yield f"SO{subset_d}",idx,"-".join(str(int(i+1)) for i in axes),R
 
 
-def summarize(curves, output, angles, endpoint_tol=1e-8):
+def summarize(curves, output, angles, endpoint_tolerance=10.0):
     """Endpoint minima (0 or 90) are necessary, not sufficient, for recovery."""
     buckets={}
     for row in curves:
@@ -294,21 +294,32 @@ def summarize(curves, output, angles, endpoint_tol=1e-8):
         flat=bool(span<=1e-9*max(1.,abs(ymax)))
         min_a=float(a[np.argmin(y)])
         endpoint=bool(np.isclose(min_a,0) or np.isclose(min_a,90))
-        # Mathematically exclude a flat constant even when argmin happens to be 0.
+        near_endpoint=bool(min(abs(min_a),abs(90-min_a))<=endpoint_tolerance+1e-9)
+        # Never count invariant flat losses as correct axis identification.
         success=endpoint and not flat
+        near_success=near_endpoint and not flat
+        at0=y[np.isclose(a,0)]; at90=y[np.isclose(a,90)]
         screens.append(dict(model=model,channel=channel,plane=plane,metric=metric,
-            minimum_angle=min_a, minimum_value=ymin, value_0=float(y[0]),
-            value_90=float(y[-1]), maximum_value=ymax, relative_range=float(span/max(abs(ymax),1e-12)),
-            flat=int(flat),endpoint_minimum=int(endpoint),nonflat_endpoint_minimum=int(success)))
+            minimum_angle=min_a, minimum_value=ymin,
+            value_0=float(at0[0]) if len(at0) else float("nan"),
+            value_90=float(at90[0]) if len(at90) else float("nan"),
+            maximum_value=ymax,relative_range=float(span/max(abs(ymax),1e-12)),
+            flat=int(flat),endpoint_minimum=int(endpoint),
+            nonflat_endpoint_minimum=int(success),
+            near_endpoint_minimum=int(near_endpoint),
+            nonflat_near_endpoint_minimum=int(near_success),
+            endpoint_tolerance_degrees=endpoint_tolerance))
         g=grouped.setdefault((model,channel,metric),[])
-        g.append((success,flat,endpoint,span))
+        g.append((success,near_success,flat,endpoint,span))
     rankings=[]
     for (model,channel,metric),values in grouped.items():
         rankings.append(dict(model=model,channel=channel,metric=metric,n_planes=len(values),
-            success_planes=sum(int(a) for a,_,_,_ in values),
-            flat_planes=sum(int(b) for _,b,_,_ in values),
-            endpoint_minimum_planes=sum(int(c) for _,_,c,_ in values),
-            success_fraction=float(np.mean([a for a,_,_,_ in values])),
+            success_planes=sum(int(a) for a,_,_,_,_ in values),
+            near_success_planes=sum(int(b) for _,b,_,_,_ in values),
+            flat_planes=sum(int(c) for _,_,c,_,_ in values),
+            endpoint_minimum_planes=sum(int(d) for _,_,_,d,_ in values),
+            success_fraction=float(np.mean([a for a,_,_,_,_ in values])),
+            near_success_fraction=float(np.mean([b for _,b,_,_,_ in values])),
             median_curve_range=float(np.median([v for *_,v in values]))))
     rankings.sort(key=lambda x:(x["model"],x["channel"],-x["success_fraction"],
                                 x["flat_planes"],-x["median_curve_range"],x["metric"]))
@@ -406,7 +417,7 @@ def run_one(model,args,out,seed):
     write_csv(modelout/"curves.csv",rows)
     write_csv(modelout/"metric_catalog.csv",
               [metric_descriptor(x) for x in sorted(metrics_seen)])
-    ranks=summarize(rows,modelout,angles)
+    ranks=summarize(rows,modelout,angles,args.endpoint_tolerance)
     plot_top(rows,ranks,modelout,args.plots)
     # Multi-axis stress test: SAME samples and target, oracle T axes at identity.
     if args.multiway>0:
@@ -454,6 +465,8 @@ def main(argv=None):
     a.add_argument("--angles",default="0:90:10")
     a.add_argument("--planes",default="all",help="all, or 1-based pairs e.g. 12,13")
     a.add_argument("--relative-threshold",type=float,default=.10)
+    a.add_argument("--endpoint-tolerance",type=float,default=10.,
+                   help="Degree tolerance for a separate NEAR-endpoint screen; exact gate retained")
     a.add_argument("--fd-step",type=float,default=.01)
     a.add_argument("--higher",action=argparse.BooleanOptionalAction,default=True)
     a.add_argument("--functional",action=argparse.BooleanOptionalAction,default=True,
@@ -469,7 +482,8 @@ def main(argv=None):
                    help="Debug C1-C3 only; never count this as a real scientific run")
     args=a.parse_args(argv)
     if (args.subjects<3 or args.trials_per_subject<2 or args.fd_step<=0 or args.relative_threshold<=0
-        or args.multiway<0 or args.function_anchors<2 or args.function_step<=0):
+        or args.multiway<0 or args.function_anchors<2 or args.function_step<=0
+        or not 0<=args.endpoint_tolerance<=45):
         a.error("subjects>=3, trials-per-subject>=2, fd-step/threshold>0, multiway>=0")
     models,alias=models_from_args(args.models)
     out=Path(args.output).resolve()
