@@ -78,6 +78,12 @@ register('jd_profile1_strength0_selfcap03_w9',family='jd',degree=1,strength=0.,s
 register('jd_profile1_strength0_modcap03_w144',family='jd',degree=1,strength=0.,self_score='cap',
     weight=144.,curvature_component='support_modulation',curvature_threshold=.03)
 CATALOG['hs_jd_profile1_strength0_modcap03_w144']['order']=3
+register('jd_profile1_strength0_selfcap03_w20',family='jd',degree=1,strength=0.,self_score='cap',
+    weight=20.,curvature_component='support_self',curvature_threshold=.03)
+for part in ['entries','rows']:
+    for score in ['cap','soft','log']:
+        for threshold in [.03,.1]:
+            register(f'uu_graph_{part}_{score}_t{threshold:g}',family='uu_graph',part=part,score=score,threshold=threshold)
 
 
 def is_combination(metric):
@@ -186,6 +192,15 @@ class HessianLoss:
         if family=='uu':return penalty(self._uu(a,s['stat'],s['part']),s['score'])
         if family=='curvature_support':
             return self._support_value(a,s['component'],s['score'],s['threshold'])
+        if family=='uu_graph':
+            if self.uu_energy==0:return 0.
+            matrix=self._uu(a,'local','all')*self.scale
+            amplitude=np.sqrt(np.sum(matrix*matrix,axis=-1)) if s['part']=='rows' else abs(matrix)
+            ratio=amplitude/max(s['threshold']*np.sqrt(self.uu_energy),1e-30)
+            if s['score']=='cap':score=np.minimum(ratio,1).mean()
+            elif s['score']=='soft':score=(ratio*ratio/(1+ratio*ratio)).mean()
+            else:score=np.log1p(ratio).mean()
+            return float(self.uu_energy/max(self.uu_energy+self.ux_energy,1e-30)*score)
         if family=='jd':
             transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
             off=transformed[:,~np.eye(self.d,dtype=bool)]
