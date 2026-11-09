@@ -7,7 +7,7 @@ import time
 import numpy as np
 import torch
 from scipy.optimize import minimize
-from core import DIMS, load, dump, formula, decoder, derivatives, correspondence
+from core import DIMS, load, dump, formula, decoder, derivatives, correspondence, sha
 from metrics import METRICS, Loss
 
 def rotation(angles, d):
@@ -67,10 +67,39 @@ def prepare(args, c):
     if args.channel=='logit': fn=base
     else:
         def fn(w): return torch.sigmoid(base(w))
-    if args.channel=='binary':
-        raise ValueError('Binary requires a Bernoulli estimator; differentiating draws is prohibited')
     w=np.concatenate((v[subject[rows]],xs),axis=1)
     return fn,w,np.cov(v[train],rowvar=False,bias=True),v,rows,dict(x_mean=xm,x_sd=sx,domain_fraction=len(candidates)/np.isin(subject,train).sum())
+
+def polynomial_fields(args,c,fn,w,v,protocol,third):
+    from estimators import PolynomialSieve
+    rng=np.random.default_rng(args.seed+317)
+    data=c['data']; d=c['d']; sub=data['subject_index']
+    tables=[]; selected_rows=[]
+    for split,n in [('train',args.train_rows),('validation',args.validation_rows)]:
+        rows=np.flatnonzero(np.isin(sub,c['splits'][split]))
+        rows=rng.choice(rows,min(n,len(rows)),replace=False); selected_rows.append(rows)
+        x=(data['x'][rows]-protocol['x_mean'])/protocol['x_sd']
+        inputs=np.concatenate((v[sub[rows]],x),axis=1)
+        values=[]
+        with torch.no_grad():
+            for batch in torch.tensor(inputs).split(1024): values.append(torch.vmap(fn)(batch).numpy())
+        y=np.concatenate(values)
+        if args.channel=='binary': y=rng.binomial(1,y).astype(float)
+        tables.append([inputs,y])
+    # Hide the analytic/input coordinate orientation from the estimator.
+    hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d)
+    b=np.eye(w.shape[1]);b[:d,:d]=hidden
+    train,y=tables[0]; val,vy=tables[1]
+    sieve=PolynomialSieve(args.degree,args.ridge,args.channel).fit(train@b.T,y,val@b.T,vy)
+    f=sieve.fields(w@b.T,third)
+    fields=dict(g=f['g']@b,h=np.einsum('ai,nab,bj->nij',b,f['h'],b,optimize=True))
+    if third: fields['third']=np.einsum('ai,bj,ck,nabc->nijk',b,b,b,f['third'],optimize=True)
+    reference=derivatives(fn,w,d,third)
+    errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
+    info=dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_row_hash=__import__('hashlib').sha256(selected_rows[0].tobytes()).hexdigest(),
+              validation_row_hash=__import__('hashlib').sha256(selected_rows[1].tobytes()).hexdigest(),
+              binary_protocol='one fixed-seed Bernoulli draw per selected original row' if args.channel=='binary' else None)
+    return fields,info
 
 def main():
     p=argparse.ArgumentParser(__doc__)
@@ -79,26 +108,37 @@ def main():
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
-    p.add_argument('--estimator',choices=['direct','finite_difference'],default='direct')
+    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
     p.add_argument('--metric',choices=METRICS,required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
     p.add_argument('--seed',type=int,default=20261108); p.add_argument('--step',type=float,default=.01)
     p.add_argument('--maxiter',type=int,default=250); p.add_argument('--label',default='round01')
+    p.add_argument('--degree',type=int,default=3);p.add_argument('--ridge',type=float,default=.001)
+    p.add_argument('--train-rows',type=int,default=32000);p.add_argument('--validation-rows',type=int,default=8000)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
+    if args.channel=='binary' and args.estimator!='polynomial':
+        raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     out.mkdir(parents=True,exist_ok=True)
     # One field cache shared among candidate losses, no fitted R or T labels.
     third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms'
     fn,w,cov,v,rows,protocol=prepare(args,c)
-    cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}.npz'
+    cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}.npz'
+    estimator_info=None
     if cache.exists():
         with np.load(cache) as saved:
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
             fields={k:saved[k] for k in ['g','h','third'] if k in saved.files}
+        if cache.with_suffix('.json').exists():
+            import json
+            estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        fields=(derivatives(fn,w,d,third) if args.estimator=='direct' else numerical_fields(fn,w,d,args.step,third))
+        if args.estimator=='polynomial':
+            fields,estimator_info=polynomial_fields(args,c,fn,w,v,protocol,third)
+            dump(cache.with_suffix('.json'),estimator_info)
+        else: fields=(derivatives(fn,w,d,third) if args.estimator=='direct' else numerical_fields(fn,w,d,args.step,third))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
     loss=Loss(fields,cov,d,args.metric)
@@ -120,7 +160,7 @@ def main():
         r=rotation(fit.x,d)
         from scipy.optimize import linear_sum_assignment
         ii,jj=linear_sum_assignment(-abs(r))
-        solutions.append(dict(start=start,loss=float(fit.fun),axis_min=float(abs(r[ii,jj]).min()),axis_mean=float(abs(r[ii,jj]).mean()),
+        solutions.append(dict(start=start,loss=float(fit.fun),initial_loss=float(loss(rotation(x0,d))),axis_min=float(abs(r[ii,jj]).min()),axis_mean=float(abs(r[ii,jj]).mean()),
                               success=bool(fit.success),message=str(fit.message),iterations=fit.nit,r=r))
     best=min(solutions,key=lambda x:x['loss']); rhat=best['r']
     # Lock R before any TEST labels are read. No labels are used to select candidates.
@@ -144,6 +184,9 @@ def main():
                 invariance_max=max(audits),truth_loss=truth,best=best,solutions=solutions,plane_ranges=ranges,
                 gap1_strict_pass=bool(strict_pass) if args.source=='formula' else None,
                 evaluation=evaluation,elapsed_seconds=time.time()-started)
+    result['estimator_info']=estimator_info
+    result['code_hashes']={f.name:sha(f) for f in Path(__file__).resolve().parent.glob('*.py')}
+    result['near10_diagnostic']=bool(best['axis_min']>np.cos(np.deg2rad(10)) and min(ranges)>1e-5*(1+abs(truth)))
     dump(out/'summary.json',result)
     print(args.model,args.source,args.channel,args.metric,'truth',round(truth,6),'best',round(best['loss'],6),
           'axis_min',round(best['axis_min'],5),'G1',strict_pass,'seconds',round(time.time()-started,1),flush=True)
