@@ -12,6 +12,7 @@ from scipy.optimize import minimize
 from scipy.special import expit
 from core import DIMS, load, dump, formula, decoder, derivatives, correspondence, sha
 from metrics import METRICS, Loss
+from strict_hessian import CATALOG as HESSIAN_CATALOG, HessianLoss
 
 def rotation(angles, d):
     r=np.eye(d)
@@ -325,7 +326,7 @@ def main():
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
     p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','stimulus','utility','profile'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
-    p.add_argument('--metric',choices=METRICS,required=True)
+    p.add_argument('--metric',choices=METRICS+tuple(HESSIAN_CATALOG),required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
     p.add_argument('--seed',type=int,default=20261108); p.add_argument('--step',type=float,default=.01)
     p.add_argument('--maxiter',type=int,default=250); p.add_argument('--label',default='round01')
@@ -346,6 +347,7 @@ def main():
     p.add_argument('--transport-access',choices=['partial','flow'],default='partial')
     p.add_argument('--fingerprint-power',type=float,default=1.)
     p.add_argument('--utility-ridge',type=float,default=1e-5)
+    p.add_argument('--gate-prescreen',action='store_true',help='Reject a G1 candidate as soon as a plane counterexample is found; never promote on planes alone')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -377,7 +379,7 @@ def main():
     out=out.with_name(f's{args.seed}_n{args.samples}_cfg{config_hash}')
     out.mkdir(parents=True,exist_ok=True)
     # One field cache shared among candidate losses, no fitted R or T labels.
-    third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms'
+    third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms' or HESSIAN_CATALOG.get(args.metric,{}).get('order')==3
     fn,w,cov,v,rows,protocol=prepare(args,c)
     latent_only=args.metric.startswith('conditional_')
     cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
@@ -462,7 +464,12 @@ def main():
         protocol['q_weight']=dict(name='predictive Fisher p(1-p)',power=args.fisher_power,
             field_effective_points=float(fields['weights'].sum()**2/np.sum(fields['weights']**2)),
             note='Weighted field points are not independent latent subjects')
-    loss=Loss(fields,cov,d,args.metric)
+    if args.metric in HESSIAN_CATALOG:
+        if args.estimator in ['utility','profile','stimulus'] or args.subject_mean or args.field_mean or args.center_point or args.q_weight!='uniform':
+            raise ValueError('Hessian-only study disallows model-specific inference/grouping and weights')
+        fields['strict_x']=w[:,d:]
+        loss=HessianLoss(fields,cov,d,args.metric)
+    else:loss=Loss(fields,cov,d,args.metric)
     rng=np.random.default_rng(args.seed+1)
     # Mathematical invariance audit over arbitrary signed scales, permutations and rotations.
     audits=[]
@@ -474,8 +481,23 @@ def main():
         audits.append(err)
     if max(audits)>1e-8: raise ValueError(f'Invariance audit failed: {audits}')
     truth=loss(np.eye(d)); solutions=[]
+    plane_counterexample=None
+    if args.gate_prescreen:
+        if args.source!='formula' or args.estimator!='direct':raise ValueError('Gate prescreen applies to G1 only')
+        for i,j in itertools.combinations(range(d),2):
+            for angle in np.linspace(0,90,37):
+                rr=np.eye(d);aa=np.deg2rad(angle);rr[i,i]=rr[j,j]=np.cos(aa);rr[i,j]=-np.sin(aa);rr[j,i]=np.sin(aa)
+                value=loss(rr)
+                if value<truth-1e-6*(1+abs(truth)):
+                    plane_counterexample=dict(i=i,j=j,angle=angle,loss=value,r=rr);break
+            if plane_counterexample is not None:break
+        if plane_counterexample is not None:
+            rr=plane_counterexample['r'];ii,jj=__import__('scipy').optimize.linear_sum_assignment(-abs(rr))
+            solutions.append(dict(start=-1,loss=plane_counterexample['loss'],initial_loss=truth,
+                axis_min=float(abs(rr[ii,jj]).min()),axis_mean=float(abs(rr[ii,jj]).mean()),success=True,
+                message='G1 rejected by explicit plane counterexample; no optimizer needed',iterations=0,r=rr))
     # Include identity only as analytic diagnostic; decoder starts NEVER use T/oracle directions.
-    for start in range(args.starts):
+    for start in range(0 if plane_counterexample is not None else args.starts):
         x0=np.zeros(nangle) if start==0 else rng.uniform(-np.pi,np.pi,nangle)
         fit=minimize(lambda a:loss(rotation(a,d)),x0,method='L-BFGS-B', options=dict(maxiter=args.maxiter,ftol=1e-12,gtol=1e-7))
         r=rotation(fit.x,d)
@@ -506,6 +528,8 @@ def main():
                 gap1_strict_pass=bool(strict_pass) if args.source=='formula' else None,
                 evaluation=evaluation,elapsed_seconds=time.time()-started)
     result['estimator_info']=estimator_info
+    result['plane_counterexample']=plane_counterexample
+    result['scope']='hessian_only' if args.metric in HESSIAN_CATALOG else 'historical_catalogue'
     result['field_cache']=str(cache)
     result['code_hashes']={f.name:sha(f) for f in Path(__file__).resolve().parent.glob('*.py')}
     result['near10_diagnostic']=bool(best['axis_min']>np.cos(np.deg2rad(10)) and min(ranges)>1e-5*(1+abs(truth)))

@@ -1,6 +1,12 @@
 # Sequential three-gap experiments
 
-**Completed result (2026-11-09):** `transport_dual_cosine` with structured
+**Scope correction (2026-11-09):** The earlier transport result below is an
+OUT-OF-SCOPE CONTROL, not completion of the requested Hessian research.
+The active study is [Hessian-only sequential search](HESSIAN_SEARCH.md).
+It requires the same Hessian metric and hyperparameter rules for all models,
+generic WY inference, and explicit G1/G2/G3 failure records.
+
+**Earlier numerical result, outside the requested scope:** `transport_dual_cosine` with structured
 numerical-WY estimators meets the requested mean-correlation gap <= 0.01
 against each model's supervised reference on four fresh cohorts of 2,000
 subjects. See [the final report](results/final/REPORT.md), including the
