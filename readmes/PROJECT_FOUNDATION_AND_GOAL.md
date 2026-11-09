@@ -380,6 +380,71 @@ $$
 
 ---
 
+### 3.6 Windows CMD：生成数据与训练 NP（两个主要阶段）
+
+本节列出**从仓库根目录直接执行**的命令。研究流程分为“阶段 A：生成数据”和“阶段 B：训练神经网络”；但是现有代码的 `s3_train.py` 会强制检查 `s2_precheck.py` 生成的合格报告，因此两个主要阶段之间还必须完成一次 **S2 数据预检查**。实际执行顺序为 **S1 → S2 → S3**，不能省略 S2 或以“只运行两条 Python 命令”代替。
+
+首次在本机运行（已有环境时忽略安装步骤）：
+
+~~~cmd
+conda activate py11
+cd /d D:\Projects\mod-rot-3
+git pull --ff-only
+pip install -e ".[dev]"
+~~~
+
+#### 阶段 A：S1 生成真实参数 T、试次 X 和二元选择 Y
+
+~~~cmd
+python np/s1_generate.py --model C1 --data-seed 20261006
+python np/s1_generate.py --model C2 --data-seed 20261006
+python np/s1_generate.py --model C3 --data-seed 20261006
+python np/s1_generate.py --model CR3 --subjects 5000 --design-seed 20261023 --data-seed 20261028
+~~~
+
+- C1、C2、C3 原始生成器默认各 5,000 位被试、每人 300–500 试次。此版本 `s1_generate.py` 对这三个模型调用原始生成器；**`--subjects` 参数不改变这三个模型类内固定的被试数量**，所以这里不传这个标志。
+- CR3 明确设定 5,000 位被试、每人 500 个共享 X 试次；如果没有固定 bank，S1 将先准备相应的 CR2/CR3 设计文件。再次执行已存在数据的 S1 时会保留原有文件，**不会覆盖**。
+- 四模型的原始生成数据保存到 `outputs/choice/<MODEL>/s1_generate/s1_generate__dataset.npz`，同时存储数据来源与摘要 manifest。
+
+#### 必需的中间校验：S2 Precheck（训练前必须成功）
+
+~~~cmd
+python np/s2_precheck.py --model C1
+python np/s2_precheck.py --model C2
+python np/s2_precheck.py --model C3
+python np/s2_precheck.py --model CR3
+~~~
+
+这些命令分别生成 `qualified` 检查报告。CR3 还会验证固定 X bank 的来源、500×6 形状、被试间共享关系及严格一阶随机占优等约束。`s3_train.py` 在缺少合格 S2 报告时会直接报错并拒绝训练。
+
+#### 阶段 B：S3 训练各模型自己的 NP
+
+下面以当前这份 README 所定义的**潜变量维数与真实参数维数相同**的配置为例，按四个模型**分别训练**。β 取之前监督 Oracle 四模型对照所使用的设置（不是声称这些就是全局最优超参数）：C1/C2/C3 用 `0.0005`，CR3 用 `0.00005`。四模型的稀疏惩罚系数设为 0，context 占比 0.25–0.80。
+
+~~~cmd
+python np/s3_train.py --model C1 --latent-dim 4 --beta 0.0005 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --batch-size 128 --learning-rate 0.0005 --weight-decay 0 --max-epochs 500 --patience 50 --repeat 1 --device auto
+python np/s3_train.py --model C2 --latent-dim 4 --beta 0.0005 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --batch-size 128 --learning-rate 0.0005 --weight-decay 0 --max-epochs 500 --patience 50 --repeat 1 --device auto
+python np/s3_train.py --model C3 --latent-dim 6 --beta 0.0005 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --batch-size 128 --learning-rate 0.0005 --weight-decay 0 --max-epochs 500 --patience 50 --repeat 1 --device auto
+python np/s3_train.py --model CR3 --latent-dim 4 --beta 0.00005 --lambda-sparse 0 --context-min 0.25 --context-max 0.80 --batch-size 128 --learning-rate 0.0005 --weight-decay 0 --max-epochs 500 --patience 50 --repeat 1 --device auto
+~~~
+
+训练脚本各自独立运行，使用 TRAIN/VALIDATION/TEST 被试划分（默认 70%/15%/15%），在 VALIDATION 上选择早停 checkpoint；**所有 NP 训练均不使用真实 T**。`--device auto` 自动选择可用的 CUDA 或 CPU。
+
+训练后的模型参数及日志保存到：
+
+~~~text
+outputs/choice/<MODEL>/s3_train/<CONDITION>/repeat01/
+    s3_train__checkpoint.pt
+    s3_train__history.csv
+    s3_train__summary.json
+~~~
+
+**已有 checkpoint 的安全约束**：训练脚本不会静默覆盖已有 checkpoint；如果同一目录已存在与配置一致的 checkpoint，会保留已有文件，配置不一致则报错。要测试新的参数组合或独立重复运行，应合理调整条件参数或 `--repeat`，不要删除此前实验。
+
+> **本文的两阶段命令到此结束**。训练完成后，若需要按第 3.5 节所述提取最终后验均值 Z，应另行执行 `np/s5_extract_z.py`（参见 [NP 流程说明](../np/README.md)）。S5 是训练后的下游数据提取，**不包含在本次要求的“生成数据、训练神经网络”两个主要阶段内**。
+
+---
+
 ## 4. 已有事实：全部 Z 包含可线性恢复真实参数 T 的信息
 
 对于每个模拟被试，我们现在有两套**按被试 ID 一一配对**的向量：
