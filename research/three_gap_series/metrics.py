@@ -4,7 +4,7 @@ import itertools
 
 METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
-           'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios','conditional_anchor','conditional_bilinear','conditional_bilinear_hrow')
+           'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios','conditional_anchor','conditional_bilinear','conditional_bilinear_hrow','conditional_relative')
 
 COMBINATIONS={f'combo_{stat}_t{tau:g}_w{weight:g}':(stat,tau,weight)
               for stat in ['rms','sd'] for tau in [.03,.1,.3,1.] for weight in [.25,1.,4.]}
@@ -47,6 +47,9 @@ class Loss:
                     signed_effect_signature=a@self.signature)
         if hasattr(self,'group_gram'):
             result['group_gradient_mean_square']=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
+        if 'relative_cov' in self.fields:
+            result['relative_gradient_covariance']=a@self.fields['relative_cov']@a.T
+            result['relative_gradient_gram']=a@self.fields['relative_gram']@a.T
         return result
 
     def __call__(self, r):
@@ -57,6 +60,13 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind=='conditional_relative':
+            energy=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
+            total=np.maximum(np.einsum('ia,ab,ib->i',a,self.gradient_gram,a),1e-30)
+            cv=np.maximum(np.einsum('ia,ab,ib->i',a,self.fields['relative_cov'],a),0)
+            gram=np.maximum(np.einsum('ia,ab,ib->i',a,self.fields['relative_gram'],a),1e-30)
+            return float(min(energy[0,i]/total[i]+energy[1,j]/total[j]+cv[k]/gram[k]
+                             for i,j,k in itertools.permutations(range(d),3)))
         if kind in COMBINATIONS or kind in UX_VARIANTS:
             raw=np.maximum(np.einsum('ia,pab,ib->ip',a,self.ux_moment,a,optimize=True),0)
             stat=(COMBINATIONS.get(kind) or UX_VARIANTS[kind])[0]

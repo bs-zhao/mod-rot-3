@@ -123,3 +123,11 @@ class BankSieve(PolynomialSieve):
             values=super().raw_derivative(w,(i,j)).mean(0)
             h[:,i,j]=h[:,j,i]=values
         return dict(g=g,h=h)
+
+    def grid_fields(self,w):
+        p=w.shape[1];values=super().raw_derivative(w,())
+        g=np.stack([super(BankSieve,self).raw_derivative(w,(i,)) for i in range(p)],axis=-1)
+        h=np.empty((*values.shape,p,p))
+        for i,j in itertools.combinations_with_replacement(range(p),2):
+            component=super().raw_derivative(w,(i,j));h[...,i,j]=h[...,j,i]=component
+        return dict(value=values,g=g,h=h)

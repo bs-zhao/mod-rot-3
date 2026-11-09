@@ -253,6 +253,56 @@ def cross_mean_fields(args,c,fn,v,protocol):
                        mean_subject_ids=ids,bank_trial_ids=stim,domain_fraction=float(valid.mean()),query_points=len(query),
                        final_field_points=k,capabilities=['mean_F1','mean_F2_ZZ','mean_F2_ZX','mean_F2_XX'])
 
+def relative_fields(args,c,fn,v,protocol):
+    """Scale separability: Var_X[grad log|eta| | Z] vanishes for pure temperature.
+
+    Requires canonical eta, not log probability. Zero-crossing neighborhoods
+    are excluded by an output-relative mask, identical rule for every source.
+    """
+    data=c['data'];sub=data['subject_index'];xx=data['x'];ti=data['trial_index'];d=c['d']
+    ix=np.flatnonzero(sub==0);ix=ix[np.argsort(ti[ix])];bank=xx[ix]
+    xs=(bank-protocol['x_mean'])/protocol['x_sd'];rng=np.random.default_rng(args.seed+614)
+    ids=rng.choice(c['splits']['train'],min(args.mean_subjects,len(c['splits']['train'])),replace=False)
+    query=np.concatenate((np.repeat(v[ids],500,axis=0),np.tile(xs,(len(ids),1))),axis=1)
+    target=structure_function(fn,args);info={}
+    if args.estimator in ['direct','finite_difference']:
+        f=derivatives(target,query,d,False,True) if args.estimator=='direct' else numerical_fields(target,query,d,args.step,False,True)
+        g=f['g'].reshape(len(ids),500,d);h=f['h'].reshape(len(ids),500,d,d)
+        with torch.no_grad():
+            eta=np.concatenate([torch.vmap(target)(batch).numpy() for batch in torch.tensor(query).split(2048)]).reshape(len(ids),500)
+    elif args.estimator=='stimulus':
+        from estimators import BankSieve
+        tables=[]
+        if not np.array_equal(np.bincount(sub),np.full(len(v),500)) or np.any(np.diff(sub)<0):
+            raise ValueError('Relative fixed-bank estimator requires grouped 500-row subjects')
+        xgrid=xx.reshape(len(v),500,6)
+        for split,num in [('train',args.train_subjects),('validation',args.validation_subjects)]:
+            use=rng.choice(c['splits'][split],min(num,len(c['splits'][split])),replace=False)
+            if not np.array_equal(xgrid[use],np.broadcast_to(bank,(len(use),500,6))):raise ValueError('Fixed bank mismatch')
+            wq=np.concatenate((np.repeat(v[use],500,axis=0),np.tile(xs,(len(use),1))),axis=1)
+            with torch.no_grad():
+                yy=np.concatenate([torch.vmap(fn)(batch).numpy() for batch in torch.tensor(wq).split(2048)]).reshape(len(use),500)
+            if args.channel=='binary':yy=rng.binomial(1,yy).astype(float)
+            tables.append((v[use],yy))
+        hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d)
+        sieve=BankSieve(args.degree,args.ridge,args.channel).fit(tables[0][0]@hidden.T,tables[0][1],tables[1][0]@hidden.T,tables[1][1])
+        grid=sieve.grid_fields(v[ids]@hidden.T)
+        eta=grid['value'];g=grid['g']@hidden;h=np.einsum('ai,nsab,bj->nsij',hidden,grid['h'],hidden,optimize=True)
+        info=sieve.info
+    else:raise ValueError('Relative candidate supports direct, E09 or fixed-bank WY')
+    covariance=[];gram=[];retained=[]
+    for values,gradient in zip(eta,g):
+        mask=abs(values)>args.relative_cutoff*max(np.sqrt(np.mean(values*values)),1e-20)
+        if mask.sum()<d+2:raise ValueError('Too few nonzero-logit stimuli')
+        rel=gradient[mask]/values[mask,None];center=rel-rel.mean(0)
+        covariance.append(center.T@center/len(rel));gram.append(rel.T@rel/len(rel));retained.append(mask.mean())
+    fields=dict(g=g.reshape(-1,d),h=h.reshape(-1,d,d),groups=np.tile(group_labels(bank),len(ids)),
+                relative_cov=np.mean(covariance,axis=0),relative_gram=np.mean(gram,axis=0))
+    info.update(protocol='Conditional raw-gradient absence plus within-subject stimulus variance of gradient log|eta|',
+                mean_subject_ids=ids,relative_cutoff=args.relative_cutoff,retained_fraction=np.mean(retained),
+                derivative_target='canonical log odds; relative gradients use log absolute canonical log odds')
+    return fields,info
+
 def main():
     p=argparse.ArgumentParser(__doc__)
     p.add_argument('--repo',default=str(Path(__file__).resolve().parents[2]))
@@ -275,6 +325,7 @@ def main():
     p.add_argument('--field-mean',type=int,choices=[0,1],default=0)
     p.add_argument('--mean-stimuli',type=int,default=64)
     p.add_argument('--center-point',type=int,choices=[0,1],default=0)
+    p.add_argument('--relative-cutoff',type=float,default=.1)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -282,6 +333,10 @@ def main():
         raise ValueError('Subject-mean currently requires CR3 conditional canonical-logit direct or bank fields')
     if args.metric=='conditional_anchor' and args.channel!='logit' and args.structure_link!='log_odds':
         raise ValueError('Additional anchor experiment currently targets canonical log odds only')
+    if args.metric=='conditional_relative' and args.channel!='logit' and args.structure_link!='log_odds':
+        raise ValueError('Relative-gradient structure requires canonical log odds')
+    if args.metric=='conditional_relative' and (args.center_point or args.subject_mean or args.field_mean or not 0<=args.relative_cutoff<1):
+        raise ValueError('Relative-gradient has its own conditional averaging protocol; use a cutoff in [0,1)')
     if args.field_mean and (args.model!='CR3' or args.metric.startswith(('conditional_','signature_')) or args.metric=='zzx_mixed_rms'):
         raise ValueError('Full-field subject mean currently supports CR3 F2 metrics only')
     if args.center_point and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.estimator not in ['direct','finite_difference','stimulus']):
@@ -289,7 +344,7 @@ def main():
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
-    config['field_protocol']='anchors' if args.metric=='conditional_anchor' else 'original'
+    config['field_protocol']=('anchors' if args.metric=='conditional_anchor' else 'relative' if args.metric=='conditional_relative' else 'original')
     config_hash=hashlib.sha256(json.dumps(config,sort_keys=True).encode()).hexdigest()[:12]
     # Compact directories avoid Windows MAX_PATH problems. Full flags in summary.
     out=out.with_name(f's{args.seed}_n{args.samples}_cfg{config_hash}')
@@ -304,11 +359,14 @@ def main():
     if cache.exists():
         with np.load(cache) as saved:
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
-            fields={k:saved[k] for k in ['g','h','third','groups'] if k in saved.files}
+            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram'] if k in saved.files}
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.center_point and args.estimator!='stimulus':
+        if args.metric=='conditional_relative':
+            fields,estimator_info=relative_fields(args,c,fn,v,protocol)
+            dump(cache.with_suffix('.json'),estimator_info)
+        elif args.center_point and args.estimator!='stimulus':
             fields,estimator_info=center_fields(args,c,fn,protocol)
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.field_mean:

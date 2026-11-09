@@ -15,6 +15,9 @@ class SieveTests(unittest.TestCase):
         np.testing.assert_allclose(got['h'][:,0,:],target,atol=1e-10)
         averaged=sieve.mean_fields(w)
         np.testing.assert_allclose(averaged['g'],[[w[:,1].mean(),w[:,0].mean()],[2*w[:,0].mean(),.3]],atol=1e-10)
+        grid=sieve.grid_fields(w[:4])
+        np.testing.assert_allclose(grid['value'],y[:4],atol=1e-10)
+        np.testing.assert_allclose(grid['g'][:,1,0],2*w[:4,0],atol=1e-10)
     def test_polynomial_and_sigmoid_third_derivatives(self):
         rng=np.random.default_rng(71)
         w=rng.normal(size=(1200,3));ev=rng.normal(size=(12,3))
