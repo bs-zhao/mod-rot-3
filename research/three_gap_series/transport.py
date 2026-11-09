@@ -22,6 +22,12 @@ def transport_fields(args,c,fn,v,protocol):
     data=c['data'];sub=data['subject_index'];trial=data['trial_index'];xx=data['x'];d=c['d']
     ix=np.flatnonzero(sub==0);ix=ix[np.argsort(trial[ix])];bank=xx[ix]
     valid=(bank[:,[0,1,3,4]]>1).all(1)&(bank[:,[2,5]]>.03).all(1)&(bank[:,[2,5]]<.97).all(1)
+    # The same support rule is applied to direct/FD, so changing h does not
+    # confound their comparison with illegal negative amounts/probabilities.
+    margin=1.05*args.step*protocol['x_sd']
+    valid&=(bank[:,[0,1,3,4]]>margin[[0,1,3,4]]).all(1)
+    valid&=(bank[:,[2,5]]>margin[[2,5]]).all(1)&(bank[:,[2,5]]<1-margin[[2,5]]).all(1)
+    if valid.sum()<d+3:raise ValueError('Too few trials support symmetric finite-scale queries')
     rng=np.random.default_rng(args.seed+3171)
     stim=rng.choice(np.flatnonzero(valid),min(args.mean_stimuli,int(valid.sum())),replace=False)
     ids=rng.choice(c['splits']['train'],min(args.mean_subjects,len(c['splits']['train'])),replace=False)
@@ -62,4 +68,6 @@ def transport_fields(args,c,fn,v,protocol):
               weighted_transport_residual_mean=np.mean(np.maximum(1-explained,0),axis=0),
               gram_eigenvalues=np.linalg.eigvalsh(gram),transport_power=args.transport_power,
               transport_ridge=args.transport_ridge)
+    info['finite_scale_step']=args.step
+    info['physical_x_query_margin']=margin
     return fields,info
