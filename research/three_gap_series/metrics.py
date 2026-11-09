@@ -14,7 +14,7 @@ UX_VARIANTS={f'ux_{stat}_{score}':(stat,score) for stat in ['rms','sd','absmean'
              for score in ['l1','gini','column_entropy','row_entropy']}
 METRICS=METRICS+tuple(COMBINATIONS)+tuple(UX_VARIANTS)
 METRICS=METRICS+('conditional_relative_directions','conditional_relative_dual','conditional_relative_cumulant')
-METRICS=METRICS+('transport_profile','transport_concentration')
+METRICS=METRICS+('transport_profile','transport_concentration','transport_dual','transport_dual_cosine')
 METRICS=METRICS+('conditional_fingerprint',)
 
 def entropy(v, axis):
@@ -75,6 +75,16 @@ class Loss:
                 self.direction_targets=dual
                 self.direction_diagnostics=dict(cumulant_control=info,completed_mixing=mixing,
                                                 dual_covectors=dual,relative_eigenvalues=et)
+        if metric in ['transport_dual','transport_dual_cosine']:
+            energy,vectors=np.linalg.eigh(fields['transport_vector_grams'])
+            mixing=vectors[:,:,-1].T
+            if np.linalg.cond(mixing)>1e8:raise ValueError('Transport directions do not span the latent space')
+            dual=np.linalg.inv(mixing);dual/=np.linalg.norm(dual,axis=1,keepdims=True)
+            self.transport_dual=dual
+            self.direction_diagnostics=dict(transport_forward_directions=mixing,
+                transport_dual_covectors=dual,condition_number=np.linalg.cond(mixing),
+                direction_rank_one_fraction=energy[:,-1]/np.maximum(energy.sum(1),1e-30),
+                assumption='All four input-symmetry transport directions estimated, then inverted; no independence/covariance completion prior')
 
     def describe(self,r):
         d=self.d;sd=np.sqrt(np.diag(r@self.cov@r.T));a=sd[:,None]*np.linalg.inv(r).T
@@ -110,6 +120,16 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind in ['transport_dual','transport_dual_cosine']:
+            if kind=='transport_dual_cosine':
+                normalized=r/np.linalg.norm(r,axis=1,keepdims=True)
+                similarity=(normalized@self.transport_dual.T)**2
+            else:
+                cross=r@self.cov@self.transport_dual.T
+                v1=np.diag(r@self.cov@r.T);v2=np.diag(self.transport_dual@self.cov@self.transport_dual.T)
+                similarity=np.clip(cross*cross/np.maximum(v1[:,None]*v2[None,:],1e-30),0,1)
+            i,j=linear_sum_assignment(-similarity)
+            return float(len(j)-similarity[i,j].sum())
         if kind=='conditional_fingerprint':
             cross=r@self.fields['fingerprint_cross'];axis=np.diag(r@self.cov@r.T)
             corr2=np.clip(cross*cross/np.maximum(axis[:,None]*self.fields['fingerprint_variance'][None],1e-30),0,1)
