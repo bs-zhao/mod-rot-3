@@ -6,6 +6,10 @@ The active study is [Hessian-only sequential search](HESSIAN_SEARCH.md).
 It requires the same Hessian metric and hyperparameter rules for all models,
 generic WY inference, and explicit G1/G2/G3 failure records.
 
+**Current priority:** [single Hessian metrics](SINGLE_METRIC_STUDY.md);
+combinations and weight tuning are paused. See the
+[single-metric results](results/single_metric_study/REPORT.md).
+
 **Earlier numerical result, outside the requested scope:** `transport_dual_cosine` with structured
 numerical-WY estimators meets the requested mean-correlation gap <= 0.01
 against each model's supervised reference on four fresh cohorts of 2,000
@@ -19,7 +23,8 @@ All code and generated artifacts for this series stay inside this directory.
 Original NP weights, data, Z, and other experiments are read-only.
 
 Each `run.py` invocation evaluates ONE loss, ONE model, ONE response channel,
-and ONE source/estimator. There is no all-method rotation runner.
+and ONE source/estimator. The atlas scores independent single objectives on
+shared rotations; each subsequent optimization still evaluates only one loss.
 
 Required flags: `--model --beta --zdim --pca`. PCA is TRAIN-only, without
 whitening; currently only equal-dimensional invertible PCA is supported.

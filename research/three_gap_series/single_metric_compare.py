@@ -51,6 +51,20 @@ def main():
     for r in counts:lines.append('| {channel} | {model} | {rejected} | {flat} | {surviving} |'.format(**r))
     lines+=['','“待完整优化”不等于 Gap 1 成功。四模型均存活的同一单项才进入多起点完整旋转检查；'
         'Gap 1 真正通过后才检查 WY inference，再进入 decoder 验证。','',
+        '## 完整优化与推断验证','',
+        '| 轮次 | 模型 | 指标 | 全空间轴误差 | 结果 |',
+        '|---|---|---|---:|---|']
+    rounds=['s02_single_joint_confirm','s05_single_soft003_g2','s06_single_soft003_g2_degree2',
+        's07_single_soft003_g2_fullrbf','s08_single_soft003_g2_smoother']
+    for label in rounds:
+        for path in sorted((ROOT/label).glob('**/summary.json')):
+            j=json.loads(path.read_text(encoding='utf8'));a=j['args']
+            passed=j['gap1_angle_pass'] if j['stage']=='G1' else j['gap2_audit']['pass_gate']
+            verdict=j['stage']+(' PASS' if passed else ' FAIL')
+            lines.append(f'| {label} | {a["model"]} | {a["metric"]} | {j["worst_axis_error_degrees"]:.4f}° | {verdict} |')
+    lines+=['','G2 不仅看全空间轴误差，还检查各平面最低点、曲线相关和相对误差。'
+        '因此表中轴误差低于 6° 仍可能 G2 失败。未列模型表示该推断分支尚未运行该模型，不能拼接不同分支冒充四模型通过。',
+        '当前尚未为这个单指标运行 G3；必须先有同一推断规则在四模型通过 G2。','',
         '需要分清的结论：','',
         '- C1/C2/C3 的 logit 对参数线性，纯 UU/UUU 单项的零场是解析不可辨识；更好的 inference 不能制造缺失的信息。',
         '- 概率的 Hessian 会因 sigmoid 曲率引入额外耦合，所以“logit 不可辨识”不能直接推及概率，但额外曲率也不保证正确轴最简单。',
