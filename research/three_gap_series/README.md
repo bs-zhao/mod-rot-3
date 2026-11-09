@@ -32,8 +32,47 @@ axis SD after each rotation. Neither raw Z nor PCA is whitened.
 
 `--estimator finite_difference` is an E09 QUERY-ACCESS numeric benchmark:
 central differences query new point/value pairs. It is explicitly NOT a
-claim of inference from the original observational WY table. Binary
-observations are rejected until a Bernoulli estimator is implemented.
+claim of inference from the original observational WY table.
+
+`--estimator polynomial` is an original-row WY total-degree sieve. Its
+weighted polynomial basis and ridge norm are rotationally invariant (tested),
+and a hidden rotation is applied before fitting. The estimator receives
+numerical input/output arrays only. Binary observations use Bernoulli
+likelihood, not differentiation of draws. TRAIN and VALIDATION subjects are
+disjoint. `--degree`, `--ridge`, `--train-rows`, and `--validation-rows`
+are explicit estimator settings.
+
+`--estimator stimulus` is a CR3 latent-polynomial x fixed-stimulus-indicator
+sieve. It provides latent gradients/Hessians only, no continuous X derivatives.
+The actual shared 500-row bank is checked for every selected subject.
+`--train-subjects` and `--validation-subjects` control grouped sample sizes.
+
+`--structure-link log_odds` is an ADDITIONAL canonical-logit structure
+condition: probability observations are mapped through logit, and binary
+observations fit a Bernoulli sieve whose latent log odds are differentiated.
+This must NEVER be reported as successful recovery using the native
+probability Hessian. Native-p and log-odds conditions are distinct.
+
+`signature_plain_l1` uses the L1 amplitude of the mean gradient, mean ZX
+Hessian, and mean ZXX derivative signature, after candidate-axis and fixed-X
+standardization. It deliberately does not give tiny noisy columns unit weight.
+It is amplitude sparsity, not a literal graph-edge count. It includes F1/F3
+information and is not a pure second-order Hessian metric.
+
+`conditional_ratios` and its bilinear variants are CR3-design-specific
+conditional absence / self-linearity candidates. `--subject-mean 1` means
+signed derivative fields are averaged over subjects BEFORE squaring or
+aggregating over stimuli: a distinct M1 estimand from local energy averaging.
+`conditional_anchor` is an explicitly model-informed, OUT-OF-DESIGN query
+control using neutral amounts/probabilities; some lotteries are dominated.
+Its results are not original-table or generic model-free results.
+
+The `combo_*` catalogue combines normalized UX soft support with normalized
+UU diagonal soft support, using RMS or SD aggregation and a predefined
+threshold/weight grid. Each setting is one separately invoked experiment.
+`ux_rms_*`, `ux_sd_*`, and `ux_absmean_*` compare amplitude and concentration
+losses with the same derivative fields. Selection on analytic simulations
+is exploratory; a new subject cohort is reserved for confirmation.
 
 Example (from repository root, py11 environment):
 
@@ -46,3 +85,25 @@ curves are saved under `results/<round>/<model_beta_zdim_pca>/...`.
 TEST T is read only after the decoder rotation is saved to disk. No loss
 weights or methods may be chosen using TEST results. Further experiments
 must distinguish exploratory screening from independent confirmation.
+
+`fresh_cohort.py` confirms a frozen result on newly generated independent
+subjects and choices, using the original frozen encoder with all trials.
+It records the rotation-summary hash before drawing new T and fits nothing.
+C1-C3 confirmation uses 500 trials per new subject; this differs from the
+original variable 300-500 trial cohort. CR3 keeps the actual 500-stimulus bank.
+
+`oracle_geometry.py` is a separate supervised TRAIN-only R+D MSE / OLS
+diagnostic, never imported by discovery. Its multistart R+D solution is a
+numerical reference, not a proof of the exact global optimum.
+
+Small reviewable JSON/CSV/PNG results are versioned. Large field caches and
+redundant `rotation.npy` files remain local; every R is also in summary.json.
+Compact configuration hashes avoid Windows path-length limits. All flags,
+source hashes, code hashes and, in newer runs, M1 matrices are recorded.
+
+Validation:
+
+```cmd
+python -m unittest discover -s research/three_gap_series -p test_estimators.py -v
+python research/three_gap_series/validate.py --model CR3 --beta 0.00005 --zdim 4 --pca 0
+```
