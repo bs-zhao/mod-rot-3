@@ -4,6 +4,8 @@ import csv
 import itertools
 from pathlib import Path
 import time
+import hashlib
+import json
 import numpy as np
 import torch
 from scipy.optimize import minimize
@@ -209,15 +211,17 @@ def main():
         raise ValueError('Subject-mean currently requires CR3 conditional canonical-logit direct or bank fields')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
-    out=out.with_name(out.name+f'_n{args.samples}_starts{args.starts}_degree{args.degree}_ridge{args.ridge:g}_link{args.structure_link}_nt{args.train_rows}_nv{args.validation_rows}_ns{args.train_subjects}_vs{args.validation_subjects}_h{args.step:g}')
-    if args.subject_mean: out=out.with_name(out.name+f'_subjectmean{args.mean_subjects}')
+    config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
+    config_hash=hashlib.sha256(json.dumps(config,sort_keys=True).encode()).hexdigest()[:12]
+    # Compact directories avoid Windows MAX_PATH problems. Full flags in summary.
+    out=out.with_name(f's{args.seed}_n{args.samples}_cfg{config_hash}')
     out.mkdir(parents=True,exist_ok=True)
     # One field cache shared among candidate losses, no fitted R or T labels.
     third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms'
     fn,w,cov,v,rows,protocol=prepare(args,c)
     latent_only=args.metric.startswith('conditional_')
     cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
-    if args.subject_mean:cache=cache.with_name(cache.stem+f'_subjectmean{args.mean_subjects}.npz')
+    cache=cache.with_name(f'fields_{config_hash}_third{int(third)}_latent{int(latent_only)}.npz')
     estimator_info=None
     if cache.exists():
         with np.load(cache) as saved:
