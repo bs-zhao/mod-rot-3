@@ -56,7 +56,7 @@ def hessian_study_fields(fn,w,d,third=False):
     if third:
         def fixed(z,x):return fn(torch.cat((z,x)))
         op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(fixed,argnums=0),argnums=0),argnums=0)
-        fields['third']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(w).split(16)])
+        fields['third']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(w).split(128)])
     return fields
 
 def prepare(args, c):
@@ -184,20 +184,25 @@ def tensor_fields(args,c,fn,w,v,protocol,third,extra_w=None):
     def estimated(q):
         eta=fit.value(torch.cat((q[:d]@torch.tensor(hidden).T,q[d:])))
         return torch.sigmoid(eta) if args.channel=='probability' and args.structure_link=='native' else eta
-    fields=hessian_study_fields(estimated,w,d,third) if args.metric in HESSIAN_CATALOG else derivatives(estimated,w,d,third,False)
+    fields=hessian_study_fields(estimated,w,d,third and extra_w is None) if args.metric in HESSIAN_CATALOG else derivatives(estimated,w,d,third,False)
     if extra_w is not None:
-        fields['uu_h']=derivatives(estimated,extra_w,d,False,True)['h']
-        if third:
-            def fixed(z,x):return estimated(torch.cat((z,x)))
-            op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(fixed,argnums=0),argnums=0),argnums=0)
-            fields['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(extra_w).split(16)])
+        latent=fit.latent_fields(extra_w[:,:d]@hidden.T,extra_w[:,d:],third)
+        lg=latent['g']@hidden
+        lh=np.einsum('ai,nab,bj->nij',hidden,latent['h'],hidden,optimize=True)
+        lt=np.einsum('ai,bj,ck,nabc->nijk',hidden,hidden,hidden,latent['third'],optimize=True) if third else None
+        if args.channel=='probability' and args.structure_link=='native':
+            pr=expit(latent['value']);s1=pr*(1-pr);s2=s1*(1-2*pr);s3=s1*(1-6*pr+6*pr*pr)
+            if third:lt=s1[:,None,None,None]*lt+s2[:,None,None,None]*(lh[:,:,:,None]*lg[:,None,None,:]+lh[:,:,None,:]*lg[:,None,:,None]+lh[:,None,:,:]*lg[:,:,None,None])+s3[:,None,None,None]*lg[:,:,None,None]*lg[:,None,:,None]*lg[:,None,None,:]
+            lh=s1[:,None,None]*lh+s2[:,None,None]*lg[:,:,None]*lg[:,None,:]
+        fields['uu_h']=lh
+        if third:fields['uu_t']=lt
     sse=0.;nval=0
     for sid,x,y in zip(ids_used[1],*tables[1]):
         prediction=fit.predict_subject(v[sid]@hidden.T,x)
         if args.channel=='probability' and args.structure_link=='native':y=expit(y);prediction=expit(prediction)
         sse+=float(np.sum((prediction-y)**2));nval+=len(y)
-    reference=hessian_study_fields(structure_function(fn,args),w,d,third) if args.metric in HESSIAN_CATALOG else derivatives(structure_function(fn,args),w,d,third,False)
-    errors={key:float(np.linalg.norm(fields[key]-reference[key])/max(np.linalg.norm(reference[key]),1e-20)) for key in ['g','h']+(['third'] if third else [])}
+    reference=hessian_study_fields(structure_function(fn,args),w,d,third and extra_w is None) if args.metric in HESSIAN_CATALOG else derivatives(structure_function(fn,args),w,d,third,False)
+    errors={key:float(np.linalg.norm(fields[key]-reference[key])/max(np.linalg.norm(reference[key]),1e-20)) for key in ['g','h']+(['third'] if third and extra_w is None else [])}
     block_errors={}
     for name,sl in [('UU',(slice(None),slice(None,d),slice(None,d))),('UX',(slice(None),slice(None,d),slice(d,None))),('XX',(slice(None),slice(d,None),slice(d,None)))]:
         diff=fields['h'][sl]-reference['h'][sl]
@@ -590,7 +595,7 @@ def main():
             dump(cache.with_suffix('.json'),estimator_info)
         else:
             target=structure_function(fn,args)
-            fields=((hessian_study_fields(target,w,d,third) if args.metric in HESSIAN_CATALOG else derivatives(target,w,d,third,latent_only)) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
+            fields=((hessian_study_fields(target,w,d,third and not args.uu_full_domain) if args.metric in HESSIAN_CATALOG else derivatives(target,w,d,third,latent_only)) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if args.uu_full_domain:
         if 'uu_h' not in fields:
@@ -599,7 +604,7 @@ def main():
             if third:
                 def zfn(z,x):return target(torch.cat((z,x)))
                 op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(zfn,argnums=0),argnums=0),argnums=0)
-                fields['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(full_w).split(16)])
+                fields['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(full_w).split(128)])
             np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
         protocol['block_domains']=dict(uu='all original TRAIN rows; only latent derivatives, valid even at zero X amounts',ux='original rows in the differentiable X domain',uu_rows=fields['uu_row_ids'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
@@ -664,6 +669,11 @@ def main():
         ii,jj=linear_sum_assignment(-abs(r))
         solutions.append(dict(start=start,loss=float(fit.fun),initial_loss=float(loss(rotation(x0,d))),axis_min=float(abs(r[ii,jj]).min()),axis_mean=float(abs(r[ii,jj]).mean()),
                               success=bool(fit.success),message=str(fit.message),iterations=fit.nit,r=r))
+        if args.metric in HESSIAN_CATALOG and (start+1)%8==0:
+            current=min(solutions,key=lambda s:s['loss'])
+            dump(out/'progress.json',dict(completed_starts=start+1,total_starts=args.starts,
+                best_loss=current['loss'],elapsed_seconds=time.time()-started,solutions=solutions))
+            print(args.model,args.source,args.metric,'starts',start+1,'of',args.starts,'best_loss',round(current['loss'],7),flush=True)
     best=min(solutions,key=lambda x:x['loss']); rhat=best['r']
     # Lock R before any TEST labels are read. No labels are used to select candidates.
     np.save(out/'rotation.npy',rhat)
@@ -701,7 +711,7 @@ def main():
     result['stage']='G1' if args.source=='formula' and args.estimator=='direct' else 'G2' if args.source=='formula' else 'DECODER_DIRECT_DIAGNOSTIC' if args.estimator=='direct' else 'G3'
     result['angle_diagnostic_coordinate']='Tstd true axes' if args.source=='formula' else 'Raw latent identity only; NOT a parameter recovery error'
     if args.metric in HESSIAN_CATALOG and args.source=='formula' and args.estimator!='direct':
-        reference=hessian_study_fields(structure_function(fn,args),w,d,third)
+        reference=hessian_study_fields(structure_function(fn,args),w,d,third and full_w is None)
         reference['strict_x']=w[:,d:]
         if grid_groups is not None:reference['strict_subject_groups']=grid_groups
         if full_w is not None:
@@ -710,7 +720,8 @@ def main():
             if third:
                 def fixed(z,x):return target(torch.cat((z,x)))
                 op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(fixed,argnums=0),argnums=0),argnums=0)
-                reference['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(full_w).split(16)])
+                reference['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(full_w).split(128)])
+                result['estimator_info']['UU_Zvariation_full_relative_error']=float(np.linalg.norm(fields['uu_t']-reference['uu_t'])/max(np.linalg.norm(reference['uu_t']),1e-20))
         reference_loss=HessianLoss(reference,cov,d,args.metric)
         actual=[];estimate=[];per_plane=[]
         for i,j in itertools.combinations(range(d),2):

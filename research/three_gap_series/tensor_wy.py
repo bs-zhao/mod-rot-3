@@ -5,6 +5,7 @@ isotropic Gaussian RBFs, and a complete latent polynomial. No model names,
 option structure, generating expressions, parameter labels or derivative data.
 """
 import math
+import itertools
 import numpy as np
 import torch
 from sklearn.preprocessing import PolynomialFeatures
@@ -65,6 +66,31 @@ class TensorWY:
     def predict_subject(self,z,x):
         phi=self.zbasis.transform(np.asarray(z)[None])*self.zweights
         return ((phi@self.coefficient)@(self.xfeatures(x)/self.xscale).T).ravel()
+
+    def latent_fields(self,z,x,third=False):
+        """Exact latent derivatives of the fitted numerical surrogate.
+
+        Uses polynomial algebra, not teacher derivatives. This only changes
+        computation, and is tested against autodiff of the same fitted value.
+        """
+        profiles=(self.xfeatures(x)/self.xscale)@self.coefficient.T
+        n,d=z.shape
+        def derivative(indices):
+            powers=self.powers.copy();factor=self.zweights.copy()
+            for j in indices:factor*=powers[:,j];powers[:,j]-=1
+            valid=np.all(powers>=0,axis=1)&(factor!=0)
+            value=np.ones((n,int(valid.sum())))
+            for j in range(d):value*=z[:,j,None]**powers[None,valid,j]
+            return np.sum(value*factor[None,valid]*profiles[:,valid],axis=1)
+        result=dict(value=derivative(()),g=np.empty((n,d)),h=np.empty((n,d,d)))
+        for j in range(d):result['g'][:,j]=derivative((j,))
+        for j,k in itertools.combinations_with_replacement(range(d),2):result['h'][:,j,k]=result['h'][:,k,j]=derivative((j,k))
+        if third:
+            result['third']=np.empty((n,d,d,d))
+            for ijk in itertools.combinations_with_replacement(range(d),3):
+                value=derivative(ijk)
+                for perm in set(itertools.permutations(ijk)):result['third'][(slice(None),*perm)]=value
+        return result
 
     def value(self,w):
         powers,zw,xpowers,xw,centers,xscale,coef=self._tensors

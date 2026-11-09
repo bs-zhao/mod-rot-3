@@ -17,6 +17,10 @@ class TensorWYTests(unittest.TestCase):
         np.testing.assert_allclose(got,expected,atol=2e-6)
         self.assertAlmostEqual(fitted.predict_subject(q.numpy()[:2],q.numpy()[None,2:])[0],float(fitted.value(q)),places=10)
         self.assertFalse(fitted.info['model_identity_used'])
+        latent=fitted.latent_fields(q.numpy()[None,:2],q.numpy()[None,2:],True)
+        np.testing.assert_allclose(latent['h'][0],got[:2,:2],atol=1e-10)
+        t=torch.func.jacfwd(torch.func.hessian(fitted.value))(q).detach().numpy()
+        np.testing.assert_allclose(latent['third'][0],t[:2,:2,:2],atol=1e-10)
 
 
 if __name__=='__main__':unittest.main()
