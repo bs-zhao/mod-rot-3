@@ -82,6 +82,17 @@ output directories retain their original unnumbered names.
   endpoint minima. Includes six-plane loss plots, candidate ranking and
   explicit failure diagnostics. See 09_cr3_three_gap_reaudit/README.md.
 
+
+- 10_multimodel_hessian_simplicity/: **independent, one-command cross-model analytic-oracle screen**
+  for C1/C2/C3/CR3.  Uses original S1 subjects/X, exact logit/probability TT/TX
+  Hessians, local-to-matrix aggregators, rowwise and columnwise Tail-L1/L2,
+  soft support, entropy/Hoyer/Gini, Gram, third/fourth-order curvature and
+  pairwise plus randomized SO(3)/SO(4)/SO(d) rotations.  Reports flatness,
+  strict endpoint minima, invariance and candidate rankings.  **This is
+  Gap 1 analytic only**: not yet formula-WY/NN-WY, and not a claim of
+  unsupervised recovery.  The repository has CR3, not an independent CR1.
+  See 10_multimodel_hessian_simplicity/README.md.
+
 Read-only input datasets are stored under outputs/choice/CR3 and all
 experiment results under outputs/math/<experiment_name>. Existing NP and
 rotation pipelines are left unchanged.
