@@ -41,6 +41,12 @@ for ux in ['rms','profile1','profile2']:
         for score in ['soft003','soft01','log01','lp05']:
             for weight in [.1,1.,10.]:
                 register(f'joint_{ux}_localuu_{part}_{score}_w{weight:g}',family='joint_sparse',ux=ux,part=part,weight=weight,score=score)
+for degree in [1,2]:
+    for strength in [0.,1.]:
+        for self_score in ['l1','soft003']:
+            for weight in [0.,.1,1.,10.]:
+                register(f'jd_profile{degree}_strength{strength:g}_self{self_score}_w{weight:g}',
+                    family='jd',degree=degree,strength=strength,self_score=self_score,weight=weight)
 
 
 def penalty(values,score,axis=-1,k=1):
@@ -84,6 +90,22 @@ class HessianLoss:
             ridge=np.eye(phi.shape[1])*1e-8;ridge[0,0]=0
             coeff=np.linalg.solve(phi.T@phi/self.n+ridge,phi.T@self.ux.reshape(self.n,-1)/self.n)
             self.profiles[degree]=coeff.reshape(-1,d,self.ux.shape[2]).transpose(1,0,2).reshape(d,-1)
+        self.joint_operators=None
+        if self.spec['family']=='jd':
+            if 'strict_subject_groups' not in fields:raise ValueError('Hessian profile JD requires a grouped subject x stimulus grid')
+            groups=fields['strict_subject_groups'];ids=np.unique(groups);coefs=[]
+            for sid in ids:
+                mask=groups==sid;phi=PolynomialFeatures(self.spec['degree']).fit_transform(fields['strict_x'][mask])
+                gram=phi.T@phi/mask.sum()+1e-6*np.eye(phi.shape[1])
+                cp=np.linalg.solve(gram,phi.T@self.ux[mask].reshape(mask.sum(),-1)/mask.sum())
+                coefs.append(cp.reshape(-1,d,self.ux.shape[2]).transpose(1,0,2).reshape(d,-1))
+            coefficients=np.asarray(coefs)
+            operators=np.einsum('saq,sbq->qab',coefficients,coefficients)/len(ids)
+            trace=np.trace(operators,axis1=1,axis2=2)
+            active=trace>1e-3*max(float(trace.max()),1e-30)
+            if not active.any():raise ValueError('No nonzero Hessian-profile operators')
+            self.joint_operators=operators[active]/trace[active,None,None]
+            weights=trace[active]**self.spec['strength'];self.jd_weights=weights/weights.sum()
 
     def _ux(self,a,stat):
         if stat.startswith('profile'):return (a@self.profiles[int(stat[-1])])/self.scale
@@ -117,6 +139,11 @@ class HessianLoss:
             return penalty(v,s['score'],axis,s.get('k',1))
         if family=='profile':return penalty(self._ux(a,f'profile{s["degree"]}'),s['score'],-2,s.get('k',1))
         if family=='uu':return penalty(self._uu(a,s['stat'],s['part']),s['score'])
+        if family=='jd':
+            transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
+            off=transformed[:,~np.eye(self.d,dtype=bool)]
+            joint=float(self.jd_weights@np.sum(off*off,axis=1))
+            return joint+s['weight']*penalty(self._uu(a,'local','self'),s['self_score'])
         ux=penalty(self._ux(a,s['ux']),'l1')
         if family=='joint_sparse':return ux+s['weight']*penalty(self._uu(a,'local',s['part']),s['score'])
         if family=='joint':return ux+s['weight']*penalty(self._uu(a,'rms',s['part']),'l1')
@@ -133,6 +160,7 @@ class HessianLoss:
     def describe(self,r):
         sd=np.sqrt(np.diag(r@self.cov@r.T));a=sd[:,None]*np.linalg.inv(r).T
         return dict(category='Hessian-only, model-blind M1/M3',specification=self.spec,
+                    joint_operators=self.joint_operators,
                     fixed_block_scale=self.scale,uu_diag_rms=self._uu(a,'rms','self'),
                     uu_off_rms=self._uu(a,'rms','off'),ux_rms=self._ux(a,'rms'),
                     ux_signed=self._ux(a,'signed'),loss=self(r))

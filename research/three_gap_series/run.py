@@ -379,6 +379,9 @@ def main():
     p.add_argument('--neighbors',type=int,default=2048)
     p.add_argument('--bandwidth',type=float,default=1.)
     p.add_argument('--uu-full-domain',action='store_true',help='Separate block domains: UU on all original TRAIN rows, UX on the differentiable X domain')
+    p.add_argument('--hessian-grid',type=int,default=0,help='Subjects in a TRAIN product evaluation grid; generic Hessian profile JD only')
+    p.add_argument('--grid-stimuli',type=int,default=64)
+    p.add_argument('--g1-angle-tolerance',type=float,default=5.,help='User-accepted maximum axis error in degrees, after sign/permutation matching')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus','local']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -412,6 +415,18 @@ def main():
     # One field cache shared among candidate losses, no fitted R or T labels.
     third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms' or HESSIAN_CATALOG.get(args.metric,{}).get('order')==3
     fn,w,cov,v,rows,protocol=prepare(args,c)
+    grid_groups=None
+    if args.hessian_grid:
+        if args.metric not in HESSIAN_CATALOG:raise ValueError('Hessian grids are reserved for the model-blind Hessian study')
+        gridrng=np.random.default_rng(args.seed+673)
+        subject_ids=gridrng.choice(c['splits']['train'],min(args.hessian_grid,len(c['splits']['train'])),replace=False)
+        stimulus_rows=gridrng.choice(rows,min(args.grid_stimuli,len(rows)),replace=False)
+        # Generic product Q. No cognitive condition groups or model-specific X templates.
+        xgrid=(c['data']['x'][stimulus_rows]-protocol['x_mean'])/protocol['x_sd']
+        w=np.concatenate((np.repeat(v[subject_ids],len(xgrid),axis=0),np.tile(xgrid,(len(subject_ids),1))),axis=1)
+        grid_groups=np.repeat(np.arange(len(subject_ids)),len(xgrid))
+        protocol['hessian_grid']=dict(subject_ids=subject_ids,stimulus_rows=stimulus_rows,
+            evaluation_points=len(w),access='TRAIN product evaluation Q; G2/G3 must fit original WY rows, not query teacher at this grid for fitting')
     latent_only=args.metric.startswith('conditional_')
     cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
     cache=cache.with_name(f'fields_{config_hash}_third{int(third)}_latent{int(latent_only)}.npz')
@@ -517,6 +532,7 @@ def main():
         if args.estimator in ['utility','profile','stimulus'] or args.subject_mean or args.field_mean or args.center_point or args.q_weight!='uniform':
             raise ValueError('Hessian-only study disallows model-specific inference/grouping and weights')
         fields['strict_x']=w[:,d:]
+        if grid_groups is not None:fields['strict_subject_groups']=grid_groups
         loss=HessianLoss(fields,cov,d,args.metric)
     else:loss=Loss(fields,cov,d,args.metric)
     rng=np.random.default_rng(args.seed+1)
@@ -530,21 +546,28 @@ def main():
         audits.append(err)
     if max(audits)>1e-8: raise ValueError(f'Invariance audit failed: {audits}')
     truth=loss(np.eye(d)); solutions=[]
-    plane_counterexample=None
+    plane_counterexample=None;prescreen_sweep=[]
     if args.gate_prescreen:
         if args.source!='formula' or args.estimator!='direct':raise ValueError('Gate prescreen applies to G1 only')
         for i,j in itertools.combinations(range(d),2):
+            plane=[]
             for angle in np.linspace(0,90,37):
                 rr=np.eye(d);aa=np.deg2rad(angle);rr[i,i]=rr[j,j]=np.cos(aa);rr[i,j]=-np.sin(aa);rr[j,i]=np.sin(aa)
                 value=loss(rr)
-                if value<truth-1e-6*(1+abs(truth)):
-                    plane_counterexample=dict(i=i,j=j,angle=angle,loss=value,r=rr);break
-            if plane_counterexample is not None:break
+                plane.append(dict(i=i,j=j,angle=angle,loss=value))
+            prescreen_sweep.extend(plane)
+            near=min(p['loss'] for p in plane if min(p['angle'],90-p['angle'])<=args.g1_angle_tolerance)
+            far=[p for p in plane if min(p['angle'],90-p['angle'])>args.g1_angle_tolerance]
+            if far:
+                wrong=min(far,key=lambda p:p['loss'])
+                if wrong['loss']<near-1e-6*(1+abs(near)) and (plane_counterexample is None or wrong['loss']<plane_counterexample['loss']):
+                    aa=np.deg2rad(wrong['angle']);rr=np.eye(d);rr[i,i]=rr[j,j]=np.cos(aa);rr[i,j]=-np.sin(aa);rr[j,i]=np.sin(aa)
+                    plane_counterexample=dict(**wrong,r=rr,near_axis_minimum=near,angle_tolerance=args.g1_angle_tolerance)
         if plane_counterexample is not None:
             rr=plane_counterexample['r'];ii,jj=__import__('scipy').optimize.linear_sum_assignment(-abs(rr))
             solutions.append(dict(start=-1,loss=plane_counterexample['loss'],initial_loss=truth,
                 axis_min=float(abs(rr[ii,jj]).min()),axis_mean=float(abs(rr[ii,jj]).mean()),success=True,
-                message='G1 rejected by explicit plane counterexample; no optimizer needed',iterations=0,r=rr))
+                message='G1 rejected: plane minimum outside the user-accepted angle neighborhood; no optimizer needed',iterations=0,r=rr))
     # Include identity only as analytic diagnostic; decoder starts NEVER use T/oracle directions.
     for start in range(0 if plane_counterexample is not None else args.starts):
         x0=np.zeros(nangle) if start==0 else rng.uniform(-np.pi,np.pi,nangle)
@@ -557,15 +580,24 @@ def main():
     best=min(solutions,key=lambda x:x['loss']); rhat=best['r']
     # Lock R before any TEST labels are read. No labels are used to select candidates.
     np.save(out/'rotation.npy',rhat)
-    sweep=[]
-    for i,j in itertools.combinations(range(d),2):
-        for angle in np.linspace(0,90,37):
-            r=np.eye(d); a=np.deg2rad(angle); r[i,i]=r[j,j]=np.cos(a);r[i,j]=-np.sin(a);r[j,i]=np.sin(a)
-            sweep.append(dict(i=i,j=j,angle=angle,loss=loss(r)))
+    sweep=prescreen_sweep
+    if not sweep:
+        for i,j in itertools.combinations(range(d),2):
+            for angle in np.linspace(0,90,37):
+                r=np.eye(d); a=np.deg2rad(angle); r[i,i]=r[j,j]=np.cos(a);r[i,j]=-np.sin(a);r[j,i]=np.sin(a)
+                sweep.append(dict(i=i,j=j,angle=angle,loss=loss(r)))
     with (out/'planes.csv').open('w',newline='') as f:
         writer=csv.DictWriter(f,fieldnames=list(sweep[0]));writer.writeheader();writer.writerows(sweep)
     ranges=[np.ptp([x['loss'] for x in sweep if x['i']==i and x['j']==j]) for i,j in itertools.combinations(range(d),2)]
     strict_pass=(best['axis_min']>.995 and best['loss']>=truth-1e-6*(1+abs(truth)) and min(ranges)>1e-5*(1+abs(truth)))
+    plane_axes=[]
+    for i,j in itertools.combinations(range(d),2):
+        plane=[p for p in sweep if p['i']==i and p['j']==j];minimum=min(plane,key=lambda p:p['loss'])
+        plane_axes.append(dict(i=i,j=j,minimum_angle=minimum['angle'],axis_error=min(minimum['angle'],90-minimum['angle'])))
+    worst_axis_error=float(np.rad2deg(np.arccos(np.clip(best['axis_min'],0,1))))
+    angle_pass=bool(worst_axis_error<=args.g1_angle_tolerance+1e-7 and
+        max(p['axis_error'] for p in plane_axes)<=args.g1_angle_tolerance and
+        min(ranges)>1e-5*(1+abs(truth)) and plane_counterexample is None)
     evaluation=None
     if args.source=='decoder':
         test=c['splits']['test']
@@ -575,6 +607,8 @@ def main():
     result=dict(args=vars(args),hashes=c['hashes'],protocol=protocol,rows=rows,train_ids=c['splits']['train'],
                 invariance_max=max(audits),truth_loss=truth,best=best,solutions=solutions,plane_ranges=ranges,
                 gap1_strict_pass=bool(strict_pass) if args.source=='formula' else None,
+                gap1_angle_pass=angle_pass if args.source=='formula' else None,
+                worst_axis_error_degrees=worst_axis_error,plane_minima=plane_axes,
                 evaluation=evaluation,elapsed_seconds=time.time()-started)
     result['estimator_info']=estimator_info
     result['plane_counterexample']=plane_counterexample
@@ -589,6 +623,6 @@ def main():
     result['matrix_metrics_identity']=loss.describe(np.eye(d))
     dump(out/'summary.json',result)
     print(args.model,args.source,args.channel,args.metric,'truth',round(truth,6),'best',round(best['loss'],6),
-          'axis_min',round(best['axis_min'],5),'G1',strict_pass,'seconds',round(time.time()-started,1),flush=True)
+          'axis_min',round(best['axis_min'],5),'G1_exact',strict_pass,'G1_angle',angle_pass,'max_angle',round(worst_axis_error,3),'seconds',round(time.time()-started,1),flush=True)
 
 if __name__=='__main__': main()

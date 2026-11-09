@@ -12,7 +12,7 @@ class StrictHessianTests(unittest.TestCase):
     def test_entire_catalogue_scale_sign_and_permutation_invariance(self):
         rng=np.random.default_rng(14);n=24;d=4;p=3
         h=rng.normal(size=(n,d+p,d+p));h=(h+h.transpose(0,2,1))/2
-        fields=dict(h=h,strict_x=rng.normal(size=(n,p)),third=rng.normal(size=(n,d+p,d+p,d+p)))
+        fields=dict(h=h,strict_x=rng.normal(size=(n,p)),third=rng.normal(size=(n,d+p,d+p,d+p)),strict_subject_groups=np.zeros(n,dtype=int))
         q,_=np.linalg.qr(rng.normal(size=(d,d)));base=rng.normal(size=(d,d));cov=base@base.T+np.eye(d)
         changed=(np.array([.001,-20.,.3,-100.])[:,None]*q)[[3,1,0,2]]
         for name in CATALOG:
