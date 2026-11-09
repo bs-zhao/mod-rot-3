@@ -165,6 +165,20 @@ class IntegrationSmoke(unittest.TestCase):
                 self.assertTrue((out/model/"curves.csv").is_file())
                 self.assertTrue((out/model/"multiway_comparison.csv").is_file())
 
+    def test_third_and_fourth_derivative_branches(self):
+        """Ensure optional higher-order tensors execute and are finite."""
+        with tempfile.TemporaryDirectory() as d:
+            main(["--models","C2","--subjects","4","--trials-per-subject","3",
+                  "--angles","0,90","--planes","12","--multiway","0",
+                  "--higher","--fourth","--no-functional","--plots","0",
+                  "--synthetic-debug","--output",d])
+            with (Path(d)/"C2"/"curves.csv").open(newline="",encoding="utf-8") as f:
+                rows=list(csv.DictReader(f))
+            self.assertEqual(len(rows),4)
+            self.assertIn("zz_self_third_rms_loss",rows[0])
+            self.assertIn("zz_self_fourth_rms_loss",rows[0])
+            self.assertTrue(all(np.isfinite(float(r["zz_self_third_rms_loss"])) for r in rows))
+
     def test_synthetic_c1_end_to_end_without_user_dataset(self):
         with tempfile.TemporaryDirectory() as d:
             main(["--models","C1","--subjects","4","--trials-per-subject","3",
