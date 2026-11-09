@@ -50,12 +50,12 @@ class PolynomialSieve:
         for i in indices:
             factor*=powers[:,i];powers[:,i]-=1
         valid=np.all(powers>=0,axis=1)&(factor!=0)
-        a=powers[valid]; coeff=self.coef[valid]*factor[valid]
+        a=powers[valid]; coeff=self.coef[valid]*factor[valid].reshape((-1,)+(1,)*(self.coef.ndim-1))
         values=np.ones((len(w),len(a)))
         for i in range(w.shape[1]): values*=w[:,i,None]**a[None,:,i]
         return values@coeff
 
-    def fields(self,w,third=False):
+    def fields(self,w,third=False,structure_link='native'):
         n,p=w.shape
         eta=self.raw_derivative(w,());g=np.empty((n,p));h=np.empty((n,p,p))
         for i in range(p): g[:,i]=self.raw_derivative(w,(i,))
@@ -68,7 +68,7 @@ class PolynomialSieve:
                 v=self.raw_derivative(w,ijk)
                 for idx in set(itertools.permutations(ijk)): t[(slice(None),*idx)]=v
             out['third']=t
-        if self.channel!='logit':
+        if self.channel!='logit' and structure_link=='native':
             pr=expit(eta);s1=pr*(1-pr);s2=s1*(1-2*pr);s3=s1*(1-6*pr+6*pr*pr)
             if third:
                 out['third']=(s1[:,None,None,None]*out['third']+
@@ -77,3 +77,35 @@ class PolynomialSieve:
             out['h']=s1[:,None,None]*h+s2[:,None,None]*g[:,:,None]*g[:,None,:]
             out['g']=s1[:,None]*g
         return out
+
+class BankSieve(PolynomialSieve):
+    """E02: latent polynomial x discrete-stimulus one-hot. No X derivatives."""
+    def fit(self,w,y,valw,valy):
+        self.basis=PolynomialFeatures(self.degree).fit(w[:1]);self.powers=self.basis.powers_
+        self.weights=np.array([math.sqrt(math.factorial(int(a.sum()))/math.prod(math.factorial(int(k)) for k in a)) for a in self.powers])
+        design=self.basis.transform(w)*self.weights;vd=self.basis.transform(valw)*self.weights
+        n=len(w);penalty=np.ones(design.shape[1])*self.ridge;penalty[0]=0
+        if self.channel=='binary':
+            shape=(design.shape[1],y.shape[1])
+            def objective(flat):
+                b=flat.reshape(shape);eta=design@b
+                loss=np.mean(np.logaddexp(0,eta)-y*eta)+.5*np.sum(penalty[:,None]*b*b)/y.shape[1]
+                grad=design.T@(expit(eta)-y)/(n*y.shape[1])+penalty[:,None]*b/y.shape[1]
+                return loss,grad.ravel()
+            fit=minimize(objective,np.zeros(np.prod(shape)),method='L-BFGS-B',jac=True,options=dict(maxiter=500,gtol=1e-7,ftol=1e-10))
+            b=fit.x.reshape(shape)
+            self.info=dict(converged=bool(fit.success),iterations=fit.nit,validation_nll=float(np.mean(np.logaddexp(0,vd@b)-valy*(vd@b))))
+        else:
+            target=y if self.channel=='logit' else np.log(np.clip(y,1e-8,1-1e-8)/np.clip(1-y,1e-8,1-1e-8))
+            b=np.linalg.solve(design.T@design/n+np.diag(penalty),design.T@target/n)
+            pred=vd@b if self.channel=='logit' else expit(vd@b)
+            self.info=dict(converged=True,validation_rmse=float(np.sqrt(np.mean((pred-valy)**2))))
+        self.coef=b*self.weights[:,None]
+        self.info.update(degree=self.degree,ridge=self.ridge,features=len(b),train_subjects=n,
+                         validation_subjects=len(valw),stimuli=y.shape[1],capabilities=['F0','F1_z','F2_zz','F3_zzz'],
+                         protocol='original-table latent polynomial x fixed-stimulus indicators; no continuous X derivatives')
+        return self
+
+    def raw_derivative(self,w,indices):
+        values=super().raw_derivative(w,indices)
+        return values[np.arange(len(w)),self.eval_stimulus]

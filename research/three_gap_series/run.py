@@ -101,17 +101,58 @@ def polynomial_fields(args,c,fn,w,v,protocol,third):
     b=np.eye(w.shape[1]);b[:d,:d]=hidden
     train,y=tables[0]; val,vy=tables[1]
     sieve=PolynomialSieve(args.degree,args.ridge,args.channel).fit(train@b.T,y,val@b.T,vy)
-    f=sieve.fields(w@b.T,third)
+    f=sieve.fields(w@b.T,third,args.structure_link)
     fields=dict(g=f['g']@b,h=np.einsum('ai,nab,bj->nij',b,f['h'],b,optimize=True))
     if third: fields['third']=np.einsum('ai,bj,ck,nabc->nijk',b,b,b,f['third'],optimize=True)
     if args.metric=='conditional_soft_count':
         fields=dict(g=fields['g'][:,:d],h=fields['h'][:,:d,:d])
-    reference=derivatives(fn,w,d,third,args.metric=='conditional_soft_count')
+    reference=derivatives(structure_function(fn,args),w,d,third,args.metric=='conditional_soft_count')
     errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
     info=dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_row_hash=__import__('hashlib').sha256(selected_rows[0].tobytes()).hexdigest(),
               validation_row_hash=__import__('hashlib').sha256(selected_rows[1].tobytes()).hexdigest(),
               binary_protocol='one fixed-seed Bernoulli draw per selected original row' if args.channel=='binary' else None)
     return fields,info
+
+def structure_function(fn,args):
+    if args.channel!='logit' and args.structure_link=='log_odds':
+        def linked(w): return torch.logit(fn(w).clamp(1e-12,1-1e-12))
+        return linked
+    return fn
+
+def bank_fields(args,c,fn,w,v,protocol,rows):
+    from estimators import BankSieve
+    if args.model!='CR3' or args.metric!='conditional_soft_count':
+        raise ValueError('Fixed-bank sieve currently supports CR3 conditional loss only')
+    rng=np.random.default_rng(args.seed+411);d=c['d'];data=c['data']
+    indices=np.flatnonzero(data['subject_index']==0)
+    order=np.argsort(data['trial_index'][indices]);indices=indices[order]
+    bank=data['x'][indices];trial=data['trial_index'][indices]
+    if len(bank)!=500 or not np.array_equal(trial,np.arange(500)): raise ValueError('Wrong bank indexing')
+    xs=(bank-protocol['x_mean'])/protocol['x_sd'];tables=[];ids_used=[]
+    for split,n in [('train',args.train_subjects),('validation',args.validation_subjects)]:
+        ids=rng.choice(c['splits'][split],min(n,len(c['splits'][split])),replace=False);ids_used.append(ids)
+        # Verify fixed X bank for the subjects used, not just subject zero.
+        for sid in ids:
+            ix=np.flatnonzero(data['subject_index']==sid)
+            ix=ix[np.argsort(data['trial_index'][ix])]
+            if not np.array_equal(data['x'][ix],bank): raise ValueError('Subject does not share CR3 bank')
+        query=np.concatenate((np.repeat(v[ids],500,axis=0),np.tile(xs,(len(ids),1))),axis=1)
+        values=[]
+        with torch.no_grad():
+            for batch in torch.tensor(query).split(2048): values.append(torch.vmap(fn)(batch).numpy())
+        y=np.concatenate(values).reshape(len(ids),500)
+        if args.channel=='binary': y=rng.binomial(1,y).astype(float)
+        tables.append((v[ids],y))
+    hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d)
+    train,y=tables[0];val,vy=tables[1]
+    sieve=BankSieve(args.degree,args.ridge,args.channel).fit(train@hidden.T,y,val@hidden.T,vy)
+    sieve.eval_stimulus=data['trial_index'][rows].astype(int)
+    f=sieve.fields(w[:,:d]@hidden.T,False,args.structure_link)
+    fields=dict(g=f['g']@hidden,h=np.einsum('ai,nab,bj->nij',hidden,f['h'],hidden,optimize=True))
+    reference=derivatives(structure_function(fn,args),w,d,False,True)
+    errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
+    return fields,dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_ids=ids_used[0],validation_ids=ids_used[1],
+                       structure_link=args.structure_link)
 
 def main():
     p=argparse.ArgumentParser(__doc__)
@@ -120,7 +161,7 @@ def main():
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
-    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial'],default='direct')
+    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','stimulus'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
     p.add_argument('--metric',choices=METRICS,required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
@@ -128,17 +169,20 @@ def main():
     p.add_argument('--maxiter',type=int,default=250); p.add_argument('--label',default='round01')
     p.add_argument('--degree',type=int,default=3);p.add_argument('--ridge',type=float,default=.001)
     p.add_argument('--train-rows',type=int,default=32000);p.add_argument('--validation-rows',type=int,default=8000)
+    p.add_argument('--train-subjects',type=int,default=1024);p.add_argument('--validation-subjects',type=int,default=256)
+    p.add_argument('--structure-link',choices=['native','log_odds'],default='native')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
-    if args.channel=='binary' and args.estimator!='polynomial':
+    if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
+    out=out.with_name(out.name+f'_n{args.samples}_starts{args.starts}_degree{args.degree}_ridge{args.ridge:g}_link{args.structure_link}_nt{args.train_rows}_nv{args.validation_rows}_ns{args.train_subjects}_vs{args.validation_subjects}_h{args.step:g}')
     out.mkdir(parents=True,exist_ok=True)
     # One field cache shared among candidate losses, no fitted R or T labels.
     third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms'
     fn,w,cov,v,rows,protocol=prepare(args,c)
     latent_only=args.metric=='conditional_soft_count'
-    cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}.npz'
+    cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
     estimator_info=None
     if cache.exists():
         with np.load(cache) as saved:
@@ -151,7 +195,12 @@ def main():
         if args.estimator=='polynomial':
             fields,estimator_info=polynomial_fields(args,c,fn,w,v,protocol,third)
             dump(cache.with_suffix('.json'),estimator_info)
-        else: fields=(derivatives(fn,w,d,third,latent_only) if args.estimator=='direct' else numerical_fields(fn,w,d,args.step,third,latent_only))
+        elif args.estimator=='stimulus':
+            fields,estimator_info=bank_fields(args,c,fn,w,v,protocol,rows)
+            dump(cache.with_suffix('.json'),estimator_info)
+        else:
+            target=structure_function(fn,args)
+            fields=(derivatives(target,w,d,third,latent_only) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
     if latent_only: fields['groups']=protocol['groups']

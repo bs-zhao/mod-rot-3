@@ -2,9 +2,17 @@ import unittest
 import numpy as np
 import torch
 from core import derivatives
-from estimators import PolynomialSieve
+from estimators import PolynomialSieve,BankSieve
 
 class SieveTests(unittest.TestCase):
+    def test_bank_derivatives_match_selected_stimulus(self):
+        rng=np.random.default_rng(41);w=rng.normal(size=(300,2))
+        y=np.column_stack((w[:,0]*w[:,1],w[:,0]**2+.3*w[:,1]))
+        sieve=BankSieve(2,0,'logit').fit(w,y,w[:10],y[:10])
+        sieve.eval_stimulus=np.array([0,1,0,1])
+        got=sieve.fields(w[:4])
+        target=np.array([[0.,1.],[2.,0.],[0.,1.],[2.,0.]])
+        np.testing.assert_allclose(got['h'][:,0,:],target,atol=1e-10)
     def test_polynomial_and_sigmoid_third_derivatives(self):
         rng=np.random.default_rng(71)
         w=rng.normal(size=(1200,3));ev=rng.normal(size=(12,3))
