@@ -95,6 +95,16 @@ Hessian 非对角 Hᵢⱼ 描述 Wⱼ 如何影响 Wᵢ 对 f 的边际作用；
 
 它们可理解为**最佳 k-项稀疏近似的残差**。保留 k 个主要作用之后，剩下的“微小但非零”项必须尽量小。本文将这一数学残差应用于 Hessian 行/列/交互指纹作为候选旋转损失，**属于研究目标设计，不代表有文献已证明它能恢复理论轴**。
 
+更严格地，令 \(\Sigma_k=\{u\in\mathbb R^d:\|u\|_0\le k\}\)，则
+
+\[
+\boxed{\sigma_k(v)_p=\inf_{u\in\Sigma_k}\|v-u\|_p
+=\left(\sum_{j>k}a_j^p\right)^{1/p},\qquad 1\le p<\infty.}
+\]
+
+这说明 Tail-L1/Tail-L2 **确实**是成熟的 best k-term approximation error，而不是为特定数值例子发明的公式；**但把它作为某一行 Hessian 的复杂度、让真参数轴恰好使其最小，则是另一件需要验证的研究假设**。非线性近似的经典理论综述见 DeVore (1998)。排序遇到同值时最优 k 项选择可不唯一，但残差值相同。
+
+
 #### 对用户指定的两组数值实际检验（k=2）
 
 A=[2, 2, 0.01, 0.001]；B=[1, 0.5, 0.01, 0.01]。
@@ -268,7 +278,7 @@ I_{\rm global}^{ANOVA}=1-\sum_iS_i.
 4. Hoyer, P. O. (2004). Non-negative matrix factorization with sparseness constraints. *JMLR, 5*, 1457–1469. [Original](https://www.jmlr.org/papers/volume5/hoyer04a/hoyer04a.pdf). Hoyer sparsity。
 5. Hurley, N., & Rickard, S. (2009). Comparing measures of sparsity. *IEEE Trans. Information Theory, 55*, 4723–4741. [DOI](https://doi.org/10.1109/TIT.2009.2027527). 比较稀疏指标。
 6. Eckart, C., & Young, G. (1936). The approximation of one matrix by another of lower rank. *Psychometrika, 1*, 211–218. [DOI](https://doi.org/10.1007/BF02288367). 最佳低秩残差（不同于元素 top-k）。
-7. Li, K.-C. (1992). On principal Hessian directions for data visualization and dimension reduction: Another application of Stein's lemma. *JASA, 87*, 1025–1039. [DOI](https://doi.org/10.1080/01621459.1992.10476261). 期望 Hessian。
+7. Li, K.-C. (1992). On principal Hessian directions for data visualization and dimension reduction: Another application of Stein's lemma. *JASA, 87*, 1025–1039. [DOI](https://doi.org/10.1080/01621459.1992.10476258). 期望 Hessian。
 8. Sobol', I. M., & Kucherenko, S. (2009). Derivative based global sensitivity measures and their link with global sensitivity indices. *Mathematics and Computers in Simulation, 79*, 3009–3017. [DOI](https://doi.org/10.1016/j.matcom.2009.01.023). DGSM。
 9. Roustant, O., Fruth, J., Iooss, B., & Kuhnt, S. (2014). Crossed-derivative based sensitivity measures for interaction screening. *Mathematics and Computers in Simulation, 105*, 105–118. [DOI](https://doi.org/10.1016/j.matcom.2014.05.005). 混合二阶导数与交互。
 10. Sobol', I. M. (2001). Global sensitivity indices for nonlinear mathematical models and their Monte Carlo estimates. *Mathematics and Computers in Simulation, 55*, 271–280. [DOI](https://doi.org/10.1016/S0378-4754(00)00270-6). 功能 ANOVA。
@@ -280,6 +290,7 @@ I_{\rm global}^{ANOVA}=1-\sum_iS_i.
 16. Fan, J., & Gijbels, I. (1996). *Local Polynomial Modelling and Its Applications*. [Publisher](https://www.routledge.com/Local-Polynomial-Modelling-and-Its-Applications-Monographs-on-Statistics/Fan/p/book/9780203748725). Local Hessian 从 WY 估计。
 17. Friedman, J. H. (1991). Multivariate adaptive regression splines. *Annals of Statistics, 19*, 1–67. [DOI](https://doi.org/10.1214/aos/1176347963). MARS/低阶交互函数。
 18. Baydin, A. G., Pearlmutter, B. A., Radul, A. A., & Siskind, J. M. (2018). Automatic differentiation in machine learning: A survey. *JMLR, 18*(153), 1–43. [Original](https://www.jmlr.org/papers/v18/17-468.html). 已知代理的自动微分，不保证真实导数对齐。
+19. DeVore, R. A. (1998). Nonlinear approximation. *Acta Numerica, 7*, 51–150. [DOI](https://doi.org/10.1017/S0962492900002816). best k-term approximation 的标准理论背景；本项目 Hessian tail loss 不是该论文验证的旋转恢复方法。
 
 ### 结论性约定
 
