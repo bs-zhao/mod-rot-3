@@ -323,7 +323,7 @@ def main():
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
-    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','stimulus'],default='direct')
+    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','stimulus','utility'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
     p.add_argument('--metric',choices=METRICS,required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
@@ -345,6 +345,7 @@ def main():
     p.add_argument('--transport-ridge',type=float,default=1e-6)
     p.add_argument('--transport-access',choices=['partial','flow'],default='partial')
     p.add_argument('--fingerprint-power',type=float,default=1.)
+    p.add_argument('--utility-ridge',type=float,default=1e-5)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -358,7 +359,7 @@ def main():
         raise ValueError('Relative-gradient has its own conditional averaging protocol; use a cutoff in [0,1)')
     if args.field_mean and (args.model!='CR3' or args.metric.startswith(('conditional_','signature_')) or args.metric=='zzx_mixed_rms'):
         raise ValueError('Full-field subject mean currently supports CR3 F2 metrics only')
-    if args.center_point and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.estimator not in ['direct','finite_difference','stimulus']):
+    if args.center_point and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.estimator not in ['direct','finite_difference','stimulus','utility']):
         raise ValueError('Center-point control requires CR3 original-bank conditional F2 metrics')
     if args.q_weight!='uniform' and (not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.subject_mean or args.field_mean or args.estimator not in ['direct','finite_difference','stimulus']):
         raise ValueError('Fisher-Q currently supports point/local original-bank conditional fields only')
@@ -389,7 +390,25 @@ def main():
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.metric=='conditional_fingerprint':
+        if args.estimator=='utility':
+            from utility_sieve import fit_utility_sieve
+            from types import SimpleNamespace
+            estimated,estimator_info=fit_utility_sieve(args,c,structure_function(fn,args),v,protocol)
+            calc=SimpleNamespace(**vars(args));calc.estimator='direct';calc.channel='logit';calc.structure_link='native'
+            if args.metric=='conditional_fingerprint':
+                fields,field_info=center_fields(calc,c,estimated,protocol)
+                from fingerprints import fingerprint_fields
+                fp,fp_info=fingerprint_fields(calc,c,estimated,v,protocol)
+                fields.update(fp);field_info['algebraic_fingerprints']=fp_info
+            elif args.metric.startswith('transport_'):
+                from transport import transport_fields
+                fields,field_info=transport_fields(calc,c,estimated,v,protocol)
+            elif args.center_point:fields,field_info=center_fields(calc,c,estimated,protocol)
+            else:
+                fields=derivatives(estimated,w,d,third,latent_only);field_info={}
+            estimator_info['field_aggregation']=field_info
+            dump(cache.with_suffix('.json'),estimator_info)
+        elif args.metric=='conditional_fingerprint':
             if args.estimator=='stimulus':fields,estimator_info=bank_fields(args,c,fn,w,v,protocol,rows)
             elif args.estimator in ['direct','finite_difference']:fields,estimator_info=center_fields(args,c,fn,protocol)
             else:raise ValueError('Fingerprint supports direct, query or fixed-bank estimator')
