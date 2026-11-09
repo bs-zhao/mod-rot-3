@@ -1,0 +1,19 @@
+{
+  "component_runs": [
+    "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfge39f5b343922/summary.json",
+    "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfge39f5b343922/summary.json",
+    "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd1f842f81486/summary.json",
+    "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfgd1f842f81486/summary.json",
+    "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd909fc250745/summary.json",
+    "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfgd909fc250745/summary.json",
+    "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfg5e0f134adf1b/summary.json",
+    "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+  ],
+  "complementarity": "Pure Hessian-UX profile JD passes C1-C3 and the CR3 alpha-gamma plane, but fails five other CR3 planes. UU self mean absolute curvature is flat for C1-C3, recovers those five CR3 planes, and fails alpha-gamma. Same Q and seed in h04.",
+  "weight_rule": "One weight for all models: single-component plane curves give a sufficient interval [6.2951599762,9.7272003390] against all grid rotations outside five degrees. Round the geometric midpoint to 8. Confirm on a new seed and larger Q before G2. No decoder T used.",
+  "weight": 8,
+  "source_label": "h04_single_components",
+  "new_confirmation_label": "h05_complementarity_confirm",
+  "channel": "logit",
+  "scope": "Hessian-only; no model-specific operators or stimulus templates"
+}

@@ -70,3 +70,23 @@ E08 正交谱、E10 适用时直接平均泛函、E12 独立平滑 NN。binary �
 E03 已实现 `local_wy.py`：完整局部二/三次多项式、同一欧氏邻域、multinomial 权重 ridge、
 二元响应局部 Bernoulli IRLS。局部三次 Hessian/三阶导数和隐藏旋转等变性有独立控制测试。
 这仅说明数值实现可用，不表示有候选已经通过 G2；严格按上面的先后门槛运行真实实验。
+
+## h04 单项互补证据与 h05 组合假设
+
+同一 Q、seed、24 起点下，`hs_jd_profile1_strength0_selfl1_w0` 在 C1–C3 通过，
+CR3 六平面最小角分别 17.5、0、15、72.5、55、20 度，只有 alpha–gamma 正确。
+`hs_uu_self_local_l1` 在 C1–C3 恒零；CR3 除 alpha–gamma（42.5°）外五个平面均 0°。
+这是实际单项失败模式的互补，不是假设任意两项相加都更好。
+
+从四模型单项 plane 曲线算出同一个权重区间：使真轴优于所有偏离>5°网格点的
+充分区间约 [6.2952,9.7272]；只要求最小点在5°内时可行区间约 [4.9545,15.3109]。
+取较强充分区间的几何中心并取整，得到 **所有模型固定 weight=8**。
+这只利用解析 G1，不读 decoder TEST T。h03 更早的权重探索不算确认。
+将这个具体假设提交为 `hs_jd_profile1_strength0_selfl1_w8`，先用新 seed、更大 Q、64 起点
+确认四模型 G1，再测试 generic TensorWY 的 G2，不跳关。
+
+`tensor_wy.py` 是通用 E02 inference：全部≤2次原始 X 单项式 + 同一各向同性 Gaussian RBF
+字典，以及完整 latent polynomial。模型名称、option 差分、金额参考、真参数式均不进入拟合器。
+是否共享 X bank 仅从数值输入检测，以优化同一回归式的计算。它不是先前的 utility/profile 方法。
+G2 在相同 W、相同 M1/M3、相同 UU/UX 域比较：最差轴≤5°、所有平面最小相关≥0.90、
+loss 曲线相对 L2 误差≤0.10；局部字段误差另行完整报告，不能拿预测误差替代。

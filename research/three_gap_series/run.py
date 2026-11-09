@@ -145,6 +145,49 @@ def local_fields(args,c,fn,w,v,protocol,third):
         hidden_rotation=hidden,train_row_ids=selected[0],validation_row_ids=selected[1],
         validation_queried_rows=len(pred),binary_protocol='one seeded Bernoulli draw per original row' if args.channel=='binary' else None)
 
+
+def tensor_fields(args,c,fn,w,v,protocol,third,extra_w=None):
+    from tensor_wy import TensorWY
+    if args.channel=='binary':raise ValueError('Generic TensorWY currently supports deterministic logit/probability; binary uses a separate Bernoulli inference experiment')
+    rng=np.random.default_rng(args.seed+791);data=c['data'];sub=data['subject_index'];xx=data['x'];d=c['d']
+    if np.any(np.diff(sub)<0):raise ValueError('Tensor adapter expects subject-grouped numerical WY')
+    boundaries=np.r_[0,np.cumsum(np.bincount(sub))]
+    ids_used=[];tables=[]
+    for split,count in [('train',args.train_subjects),('validation',args.validation_subjects)]:
+        ids=rng.choice(c['splits'][split],min(count,len(c['splits'][split])),replace=False);ids_used.append(ids)
+        xt=[];yt=[]
+        for chunk in np.array_split(ids,max(1,int(np.ceil(len(ids)/32)))):
+            counts=boundaries[chunk+1]-boundaries[chunk]
+            xs=[(xx[boundaries[s]:boundaries[s+1]]-protocol['x_mean'])/protocol['x_sd'] for s in chunk]
+            inputs=np.concatenate((np.repeat(v[chunk],counts,axis=0),np.concatenate(xs)),axis=1)
+            with torch.no_grad():y=np.concatenate([torch.vmap(fn)(b).numpy() for b in torch.tensor(inputs).split(2048)])
+            if args.channel=='probability':y=np.log(np.clip(y,1e-12,1-1e-12)/np.clip(1-y,1e-12,1-1e-12))
+            start=0
+            for x,count_ in zip(xs,counts):xt.append(x);yt.append(y[start:start+count_]);start+=count_
+        tables.append((xt,yt))
+    hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d)
+    fit=TensorWY(args.degree,args.ridge,args.utility_ridge,args.rbf_centers,args.rbf_length,args.seed).fit(v[ids_used[0]]@hidden.T,*tables[0])
+    def estimated(q):
+        eta=fit.value(torch.cat((q[:d]@torch.tensor(hidden).T,q[d:])))
+        return torch.sigmoid(eta) if args.channel=='probability' and args.structure_link=='native' else eta
+    fields=derivatives(estimated,w,d,third,False)
+    if extra_w is not None:
+        fields['uu_h']=derivatives(estimated,extra_w,d,False,True)['h']
+        if third:
+            def fixed(z,x):return estimated(torch.cat((z,x)))
+            op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(fixed,argnums=0),argnums=0),argnums=0)
+            fields['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(extra_w).split(16)])
+    sse=0.;nval=0
+    for sid,x,y in zip(ids_used[1],*tables[1]):
+        query=np.column_stack((np.repeat(v[sid][None],len(x),axis=0),x))
+        with torch.no_grad():prediction=torch.vmap(estimated)(torch.tensor(query)).numpy()
+        if args.channel=='probability' and args.structure_link=='native':y=expit(y)
+        sse+=float(np.sum((prediction-y)**2));nval+=len(y)
+    reference=derivatives(structure_function(fn,args),w,d,third,False)
+    errors={key:float(np.linalg.norm(fields[key]-reference[key])/max(np.linalg.norm(reference[key]),1e-20)) for key in ['g','h']+(['third'] if third else [])}
+    return fields,dict(**fit.info,hidden_rotation=hidden,train_ids=ids_used[0],validation_ids=ids_used[1],
+        validation_rmse=np.sqrt(sse/nval),relative_errors=errors)
+
 def structure_function(fn,args):
     if args.channel!='logit' and args.structure_link=='log_odds':
         def linked(w): return torch.logit(fn(w).clamp(1e-12,1-1e-12))
@@ -352,7 +395,7 @@ def main():
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
-    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','local','stimulus','utility','profile'],default='direct')
+    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','local','tensor','stimulus','utility','profile'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
     p.add_argument('--metric',choices=METRICS+tuple(HESSIAN_CATALOG),required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
@@ -383,6 +426,8 @@ def main():
     p.add_argument('--grid-stimuli',type=int,default=64)
     p.add_argument('--g1-angle-tolerance',type=float,default=5.,help='User-accepted maximum axis error in degrees, after sign/permutation matching')
     p.add_argument('--combination-rationale',help='JSON evidence file with single-loss runs, complementarity and a common weight rule; required for combined candidates')
+    p.add_argument('--rbf-centers',type=int,default=64)
+    p.add_argument('--rbf-length',type=float,default=1.)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.metric in HESSIAN_CATALOG and is_combination(args.metric):
         if not args.combination_rationale:raise ValueError('User requires observed complementarity before combining losses; supply --combination-rationale')
@@ -442,6 +487,14 @@ def main():
         grid_groups=np.repeat(np.arange(len(subject_ids)),len(xgrid))
         protocol['hessian_grid']=dict(subject_ids=subject_ids,stimulus_rows=stimulus_rows,
             evaluation_points=len(w),access='TRAIN product evaluation Q; G2/G3 must fit original WY rows, not query teacher at this grid for fitting')
+    full_w=None;full_rows=None
+    if args.uu_full_domain:
+        if args.metric not in HESSIAN_CATALOG or args.estimator not in ['direct','tensor']:
+            raise ValueError('Separate all-row UU supports direct fields and generic TensorWY inference')
+        all_sub=c['data']['subject_index'];all_x=c['data']['x']
+        pool=np.flatnonzero(np.isin(all_sub,c['splits']['train']))
+        full_rows=np.random.default_rng(args.seed+511).choice(pool,min(args.samples,len(pool)),replace=False)
+        full_w=np.concatenate((v[all_sub[full_rows]],(all_x[full_rows]-protocol['x_mean'])/protocol['x_sd']),axis=1)
     latent_only=args.metric.startswith('conditional_')
     cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
     cache=cache.with_name(f'fields_{config_hash}_third{int(third)}_latent{int(latent_only)}.npz')
@@ -499,6 +552,10 @@ def main():
         elif args.metric=='conditional_anchor':
             fields,estimator_info=anchor_fields(args,c,fn,v,protocol)
             dump(cache.with_suffix('.json'),estimator_info)
+        elif args.estimator=='tensor':
+            fields,estimator_info=tensor_fields(args,c,fn,w,v,protocol,third,full_w)
+            if full_rows is not None:fields['uu_row_ids']=full_rows
+            dump(cache.with_suffix('.json'),estimator_info)
         elif args.estimator=='local':
             fields,estimator_info=local_fields(args,c,fn,w,v,protocol,third)
             dump(cache.with_suffix('.json'),estimator_info)
@@ -516,12 +573,7 @@ def main():
             fields=(derivatives(target,w,d,third,latent_only) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if args.uu_full_domain:
-        if args.metric not in HESSIAN_CATALOG or args.estimator!='direct':raise ValueError('Separate all-row UU currently supports exact G1 fields only')
         if 'uu_h' not in fields:
-            all_sub=c['data']['subject_index'];all_x=c['data']['x']
-            pool=np.flatnonzero(np.isin(all_sub,c['splits']['train']))
-            full_rows=np.random.default_rng(args.seed+511).choice(pool,min(args.samples,len(pool)),replace=False)
-            full_w=np.concatenate((v[all_sub[full_rows]],(all_x[full_rows]-protocol['x_mean'])/protocol['x_sd']),axis=1)
             target=structure_function(fn,args)
             extra=derivatives(target,full_w,d,False,True);fields['uu_h']=extra['h'];fields['uu_row_ids']=full_rows
             if third:
@@ -626,6 +678,33 @@ def main():
                 worst_axis_error_degrees=worst_axis_error,plane_minima=plane_axes,
                 evaluation=evaluation,elapsed_seconds=time.time()-started)
     result['estimator_info']=estimator_info
+    result['stage']='G1' if args.source=='formula' and args.estimator=='direct' else 'G2' if args.source=='formula' else 'G3'
+    if args.metric in HESSIAN_CATALOG and args.source=='formula' and args.estimator!='direct':
+        reference=derivatives(structure_function(fn,args),w,d,third,False)
+        reference['strict_x']=w[:,d:]
+        if grid_groups is not None:reference['strict_subject_groups']=grid_groups
+        if full_w is not None:
+            target=structure_function(fn,args)
+            reference['uu_h']=derivatives(target,full_w,d,False,True)['h']
+            if third:
+                def fixed(z,x):return target(torch.cat((z,x)))
+                op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(fixed,argnums=0),argnums=0),argnums=0)
+                reference['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(full_w).split(16)])
+        reference_loss=HessianLoss(reference,cov,d,args.metric)
+        actual=[];estimate=[];per_plane=[]
+        for i,j in itertools.combinations(range(d),2):
+            exact_plane=[];estimated_plane=[]
+            for row in sweep:
+                if (row['i'],row['j'])!=(i,j):continue
+                rr=np.eye(d);aa=np.deg2rad(row['angle']);rr[i,i]=rr[j,j]=np.cos(aa);rr[i,j]=-np.sin(aa);rr[j,i]=np.sin(aa)
+                exact_plane.append(reference_loss(rr));estimated_plane.append(row['loss'])
+            actual.extend(exact_plane);estimate.extend(estimated_plane)
+            per_plane.append(float(np.corrcoef(exact_plane,estimated_plane)[0,1]) if np.ptp(exact_plane)>1e-14 and np.ptp(estimated_plane)>1e-14 else 0.)
+        relative=float(np.linalg.norm(np.asarray(actual)-estimate)/max(np.linalg.norm(actual),1e-20))
+        result['gap2_audit']=dict(curve_relative_error=relative,minimum_plane_correlation=min(per_plane),plane_correlations=per_plane,
+            estimated_axis_pass=angle_pass,pass_gate=bool(angle_pass and relative<=.1 and min(per_plane)>=.9),
+            thresholds=dict(max_axis_error_degrees=args.g1_angle_tolerance,max_curve_relative_error=.1,min_plane_correlation=.9),
+            explanation='Same W, same metric and block domains; exact derivatives are post-fit diagnostics only')
     result['plane_counterexample']=plane_counterexample
     result['scope']='hessian_only' if args.metric in HESSIAN_CATALOG else 'historical_catalogue'
     result['field_cache']=str(cache)

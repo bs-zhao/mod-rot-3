@@ -52,6 +52,9 @@ for kind in ['self','mixed']:
         name=f'uu_third_{kind}_{score}'
         register(name,family='third',kind=kind,score=score)
         CATALOG['hs_'+name]['order']=3
+# Added only after h04 single-loss complementarity and a feasible common
+# analytic weight interval were measured; this is not another weight grid.
+register('jd_profile1_strength0_selfl1_w8',family='jd',degree=1,strength=0.,self_score='l1',weight=8.)
 
 
 def is_combination(metric):
