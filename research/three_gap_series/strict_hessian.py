@@ -84,6 +84,30 @@ for part in ['entries','rows']:
     for score in ['cap','soft','log']:
         for threshold in [.03,.1]:
             register(f'uu_graph_{part}_{score}_t{threshold:g}',family='uu_graph',part=part,score=score,threshold=threshold)
+# Single penalties on the U-related Hessian row matrix [H_UU | H_UX].
+# There are no separately weighted component losses in this family.
+for stat in ['signed','rms','sd','local']:
+    for score in ['l1','lp05','soft003','soft01','cap01','log01','entropy']:
+        register(f'full_{stat}_{score}',family='full',stat=stat,axis='row',score=score)
+    for axis in ['row','column']:
+        for k in [1,2]:
+            for score in ['tail1','tail2sq','relative_tail2']:
+                register(f'full_{stat}_{axis}_{score}_k{k}',family='full',stat=stat,axis=axis,k=k,score=score)
+for part in ['self','off','all']:
+    for stat in ['signed','rms','sd']:
+        register(f'uu_{part}_{stat}_l2sq',family='uu',part=part,stat=stat,score='l2sq',
+            control=bool(part=='all' and stat=='rms'))
+for stat in ['signed','rms','sd']:
+    for part in ['self','off']:
+        register(f'uu_{part}_{stat}_energy_fraction',family='uu_fraction',part=part,stat=stat)
+for family in ['ux','full']:
+    register(f'{family}_rms_l2sq',family=family,stat='rms',axis='row',score='l2sq',control=True)
+for stat in ['meanabs','median','q90','q99']:
+    for score in ['l1','lp05','log01']:
+        register(f'ux_{stat}_{score}',family='ux',stat=stat,axis='all',score=score)
+        register(f'full_{stat}_{score}',family='full',stat=stat,axis='row',score=score)
+        for part in ['self','off']:
+            register(f'uu_{part}_{stat}_{score}',family='uu',part=part,stat=stat,score=score)
 
 
 def is_combination(metric):
@@ -91,9 +115,18 @@ def is_combination(metric):
     return spec['family'] in ['joint','third_joint','joint_sparse'] or spec['family']=='jd' and spec['weight']!=0
 
 
+def summarize_absolute(values,stat):
+    if stat=='meanabs':return np.mean(values,axis=0)
+    if stat=='median':return np.median(values,axis=0)
+    if stat=='q90':return np.quantile(values,.9,axis=0)
+    if stat=='q99':return np.quantile(values,.99,axis=0)
+    raise ValueError(stat)
+
+
 def penalty(values,score,axis=-1,k=1):
     v=np.abs(values)
     if score=='l1':return float(v.mean())
+    if score=='l2sq':return float(np.mean(v*v))
     if score=='lp05':return float(np.sqrt(v+1e-16).mean())
     if score=='soft003':return float(np.mean(v*v/(v*v+.03**2)))
     if score=='soft01':return float(np.mean(v*v/(v*v+.1**2)))
@@ -118,6 +151,10 @@ class HessianLoss:
         if 'h' not in fields:raise ValueError('Hessian required, missing F2 cannot be treated as zero')
         self.spec=CATALOG[metric];self.metric=metric;self.d=d;self.cov=covariance
         h=fields['h'];self.n=len(h);self.uu=fields.get('uu_h',h[:,:d,:d]);self.ux=h[:,:d,d:]
+        self.common_uu=h[:,:d,:d]
+        self.common_uu_mean=self.common_uu.mean(0)
+        common_flat=self.common_uu.reshape(self.n,-1)
+        self.common_uu_moment=common_flat.T@common_flat/self.n
         self.um=self.uu.mean(0);self.xm=self.ux.mean(0)
         flat=self.uu.reshape(len(self.uu),-1);self.uu_moment=flat.T@flat/len(self.uu)
         self.ux_moment=np.einsum('nap,nbp->pab',self.ux,self.ux,optimize=True)/self.n
@@ -125,6 +162,8 @@ class HessianLoss:
         u=self.uu*sd[None,:,None]*sd[None,None,:];x=self.ux*sd[None,:,None]
         self.uu_energy=float(np.mean(np.sum(u*u,axis=(1,2))));self.ux_energy=float(np.mean(np.sum(x*x,axis=(1,2))))
         self.scale=max(float(np.sqrt(self.uu_energy+self.ux_energy)),1e-12)
+        common_standard=self.common_uu*sd[None,:,None]*sd[None,None,:]
+        self.common_scale=max(float(np.sqrt(np.mean(np.sum(common_standard*common_standard,axis=(1,2)))+self.ux_energy)),1e-12)
         self.third=fields.get('uu_t',fields.get('third'))
         self.third_is_zero=self.third is not None and not np.any(self.third)
         self.third_energy=0.
@@ -161,6 +200,9 @@ class HessianLoss:
     def _ux(self,a,stat):
         if stat.startswith('profile'):return (a@self.profiles[int(stat[-1])])/self.scale
         if stat=='local':return np.einsum('ia,nap->nip',a,self.ux,optimize=True)/self.scale
+        if stat in ['meanabs','median','q90','q99']:
+            value=np.abs(np.einsum('ia,nap->nip',a,self.ux,optimize=True))/self.scale
+            return summarize_absolute(value,stat)
         mean=a@self.xm
         if stat=='signed':return mean/self.scale
         square=np.maximum(np.einsum('ia,pab,ib->ip',a,self.ux_moment,a,optimize=True),0)
@@ -168,7 +210,9 @@ class HessianLoss:
         return np.sqrt(square)/self.scale
 
     def _uu(self,a,stat,part):
-        if stat=='local':mat=np.einsum('ia,nab,jb->nij',a,self.uu,a,optimize=True)/self.scale
+        if stat=='local' or stat in ['meanabs','median','q90','q99']:
+            mat=np.einsum('ia,nab,jb->nij',a,self.uu,a,optimize=True)/self.scale
+            if stat!='local':mat=summarize_absolute(abs(mat),stat)
         else:
             mean=a@self.um@a.T
             if stat=='signed':mat=mean/self.scale
@@ -181,15 +225,36 @@ class HessianLoss:
         if part=='off':return mat[...,~np.eye(self.d,dtype=bool)]
         return mat
 
+    def _full(self,a,stat):
+        if stat=='local' or stat in ['meanabs','median','q90','q99']:
+            uu=np.einsum('ia,nab,jb->nij',a,self.common_uu,a,optimize=True)
+            ux=np.einsum('ia,nap->nip',a,self.ux,optimize=True)
+            values=np.concatenate((uu,ux),axis=-1)/self.common_scale
+            return values if stat=='local' else summarize_absolute(abs(values),stat)
+        mean=a@self.common_uu_mean@a.T
+        if stat=='signed':uu=mean
+        else:
+            transform=np.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)
+            square=np.maximum(np.einsum('ia,ab,ib->i',transform,self.common_uu_moment,transform,optimize=True),0).reshape(self.d,self.d)
+            if stat=='sd':square=np.maximum(square-mean*mean,0)
+            uu=np.sqrt(square)
+        ux=self._ux(a,stat)*self.scale
+        return np.concatenate((uu,ux),axis=-1)/self.common_scale
+
     def __call__(self,r):
         sd=np.sqrt(np.diag(r@self.cov@r.T))
         a=sd[:,None]*np.linalg.inv(r).T
         s=self.spec;family=s['family']
+        if family=='full':return penalty(self._full(a,s['stat']),s['score'],-2 if s['axis']=='column' else -1,s.get('k',1))
         if family=='ux':
             v=self._ux(a,s['stat']);axis=-1 if s['axis']!='column' else -2
             return penalty(v,s['score'],axis,s.get('k',1))
         if family=='profile':return penalty(self._ux(a,f'profile{s["degree"]}'),s['score'],-2,s.get('k',1))
         if family=='uu':return penalty(self._uu(a,s['stat'],s['part']),s['score'])
+        if family=='uu_fraction':
+            values=self._uu(a,s['stat'],'all')**2;total=float(values.sum())
+            own=float(np.trace(values))
+            return (own if s['part']=='self' else total-own)/max(total,1e-30)
         if family=='curvature_support':
             return self._support_value(a,s['component'],s['score'],s['threshold'])
         if family=='uu_graph':
@@ -268,6 +333,7 @@ class HessianLoss:
             parts=dict(hessian_profile_jd=joint,curvature_raw=raw,curvature_weight=self.spec['weight'],curvature_weighted=self.spec['weight']*raw,total=joint+self.spec['weight']*raw)
         return dict(category='Hessian-only, model-blind M1/M3',specification=self.spec,loss_components=parts,
                     block_energy_reference=dict(uu=self.uu_energy,ux=self.ux_energy,third=self.third_energy),
+                    full_matrix_domain='Same differentiable W points for UU and UX; excludes undefined X derivatives',full_matrix_scale=self.common_scale,
                     joint_operators=self.joint_operators,
                     fixed_block_scale=self.scale,uu_diag_rms=self._uu(a,'rms','self'),
                     uu_off_rms=self._uu(a,'rms','off'),ux_rms=self._ux(a,'rms'),

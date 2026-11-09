@@ -4,6 +4,31 @@ from strict_hessian import HessianLoss,CATALOG,penalty
 
 
 class StrictHessianTests(unittest.TestCase):
+    def test_batched_single_metrics_match_independent_losses_across_rotations(self):
+        from single_metric_atlas import BatchLoss,canonical_singles
+        rng=np.random.default_rng(21);n=12;d=4;p=3
+        h=rng.normal(size=(n,d+p,d+p));h=(h+h.transpose(0,2,1))/2
+        fields=dict(h=h,uu_h=h[:7,:d,:d],uu_t=rng.normal(size=(7,d,d,d)),
+            strict_x=rng.normal(size=(n,p)),strict_subject_groups=np.repeat([0,1],6))
+        names,aliases=canonical_singles();cov=np.eye(d);batch=BatchLoss(fields,cov,d,names)
+        for _ in range(2):
+            r,_=np.linalg.qr(rng.normal(size=(d,d)))
+            shared=batch(r)
+            for name in names:
+                self.assertAlmostEqual(shared[name],HessianLoss(fields,cov,d,name)(r),places=11,msg=name)
+        self.assertTrue(aliases)
+
+    def test_full_hessian_uses_common_points_and_transforms_before_summarizing(self):
+        rng=np.random.default_rng(31);d=4;p=3;n=12
+        h=rng.normal(size=(n,d+p,d+p));h=(h+h.transpose(0,2,1))/2
+        fields=dict(h=h,uu_h=h[:5,:d,:d],strict_x=rng.normal(size=(n,p)))
+        loss=HessianLoss(fields,np.eye(d),d,'hs_full_q90_l1')
+        r,_=np.linalg.qr(rng.normal(size=(d,d)))
+        uu=np.einsum('ia,nab,jb->nij',r,h[:,:d,:d],r)
+        ux=np.einsum('ia,nap->nip',r,h[:,:d,d:])
+        expected=np.quantile(abs(np.concatenate((uu,ux),axis=-1)),.9,axis=0).mean()/loss.common_scale
+        self.assertAlmostEqual(loss(r),expected,places=12)
+
     def test_tail_matches_the_history_examples(self):
         a=np.array([2.,2.,.01,.001]);b=np.array([1.,.5,.01,.01])
         for score in ['tail1','tail2sq','relative_tail2']:
