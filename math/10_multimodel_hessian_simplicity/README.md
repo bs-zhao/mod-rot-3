@@ -1,6 +1,6 @@
 # 10 — Cross-model analytic Hessian simplicity atlas (C1/C2/C3/CR3)
 
-Standalone experiment. Does NOT import sibling math experiments, train NP, change old outputs, or use held-out T in an alleged unsupervised loss. Implements **Gap 1: analytic-oracle-only screening**. No WY-only/NN estimator has been implemented here yet.
+Standalone experiment with **Gap 1 analytic screening**, followed by **Gap 2 formula-generated numeric WY and Gap 3 frozen-NP-generated numeric WY simultaneously**. No NP retraining or neural differentiation. See [the implementation and run instructions for Gap 2 + Gap 3](README_GAPS23.md). The comparison uses a supervised TRAIN-only Z-to-T benchmark mapping, not a claim of unsupervised axis recovery.
 
 Research sources: [history Hessian complexity](../../readmes/history/README_HESSIAN_COMPLEXITY_SPARSITY_METRICS_20261109.md), [history rotation and sparsity](../../readmes/history/README_SPARSITY_SIMPLICITY_AND_FUNCTIONAL_ROTATION_20261109.md), [rotation research overview](../../readmes/rotation_research/01_project_overview.md), and [Hessian simplicity proposed experiment](../../readmes/rotation_research/02_hessian_simplicity_experiment.md).
 
@@ -9,10 +9,10 @@ Research sources: [history Hessian complexity](../../readmes/history/README_HESS
 ~~~cmd
 conda activate py11
 git pull origin main
-python math/10_multimodel_hessian_simplicity/run.py --models C1 C2 C3 CR3
+python math/10_multimodel_hessian_simplicity/run_pipeline.py --models C1 C2 C3 CR3
 ~~~
 
-Alternatively run **run_all.cmd** from repository root. This executes the same four models with the default settings. The requested spelling **CR1** is not a model in this repository. A command containing CR1 is a **visibly warned alias for CR3**. It does NOT test an independent CR1. The actual four generators in np/ are C1, C2, C3 and CR3; C3 has **6 latent theory parameters**, not 4.
+Alternatively run **run_all.cmd** from repository root. It now runs verified Gap 1 followed by **paired Gap 2 and Gap 3**. The original run.py remains the stand-alone Gap1 oracle entrypoint; the pipeline automatically reuses valid saved Gap1 data. The requested spelling **CR1** is not a model in this repository. A command containing CR1 is a **visibly warned alias for CR3**. It does NOT test an independent CR1. The actual four generators in np/ are C1, C2, C3 and CR3; C3 has **6 latent theory parameters**, not 4.
 
 **Precondition**: original simulation files must already exist at outputs/choice/MODEL/s1_generate/s1_generate__dataset.npz; CR3 also needs the exact saved 500-trial X bank. If missing, run the existing S1 separately (which does not overwrite an existing dataset):
 
@@ -122,8 +122,8 @@ CR3/ ...
 - multiway_comparison.csv: how many random SO(3)/SO(4)/SO(d) candidates beat the identity. The top-level cross_model_ranking.csv also counts these sampled counterexamples and records metric coverage; this is not an exhaustive SO(d) search.
 - metadata.json: source hash, original units, singular-domain coverage, derivative method and essential provenance.
 
-**These outputs do not establish NN recovery.** In particular: C1–C3 logit H_TT is exactly zero, so ZZ-logit metrics are flat and cannot distinguish parameter axes. Even if a complexity loss prefers a particular basis, that does not prove the basis is the true psychological coordinate system.
+**The standalone Gap1 outputs do not establish NN recovery.** The paired numeric-WY Gap2+3 results are saved in a separate gaps23 directory; see [README_GAPS23.md](README_GAPS23.md). In particular: C1–C3 logit H_TT is exactly zero, so ZZ-logit metrics are flat and cannot distinguish parameter axes. Even if a complexity loss prefers a particular basis, that does not prove the basis is the true psychological coordinate system.
 
-Next independent gaps to implement: (2) formula-generated numerical WY -> fit local Hessian/target statistic; (3) frozen NP Z+X -> NN-generated Y -> same WY estimator. The fitted decoder does not become an oracle just because its Y prediction is accurate. Coordinate maps from Z to T are supervised references only.
+**Now implemented:** Gap 2 and Gap 3 run jointly after Gap 1, use the same four numeric Y channels and matched estimators, and report source-specific errors and landscape agreement. Remaining: richer estimators and actual unsupervised rotation optimization. The fitted decoder does not become an oracle just because its Y prediction is accurate. Coordinate maps from Z to T are supervised references only.
 
 Relevant literature: Li (1992) principal Hessian directions; Sobol & Kucherenko (2009) DGSM; Roustant et al. (2014) crossed DGSM; Hoyer (2004), Hurley & Rickard (2009) sparsity; Tibshirani (1996) Lasso; Candès, Wakin & Boyd (2008) reweighted L1; DeVore (1998) best k-term approximation; Sobol (2001) functional ANOVA; Friedman & Popescu (2008) interaction; Apley & Zhu (2020) ALE. Full citations/DOIs are in the referenced history files. These citations do not claim those authors proved Hessian rotation axis recovery.
