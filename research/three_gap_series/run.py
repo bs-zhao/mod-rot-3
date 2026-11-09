@@ -184,8 +184,15 @@ def tensor_fields(args,c,fn,w,v,protocol,third,extra_w=None):
         sse+=float(np.sum((prediction-y)**2));nval+=len(y)
     reference=derivatives(structure_function(fn,args),w,d,third,False)
     errors={key:float(np.linalg.norm(fields[key]-reference[key])/max(np.linalg.norm(reference[key]),1e-20)) for key in ['g','h']+(['third'] if third else [])}
+    block_errors={}
+    for name,sl in [('UU',(slice(None),slice(None,d),slice(None,d))),('UX',(slice(None),slice(None,d),slice(d,None))),('XX',(slice(None),slice(d,None),slice(d,None)))]:
+        diff=fields['h'][sl]-reference['h'][sl]
+        block_errors[name]=dict(relative=float(np.linalg.norm(diff)/max(np.linalg.norm(reference['h'][sl]),1e-20)),absolute_rmse=float(np.sqrt(np.mean(diff*diff))))
+    if extra_w is not None:
+        truth_uu=derivatives(structure_function(fn,args),extra_w,d,False,True)['h'];diff=fields['uu_h']-truth_uu
+        block_errors['UU_full_domain']=dict(relative=float(np.linalg.norm(diff)/max(np.linalg.norm(truth_uu),1e-20)),absolute_rmse=float(np.sqrt(np.mean(diff*diff))))
     return fields,dict(**fit.info,hidden_rotation=hidden,train_ids=ids_used[0],validation_ids=ids_used[1],
-        validation_rmse=np.sqrt(sse/nval),relative_errors=errors)
+        validation_rmse=np.sqrt(sse/nval),relative_errors=errors,block_errors=block_errors)
 
 def structure_function(fn,args):
     if args.channel!='logit' and args.structure_link=='log_odds':

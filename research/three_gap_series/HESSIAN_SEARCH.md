@@ -95,3 +95,22 @@ h05 的全维最大角度为 C1≈0、C2≈0.038、C3≈0.040、CR3≈5.796°，
 是否共享 X bank 仅从数值输入检测，以优化同一回归式的计算。它不是先前的 utility/profile 方法。
 G2 在相同 W、相同 M1/M3、相同 UU/UX 域比较：最差轴≤5°、所有平面最小相关≥0.90、
 loss 曲线相对 L2 误差≤0.10；局部字段误差另行完整报告，不能拿预测误差替代。
+
+## h07：先记录 inference 失败，再改变 inference
+
+固定 weight=8 的首个 generic TensorWY（64 RBF、length=1、latent degree=3）在 C2/C3
+复现解析方向，但 CR3 轴误差约10.435°；loss 曲线相对误差0.03515、最差平面相关0.92190，
+仍不能算 G2 通过。与解析最优 R 本身的最大轴差约8.26°，不是只因解析本身偏5.8°而误判。
+CR3 prediction validation RMSE≈0.10764；整体 Hessian 相对误差≈0.816，需拆 UU/UX/XX。
+不进入 decoder，不换 loss；下一轮只增加通用 RBF 分辨率与调整长度尺度，去重 TRAIN 中心。
+
+补充 inference 文献：
+
+- Larsson & Schaback, *Scaling of Radial Basis Functions*,
+  [原文](https://arxiv.org/abs/2210.05617)：尺度选择影响插值及其误差，不能把核宽度当作无关实现参数。
+- *Extending error bounds for radial basis function interpolation to measuring the error in higher order Sobolev norms*,
+  [原文](https://arxiv.org/abs/2302.07306)：函数值与高阶导数的误差度量不同。
+- Rasmussen & Williams, *Gaussian Processes for Machine Learning*,
+  [第9章原文](https://www.gaussianprocess.org/gpml/chapters/RW9.pdf)：可微核与导数建模的背景。
+
+这些文献为数值方法和误差分析提供依据，不证明本项目某一 loss 的参数语义可恢复。

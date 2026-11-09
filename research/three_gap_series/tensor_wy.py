@@ -26,7 +26,8 @@ class TensorWY:
         # not a model-specific estimator branch.
         rng=np.random.default_rng(self.seed);pool=np.concatenate(x_tables)
         pick=rng.choice(len(pool),min(8192,len(pool)),replace=False);pool=pool[pick]
-        self.centers=pool[rng.choice(len(pool),min(self.ncenters,len(pool)),replace=False)].copy()
+        unique_pool=np.unique(pool,axis=0)
+        self.centers=unique_pool[rng.choice(len(unique_pool),min(self.ncenters,len(unique_pool)),replace=False)].copy()
         self.sigma=self.length*np.sqrt(pool.shape[1])
         self.xbasis=PolynomialFeatures(2).fit(pool[:1]);xp=self.xbasis.powers_
         self.xweights=np.array([math.sqrt(math.factorial(int(a.sum()))/math.prod(math.factorial(int(j)) for j in a)) for a in xp])
@@ -55,6 +56,7 @@ class TensorWY:
             assumptions=['Smooth response surface','Complete latent polynomial truncation','Generic isotropic RBF interpolation in original standardized X'],
             model_identity_used=False,latent_degree=self.degree,latent_ridge=self.ridge,stimulus_ridge=self.stimulus_ridge,
             stimulus_features=q,latent_features=len(self.powers),centers=self.centers,length_scale=self.sigma,
+            center_rule='Uniform sample without replacement from distinct TRAIN X rows; no model condition groups',
             shared_stimulus_design_detected=shared,train_subjects=len(z),train_rows=sum(len(y) for y in y_tables),
             capabilities=['F0','F1','F2','F3'],warning='Prediction accuracy does not imply Hessian accuracy; fixed X designs require interpolation assumptions')
         self._tensors=tuple(torch.tensor(a) for a in [self.powers,self.zweights,self.xbasis.powers_,self.xweights,self.centers,self.xscale,self.coefficient])
