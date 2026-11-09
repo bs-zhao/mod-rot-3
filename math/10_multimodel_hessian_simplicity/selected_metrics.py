@@ -6,7 +6,7 @@ never silently assigned zero. No data-based changes to the metric shortlist.
 """
 from __future__ import annotations
 import numpy as np
-from metrics import (EPS,AGGREGATORS,aggregate,vector_scores,norm2,compute_metrics)
+from metrics import (EPS,AGGREGATORS,aggregate,vector_scores,norm2)
 
 AGG_ORDER=tuple(sorted(AGGREGATORS,key=len,reverse=True))
 
@@ -40,9 +40,9 @@ def compute_selected(zz,zx,wanted,*,threshold=.10):
                 rows=([M[i,:] for i in range(d)] if orient=="row"
                       else [M[:,j] for j in range(M.shape[1])])
                 scl=scx
-            vectors[key]={name:float(np.mean([v[name] for v in [
-                  vector_scores(row,scl,relative_threshold=threshold) for row in rows]]))
-                  for name in vector_scores(rows[0],scl,relative_threshold=threshold)}
+            per_row=[vector_scores(row,scl,relative_threshold=threshold) for row in rows]
+            vectors[key]={name:float(np.mean([v[name] for v in per_row]))
+                          for name in per_row[0]}
         return vectors[key]
     def local():
         if local_cache:
