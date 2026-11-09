@@ -13,7 +13,7 @@ COMBINATIONS={f'combo_{stat}_t{tau:g}_w{weight:g}':(stat,tau,weight)
 UX_VARIANTS={f'ux_{stat}_{score}':(stat,score) for stat in ['rms','sd','absmean']
              for score in ['l1','gini','column_entropy','row_entropy']}
 METRICS=METRICS+tuple(COMBINATIONS)+tuple(UX_VARIANTS)
-METRICS=METRICS+('conditional_relative_directions','conditional_relative_dual')
+METRICS=METRICS+('conditional_relative_directions','conditional_relative_dual','conditional_relative_cumulant')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -39,7 +39,7 @@ class Loss:
             self.group_gram=np.array([fields['g'][fields['groups']==k,:d].T@(fields['g'][fields['groups']==k,:d]*weights[fields['groups']==k,None])/weights[fields['groups']==k].sum()
                                       for k in np.unique(fields['groups'])])
             self.gradient_gram=fields['g'][:,:d].T@(fields['g'][:,:d]*weights[:,None])
-        if metric in ['conditional_relative_directions','conditional_relative_dual']:
+        if metric in ['conditional_relative_directions','conditional_relative_dual','conditional_relative_cumulant']:
             def null_direction(matrix,reference):
                 ridge=1e-8*max(np.trace(reference)/d,1e-30)
                 values,vectors=eigh(matrix,reference+ridge*np.eye(d))
@@ -61,6 +61,15 @@ class Loss:
             self.direction_diagnostics=dict(forward_directions=forward,completed_mixing=mixing,
                 dual_covectors=dual,absence_gain_eigenvalues=el,absence_neutral_eigenvalues=eg,relative_eigenvalues=et,
                 assumption='Covariance completion assumes independent factors; additional geometric prior, no T labels')
+            if metric=='conditional_relative_cumulant':
+                from cumulants import three_skew_directions
+                non_gaussian,info=three_skew_directions(fields['latent_train'])
+                mixing=np.column_stack((non_gaussian,tau))
+                if np.linalg.cond(mixing)>1e8:raise ValueError('Skew directions and scale direction are degenerate')
+                dual=np.linalg.inv(mixing);dual/=np.linalg.norm(dual,axis=1,keepdims=True)
+                self.direction_targets=dual
+                self.direction_diagnostics=dict(cumulant_control=info,completed_mixing=mixing,
+                                                dual_covectors=dual,relative_eigenvalues=et)
 
     def describe(self,r):
         d=self.d;sd=np.sqrt(np.diag(r@self.cov@r.T));a=sd[:,None]*np.linalg.inv(r).T
@@ -88,7 +97,7 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
-        if kind in ['conditional_relative_directions','conditional_relative_dual']:
+        if kind in ['conditional_relative_directions','conditional_relative_dual','conditional_relative_cumulant']:
             normalized=a/np.linalg.norm(a,axis=1,keepdims=True)
             similarity=(normalized@self.direction_targets.T)**2
             i,j=linear_sum_assignment(-similarity)

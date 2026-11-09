@@ -310,6 +310,7 @@ def relative_fields(args,c,fn,v,protocol):
     fields=dict(g=g.reshape(-1,d),h=h.reshape(-1,d,d),groups=np.tile(group_labels(bank),len(ids)),
                 relative_cov=np.mean(covariance,axis=0),relative_gram=np.mean(gram,axis=0))
     fields['value']=eta.reshape(-1)
+    fields['latent_train']=v[c['splits']['train']]
     info.update(protocol='Conditional raw-gradient absence plus within-subject stimulus variance of gradient log|eta|',
                 mean_subject_ids=ids,relative_cutoff=args.relative_cutoff,retained_fraction=np.mean(retained),
                 derivative_target='canonical log odds; relative gradients use log absolute canonical log odds')
@@ -376,7 +377,7 @@ def main():
     if cache.exists():
         with np.load(cache) as saved:
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
-            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram','value','weights'] if k in saved.files}
+            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram','value','weights','latent_train'] if k in saved.files}
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
@@ -407,6 +408,7 @@ def main():
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
     if latent_only and 'groups' not in fields: fields['groups']=protocol['groups']
+    if args.metric=='conditional_relative_cumulant' and 'latent_train' not in fields:fields['latent_train']=v[c['splits']['train']]
     if args.q_weight=='fisher':
         if 'value' not in fields:
             target=structure_function(fn,args)
