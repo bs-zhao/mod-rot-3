@@ -153,11 +153,14 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
     train,y=tables[0];val,vy=tables[1]
     sieve=BankSieve(args.degree,args.ridge,args.channel).fit(train@hidden.T,y,val@hidden.T,vy)
     sieve.eval_stimulus=all_trials[rows].astype(int)
-    if args.subject_mean:
+    if args.center_point:
+        sieve.eval_stimulus=np.arange(500)
+        f=sieve.fields(np.zeros((500,d)),False,args.structure_link)
+    elif args.subject_mean:
         f=sieve.mean_fields(v[c['splits']['train']]@hidden.T)
     else: f=sieve.fields(w[:,:d]@hidden.T,False,args.structure_link)
     fields=dict(g=f['g']@hidden,h=np.einsum('ai,nab,bj->nij',hidden,f['h'],hidden,optimize=True))
-    if args.subject_mean:
+    if args.subject_mean or args.center_point:
         fields['groups']=group_labels(bank)
         errors=None
     else:
@@ -165,6 +168,15 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
         errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
     return fields,dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_ids=ids_used[0],validation_ids=ids_used[1],
                        structure_link=args.structure_link)
+
+def center_fields(args,c,fn,protocol):
+    data=c['data'];sub=data['subject_index'];ti=data['trial_index'];xx=data['x'];d=c['d']
+    ix=np.flatnonzero(sub==0);ix=ix[np.argsort(ti[ix])];bank=xx[ix]
+    query=np.concatenate((np.zeros((500,d)),(bank-protocol['x_mean'])/protocol['x_sd']),axis=1)
+    target=structure_function(fn,args)
+    f=derivatives(target,query,d,False,True) if args.estimator=='direct' else numerical_fields(target,query,d,args.step,False,True)
+    f['groups']=group_labels(bank)
+    return f,dict(protocol='Q11: TRAIN latent center, full original CR3 bank; latent derivatives only',latent_center=np.zeros(d),bank_trials=500)
 
 def group_labels(xx):
     labels=np.full(len(xx),3)
@@ -262,6 +274,7 @@ def main():
     p.add_argument('--mean-subjects',type=int,default=128)
     p.add_argument('--field-mean',type=int,choices=[0,1],default=0)
     p.add_argument('--mean-stimuli',type=int,default=64)
+    p.add_argument('--center-point',type=int,choices=[0,1],default=0)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -271,6 +284,8 @@ def main():
         raise ValueError('Additional anchor experiment currently targets canonical log odds only')
     if args.field_mean and (args.model!='CR3' or args.metric.startswith(('conditional_','signature_')) or args.metric=='zzx_mixed_rms'):
         raise ValueError('Full-field subject mean currently supports CR3 F2 metrics only')
+    if args.center_point and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.estimator not in ['direct','finite_difference','stimulus']):
+        raise ValueError('Center-point control requires CR3 original-bank conditional F2 metrics')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
@@ -293,7 +308,10 @@ def main():
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.field_mean:
+        if args.center_point and args.estimator!='stimulus':
+            fields,estimator_info=center_fields(args,c,fn,protocol)
+            dump(cache.with_suffix('.json'),estimator_info)
+        elif args.field_mean:
             fields,estimator_info=cross_mean_fields(args,c,fn,v,protocol)
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.metric=='conditional_anchor':
