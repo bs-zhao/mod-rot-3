@@ -29,25 +29,25 @@ Hessian 非对角 Hᵢⱼ 描述 Wⱼ 如何影响 Wᵢ 对 f 的边际作用；
 | ID | 数学运算 | 主要保留什么信息 |
 |---|---|---|
 | M01 Signed Mean | E[H] | 有符号平均；会正负抵消 |
-| M02 Mean Absolute | E[|H|el] | 元素平均曲率绝对幅度 |
+| M02 Mean Absolute | E[&#124;H&#124;el] | 元素平均曲率绝对幅度 |
 | M03 RMS | √E[H⊙H]（逐元素） | 曲率能量、无符号抵消 |
 | M04 Mean Square | E[H⊙H] | 每个元素二阶矩 |
 | M05 Variance | Var(Hᵢⱼ) 逐元素 | 局部曲率的变异 |
 | M06 Standard Deviation | √Var(Hᵢⱼ) | 曲率变异的原单位 |
-| M07 General Lp | (E|Hᵢⱼ|ᵖ)^(1/p) | p 不同则对强值/尾部敏感不同 |
-| M08 Median Absolute | median(|Hᵢⱼ|) | 典型作用、抗极端值 |
-| M09 Absolute Quantile | Q90/Q99(|Hᵢⱼ|) | 尾部强作用 |
-| M10 Maximum/Supremum | supΩ |Hᵢⱼ(W)| | 最坏情形 |
-| M11 Exceedance | Pr(|Hᵢⱼ|>τ) | 大于阈值的作用比例 |
-| M12 Sign Consistency | |E[sign(Hᵢⱼ)]| | 符号稳定性，不是强度 |
+| M07 General Lp | (E&#124;Hᵢⱼ&#124;ᵖ)^(1/p) | p 不同则对强值/尾部敏感不同 |
+| M08 Median Absolute | median(&#124;Hᵢⱼ&#124;) | 典型作用、抗极端值 |
+| M09 Absolute Quantile | Q90/Q99(&#124;Hᵢⱼ&#124;) | 尾部强作用 |
+| M10 Maximum/Supremum | supΩ &#124;Hᵢⱼ(W)&#124; | 最坏情形 |
+| M11 Exceedance | Pr(&#124;Hᵢⱼ&#124;>τ) | 大于阈值的作用比例 |
+| M12 Sign Consistency | &#124;E[sign(Hᵢⱼ)]&#124; | 符号稳定性，不是强度 |
 | M13 Positive/Negative parts | E[(Hᵢⱼ)₊]、E[(-Hᵢⱼ)₊] | 正负曲率分别留存 |
 | M14 Trimmed/Winsorized | 截尾/缩尾后平均 | 稳健性 |
 | M15 Row Gram | E[HHᵀ] | 行方向综合作用 |
 | M16 Column Gram | E[HᵀH] | 列方向综合作用 |
 | M17 Spectral absolute | E[(H²)^(1/2)]，H 对称 | 整体矩阵谱的绝对强度 |
 | M18 Covariance of vec H | Cov(vec H) | 各 Hessian 元素共同变化，尺寸改变 |
-| M19 Conditional/ANOVA | E[Var(Hᵢⱼ|Wₖ)] 等 | 曲率由哪些输入调节 |
-| M20 Higher derivative aggregation | E|∂ₖHᵢⱼ|、RMS(∂ₖHᵢⱼ)、四阶 | 曲率改变与更高阶交互 |
+| M19 Conditional/ANOVA | E[Var(Hᵢⱼ&#124;Wₖ)] 等 | 曲率由哪些输入调节 |
+| M20 Higher derivative aggregation | E&#124;∂ₖHᵢⱼ&#124;、RMS(∂ₖHᵢⱼ)、四阶 | 曲率改变与更高阶交互 |
 
 可计算而未必是复杂度损失的其他对象：H(W₀)、时间/路径平均、指数移动平均、极限、矩阵上下界、tr H=Δf、det H、logdet、特征值、条件数、Hessian-vector product、方向二次型、主子块、Schur complement、投影和 Kronecker 近似。
 
@@ -59,17 +59,17 @@ Hessian 非对角 Hᵢⱼ 描述 Wⱼ 如何影响 Wᵢ 对 f 的边际作用；
 
 | 家族 | 代表损失（越小越简单） | 适用目的与风险 |
 |---|---|---|
-| 总 Hessian 能量 | E||H||F²、||E H||F² | 曲率总量小；正交旋转下前者不变 |
-| 逐元素 L1 | Σᵢⱼ E|Hᵢⱼ|，或 Σᵢⱼ|Mᵢⱼ| | 小系数较显著地受罚，但易偏向整体缩放小 |
-| Off-diagonal L1 | Σᵢ≠ⱼ E|Hᵢⱼ| | 函数交互少；可对局部或汇总矩阵评分 |
+| 总 Hessian 能量 | E&#124;&#124;H&#124;&#124;F²、&#124;&#124;E H&#124;&#124;F² | 曲率总量小；正交旋转下前者不变 |
+| 逐元素 L1 | Σᵢⱼ E&#124;Hᵢⱼ&#124;，或 Σᵢⱼ&#124;Mᵢⱼ&#124; | 小系数较显著地受罚，但易偏向整体缩放小 |
+| Off-diagonal L1 | Σᵢ≠ⱼ E&#124;Hᵢⱼ&#124; | 函数交互少；可对局部或汇总矩阵评分 |
 | Off-diagonal L2 | Σᵢ<ⱼ E[Hᵢⱼ²] | 二阶交互能量小；单张对称矩阵可对角化 |
-| Offdiag / Total | ||offdiag(M)||F²/(||M||F²+ε) | 相对解耦；分母与坐标性质需固定 |
-| Offdiag / Diag | ||offdiag(M)||F²/(||diag(M)||²+ε) | 交互相对自曲率少；分母可病态 |
-| Diag self-curvature | Σᵢ E[Hᵢᵢ²] 或 Σᵢ E|Hᵢᵢ| | 自身非线性小；可能与少交互冲突 |
+| Offdiag / Total | &#124;&#124;offdiag(M)&#124;&#124;F²/(&#124;&#124;M&#124;&#124;F²+ε) | 相对解耦；分母与坐标性质需固定 |
+| Offdiag / Diag | &#124;&#124;offdiag(M)&#124;&#124;F²/(&#124;&#124;diag(M)&#124;&#124;²+ε) | 交互相对自曲率少；分母可病态 |
+| Diag self-curvature | Σᵢ E[Hᵢᵢ²] 或 Σᵢ E&#124;Hᵢᵢ&#124; | 自身非线性小；可能与少交互冲突 |
 | Direction-specific interaction | Σⱼ≠ᵢ E[Hᵢⱼ²] | 第 i 维参与其他维度的交互多少 |
 | Row/column sparsity | 对每行/列取 L1、Tail-k、Soft-L0 等 | 一个维度应只影响少数其他维度 |
-| Group sparsity | Σᵢ||rowᵢ(M)||₂、列组惩罚 | 少数行/列整体激活，与单元素支持不同 |
-| Multiple Hessian joint diagonalization | Σ_c||offdiag(R H_c Rᵀ)||F² | 同一 R 简化多个局部/条件矩阵 |
+| Group sparsity | Σᵢ&#124;&#124;rowᵢ(M)&#124;&#124;₂、列组惩罚 | 少数行/列整体激活，与单元素支持不同 |
+| Multiple Hessian joint diagonalization | Σ_c&#124;&#124;offdiag(R H_c Rᵀ)&#124;&#124;F² | 同一 R 简化多个局部/条件矩阵 |
 | Local nonlinear penalty | E[S(H(W))] | 保留局部结构，未必等于 S(E[H]) |
 
 注意“矩阵 L1”在本文特指逐元素绝对值和；这与数学上诱导 1-范数（最大绝对列和）不同。只优化完整 Hessian Frobenius 范数或 ZZ 谱、trace、det，无法辨别正交旋转方向。
@@ -109,7 +109,7 @@ A=[2, 2, 0.01, 0.001]；B=[1, 0.5, 0.01, 0.01]。
 | **Relative Tail-L2 k=2** | **0.003553** | **0.012648** | **是** |
 | Relative Tail-L2² k=2 | ≈0.00001262 | ≈0.00015997 | **是** |
 | Hoyer（大=更稀疏） | ≈0.58191 | ≈0.64058 | **否**，偏 B |
-| Shannon entropy of normalized |v|（小=集中） | ≈0.71100 | ≈0.70731 | **否**，略偏 B |
+| Shannon entropy of normalized &#124;v&#124;（小=集中） | ≈0.71100 | ≈0.70731 | **否**，略偏 B |
 | exp(entropy) 有效支持（小=集中） | ≈2.0360 | ≈2.0285 | **否** |
 | Gini（大=更集中） | ≈0.49782 | ≈0.56908 | **否**，偏 B |
 
@@ -142,7 +142,7 @@ A=[2, 2, 0.01, 0.001]；B=[1, 0.5, 0.01, 0.01]。
 | Reweighted L1 | Σ_j ω_j a_j，ω_j≈1/(a_j_old+τ) | 迭代偏向小支持；权重历史必须固定 |
 | Penalized k-support | min_k{TailL2sq_k+λk} | 让多保留一个主项也付成本 |
 | Top-k shoulder penalty | 对第 k+1 项和其余尾部不同加权 | 着重压掉临界多余联系；项目候选组合 |
-| Row/column group Lasso | Σ_i ||M_i,:||₂ | 少数整行/列激活，非元素支撑稀疏 |
+| Row/column group Lasso | Σ_i &#124;&#124;M_i,:&#124;&#124;₂ | 少数整行/列激活，非元素支撑稀疏 |
 
 例：绝对阈值 τ=0.005 时，A 的两条尾项中 0.01 超阈值而 0.001 不超；B 的两条 0.01 都超。若 τ=0.02，二者的小尾项全被忽略。**阈值是定义，不是从数据自动得出的“真复杂度”**。相对阈值 τ∝row RMS 可能改变排序，因为大主项也改变了门槛。
 
