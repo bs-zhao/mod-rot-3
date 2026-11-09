@@ -1,0 +1,10 @@
+{
+  "protocol": "Q11: TRAIN latent center, full original CR3 bank; latent derivatives only",
+  "latent_center": [
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "bank_trials": 500
+}

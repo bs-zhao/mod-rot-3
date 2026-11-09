@@ -1,0 +1,12 @@
+{
+  "recorded_at_utc": "2026-11-09T05:20:24.756466+00:00",
+  "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+  "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "numpy": "2.2.6",
+  "scipy": "1.16.1",
+  "sklearn": "1.6.1",
+  "torch": "2.9.1+cu130",
+  "cuda": "13.0",
+  "gpu": "NVIDIA GeForce RTX 5060 Laptop GPU"
+}

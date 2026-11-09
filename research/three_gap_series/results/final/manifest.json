@@ -1,0 +1,54 @@
+{
+  "C1": {
+    "decoder": "round35_final_protocol/C1_beta0.0005_zdim4_pca0/decoder/logit/profile/transport_dual_cosine/s20261115_n1024_cfg0b2e84e60a2d/summary.json",
+    "formula_direct": "round34_unified_transport/C1_beta0.0005_zdim4_pca0/formula/logit/direct/transport_dual_cosine/s20261114_n1024_cfg36a98d2f65da/summary.json",
+    "formula_wy": "round35_final_protocol/C1_beta0.0005_zdim4_pca0/formula/logit/profile/transport_dual_cosine/s20261115_n1024_cfged4cd52683dc/summary.json",
+    "probability_logodds": "round36_probability_audit/C1_beta0.0005_zdim4_pca0/decoder/probability/profile/transport_dual_cosine/s20261115_n1024_cfg287ac26a37da/summary.json",
+    "fresh": "fresh_cohort/C1/seed20261121_transport_dual_cosine_logit_ea2e2e23.json",
+    "locked_summary_sha256": "ea2e2e23bd02e14978fa84d4d7c5f9c6a919ad4402181e38e9599eca9e9fb730",
+    "source_hashes": {
+      "checkpoint": "75aa0b84aa642979c6bd8cff56907631aecee828dfd4cf7714077881099fc759",
+      "latent": "66bbde943aaba33707fadc611f201a5bc0dd2e942607985dd458c859fc106e64",
+      "dataset": "2765dd0031c983b5bfcdff37808687e60a07eebb51c58bf78399930597338c09"
+    }
+  },
+  "C2": {
+    "decoder": "round35_final_protocol/C2_beta0.0005_zdim4_pca0/decoder/logit/profile/transport_dual_cosine/s20261115_n1024_cfg58b0b5310ddd/summary.json",
+    "formula_direct": "round34_unified_transport/C2_beta0.0005_zdim4_pca0/formula/logit/direct/transport_dual_cosine/s20261114_n1024_cfg7cd547a9357f/summary.json",
+    "formula_wy": "round35_final_protocol/C2_beta0.0005_zdim4_pca0/formula/logit/profile/transport_dual_cosine/s20261115_n1024_cfg2b9c7994d386/summary.json",
+    "probability_logodds": "round36_probability_audit/C2_beta0.0005_zdim4_pca0/decoder/probability/profile/transport_dual_cosine/s20261115_n1024_cfgea49212a53d1/summary.json",
+    "fresh": "fresh_cohort/C2/seed20261122_transport_dual_cosine_logit_58cd5c06.json",
+    "locked_summary_sha256": "58cd5c068e9a5b15ba6eac501daf87f06b609e931266a03e28cd52de64904c43",
+    "source_hashes": {
+      "checkpoint": "987433c0da3fc72a59cfb1e1290f39b9aa1b5f5d5d8ae3f8fa7e15237cfb15a7",
+      "latent": "5fd4097ad7d299a6960b1867cad835170eda890fe2be9524c7fe5c78def38375",
+      "dataset": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+    }
+  },
+  "C3": {
+    "decoder": "round35_final_protocol/C3_beta0.0005_zdim6_pca0/decoder/logit/profile/transport_dual_cosine/s20261115_n1024_cfg3008f01dffec/summary.json",
+    "formula_direct": "round34_unified_transport/C3_beta0.0005_zdim6_pca0/formula/logit/direct/transport_dual_cosine/s20261114_n1024_cfgaf70a7cd277e/summary.json",
+    "formula_wy": "round35_final_protocol/C3_beta0.0005_zdim6_pca0/formula/logit/profile/transport_dual_cosine/s20261115_n1024_cfgd73ea95d77c0/summary.json",
+    "probability_logodds": "round36_probability_audit/C3_beta0.0005_zdim6_pca0/decoder/probability/profile/transport_dual_cosine/s20261115_n1024_cfg1b21d9ef63c3/summary.json",
+    "fresh": "fresh_cohort/C3/seed20261123_transport_dual_cosine_logit_2ef80936.json",
+    "locked_summary_sha256": "2ef8093679e5f40832cbc258e7d285ae56b135849da852113e9e3584f5b67a4a",
+    "source_hashes": {
+      "checkpoint": "26f3b81ae9d3f8fd301f96c348c81f1c3ad5c8743ebdb634206cf95babf242eb",
+      "latent": "6e4f3462612df102d61061447728ffe88267fe3ef199f0f05a74c1961738bbc9",
+      "dataset": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+    }
+  },
+  "CR3": {
+    "decoder": "round33_utility_confirm/CR3_beta5e-05_zdim4_pca0/decoder/logit/utility/transport_dual_cosine/s20261115_n1024_cfg906f0740b3e2/summary.json",
+    "formula_direct": "round37_g1_audit/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/transport_dual_cosine/s20261115_n1024_cfgbc5625ca6f86/summary.json",
+    "formula_wy": "round33_utility_confirm/CR3_beta5e-05_zdim4_pca0/formula/logit/utility/transport_dual_cosine/s20261115_n1024_cfgda29d3ac581e/summary.json",
+    "probability_logodds": "round36_probability_audit/CR3_beta5e-05_zdim4_pca0/decoder/probability/utility/transport_dual_cosine/s20261115_n1024_cfg939f98d86b4c/summary.json",
+    "fresh": "fresh_cohort/CR3/seed20261124_transport_dual_cosine_logit_a9db1215.json",
+    "locked_summary_sha256": "a9db12157398104b737700de16732820d120e192cc5a7f8d56c5a59bf6cca730",
+    "source_hashes": {
+      "checkpoint": "943c05afd688127ddec4f4fe8581832e7e4aa7ec27acc2b4ff3d2db3b27784f9",
+      "latent": "5b037c09d86ef5483fc67275673568b37f9002c30209f9e10c64be16fb767434",
+      "dataset": "6a7b7773300d6052f062b034a0f1733ca4a431b77935c97197a167b993b21b45"
+    }
+  }
+}
