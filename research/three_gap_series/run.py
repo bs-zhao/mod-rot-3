@@ -117,6 +117,34 @@ def polynomial_fields(args,c,fn,w,v,protocol,third):
               binary_protocol='one fixed-seed Bernoulli draw per selected original row' if args.channel=='binary' else None)
     return fields,info
 
+
+def local_fields(args,c,fn,w,v,protocol,third):
+    from local_wy import LocalPolynomial
+    rng=np.random.default_rng(args.seed+317);data=c['data'];d=c['d'];sub=data['subject_index']
+    tables=[];selected=[]
+    for split,count in [('train',args.train_rows),('validation',args.validation_rows)]:
+        ids=np.flatnonzero(np.isin(sub,c['splits'][split]));ids=rng.choice(ids,min(count,len(ids)),replace=False)
+        x=(data['x'][ids]-protocol['x_mean'])/protocol['x_sd']
+        inputs=np.concatenate((v[sub[ids]],x),axis=1)
+        with torch.no_grad():y=np.concatenate([torch.vmap(fn)(b).numpy() for b in torch.tensor(inputs).split(2048)])
+        if args.channel=='binary':y=rng.binomial(1,y).astype(float)
+        tables.append((inputs,y));selected.append(ids)
+    hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d);b=np.eye(w.shape[1]);b[:d,:d]=hidden
+    fit=LocalPolynomial(args.degree,args.neighbors,args.bandwidth,args.ridge,args.channel).fit(tables[0][0]@b.T,tables[0][1])
+    f=fit.fields(w@b.T,third,args.structure_link)
+    fields=dict(g=f['g']@b,h=np.einsum('ai,nab,bj->nij',b,f['h'],b,optimize=True))
+    if third:fields['third']=np.einsum('ai,bj,ck,nabc->nijk',b,b,b,f['third'],optimize=True)
+    # Validation is grouped by subject. Limit costly local queries by a fixed rule.
+    valw,valy=tables[1];vout=fit.fields((valw@b.T)[:min(128,len(valw))],False,args.structure_link)
+    pred=vout['value'];target=valy[:len(pred)]
+    if args.channel=='probability' and args.structure_link=='log_odds':target=np.log(np.clip(target,1e-12,1-1e-12)/np.clip(1-target,1e-12,1-1e-12))
+    if args.channel=='binary' and args.structure_link=='log_odds':pred=expit(pred)
+    reference=derivatives(structure_function(fn,args),w,d,third,False)
+    errors={key:float(np.linalg.norm(fields[key]-reference[key])/max(np.linalg.norm(reference[key]),1e-20)) for key in fields}
+    return fields,dict(**fit.info,relative_errors=errors,validation_rmse=float(np.sqrt(np.mean((pred-target)**2))),
+        hidden_rotation=hidden,train_row_ids=selected[0],validation_row_ids=selected[1],
+        validation_queried_rows=len(pred),binary_protocol='one seeded Bernoulli draw per original row' if args.channel=='binary' else None)
+
 def structure_function(fn,args):
     if args.channel!='logit' and args.structure_link=='log_odds':
         def linked(w): return torch.logit(fn(w).clamp(1e-12,1-1e-12))
@@ -324,7 +352,7 @@ def main():
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
-    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','stimulus','utility','profile'],default='direct')
+    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','local','stimulus','utility','profile'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
     p.add_argument('--metric',choices=METRICS+tuple(HESSIAN_CATALOG),required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
@@ -348,8 +376,11 @@ def main():
     p.add_argument('--fingerprint-power',type=float,default=1.)
     p.add_argument('--utility-ridge',type=float,default=1e-5)
     p.add_argument('--gate-prescreen',action='store_true',help='Reject a G1 candidate as soon as a plane counterexample is found; never promote on planes alone')
+    p.add_argument('--neighbors',type=int,default=2048)
+    p.add_argument('--bandwidth',type=float,default=1.)
+    p.add_argument('--uu-full-domain',action='store_true',help='Separate block domains: UU on all original TRAIN rows, UX on the differentiable X domain')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
-    if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
+    if args.channel=='binary' and args.estimator not in ['polynomial','stimulus','local']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
     if args.subject_mean and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.estimator not in ['direct','stimulus'] or (args.channel!='logit' and args.structure_link!='log_odds')):
         raise ValueError('Subject-mean currently requires CR3 conditional canonical-logit direct or bank fields')
@@ -388,7 +419,7 @@ def main():
     if cache.exists():
         with np.load(cache) as saved:
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
-            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram','value','weights','latent_train','full_g','transport_gram','transport_cross','transport_energy','transport_vector_grams','fingerprint_cross','fingerprint_variance'] if k in saved.files}
+            fields={k:saved[k] for k in ['g','h','third','uu_h','uu_t','uu_row_ids','groups','relative_cov','relative_gram','value','weights','latent_train','full_g','transport_gram','transport_cross','transport_energy','transport_vector_grams','fingerprint_cross','fingerprint_variance'] if k in saved.files}
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
@@ -438,6 +469,9 @@ def main():
         elif args.metric=='conditional_anchor':
             fields,estimator_info=anchor_fields(args,c,fn,v,protocol)
             dump(cache.with_suffix('.json'),estimator_info)
+        elif args.estimator=='local':
+            fields,estimator_info=local_fields(args,c,fn,w,v,protocol,third)
+            dump(cache.with_suffix('.json'),estimator_info)
         elif args.estimator=='polynomial':
             fields,estimator_info=polynomial_fields(args,c,fn,w,v,protocol,third)
             dump(cache.with_suffix('.json'),estimator_info)
@@ -451,6 +485,21 @@ def main():
             target=structure_function(fn,args)
             fields=(derivatives(target,w,d,third,latent_only) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
+    if args.uu_full_domain:
+        if args.metric not in HESSIAN_CATALOG or args.estimator!='direct':raise ValueError('Separate all-row UU currently supports exact G1 fields only')
+        if 'uu_h' not in fields:
+            all_sub=c['data']['subject_index'];all_x=c['data']['x']
+            pool=np.flatnonzero(np.isin(all_sub,c['splits']['train']))
+            full_rows=np.random.default_rng(args.seed+511).choice(pool,min(args.samples,len(pool)),replace=False)
+            full_w=np.concatenate((v[all_sub[full_rows]],(all_x[full_rows]-protocol['x_mean'])/protocol['x_sd']),axis=1)
+            target=structure_function(fn,args)
+            extra=derivatives(target,full_w,d,False,True);fields['uu_h']=extra['h'];fields['uu_row_ids']=full_rows
+            if third:
+                def zfn(z,x):return target(torch.cat((z,x)))
+                op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(zfn,argnums=0),argnums=0),argnums=0)
+                fields['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(full_w).split(16)])
+            np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
+        protocol['block_domains']=dict(uu='all original TRAIN rows; only latent derivatives, valid even at zero X amounts',ux='original rows in the differentiable X domain',uu_rows=fields['uu_row_ids'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
     if latent_only and 'groups' not in fields: fields['groups']=protocol['groups']
     if args.metric=='conditional_relative_cumulant' and 'latent_train' not in fields:fields['latent_train']=v[c['splits']['train']]

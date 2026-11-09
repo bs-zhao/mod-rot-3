@@ -36,6 +36,11 @@ for ux in ['rms','profile1','profile2']:
         for weight in [.01,.1,1.,10.]:
             register(f'joint_{ux}_third{kind}_w{weight:g}',family='third_joint',ux=ux,kind=kind,weight=weight,score='l1')
             CATALOG['hs_'+f'joint_{ux}_third{kind}_w{weight:g}']['order']=3
+for ux in ['rms','profile1','profile2']:
+    for part in ['self','off','all']:
+        for score in ['soft003','soft01','log01','lp05']:
+            for weight in [.1,1.,10.]:
+                register(f'joint_{ux}_localuu_{part}_{score}_w{weight:g}',family='joint_sparse',ux=ux,part=part,weight=weight,score=score)
 
 
 def penalty(values,score,axis=-1,k=1):
@@ -64,14 +69,14 @@ class HessianLoss:
     def __init__(self,fields,covariance,d,metric):
         if 'h' not in fields:raise ValueError('Hessian required, missing F2 cannot be treated as zero')
         self.spec=CATALOG[metric];self.metric=metric;self.d=d;self.cov=covariance
-        h=fields['h'];self.n=len(h);self.uu=h[:,:d,:d];self.ux=h[:,:d,d:]
+        h=fields['h'];self.n=len(h);self.uu=fields.get('uu_h',h[:,:d,:d]);self.ux=h[:,:d,d:]
         self.um=self.uu.mean(0);self.xm=self.ux.mean(0)
-        flat=self.uu.reshape(self.n,-1);self.uu_moment=flat.T@flat/self.n
+        flat=self.uu.reshape(len(self.uu),-1);self.uu_moment=flat.T@flat/len(self.uu)
         self.ux_moment=np.einsum('nap,nbp->pab',self.ux,self.ux,optimize=True)/self.n
         sd=np.sqrt(np.diag(covariance))
         u=self.uu*sd[None,:,None]*sd[None,None,:];x=self.ux*sd[None,:,None]
-        self.scale=max(float(np.sqrt(np.mean(np.sum(u*u,axis=(1,2))+np.sum(x*x,axis=(1,2))))),1e-12)
-        self.third=fields.get('third')
+        self.scale=max(float(np.sqrt(np.mean(np.sum(u*u,axis=(1,2)))+np.mean(np.sum(x*x,axis=(1,2))))),1e-12)
+        self.third=fields.get('uu_t',fields.get('third'))
         if self.spec['order']==3 and self.third is None:raise ValueError('Third derivative of Hessian required')
         self.profiles={}
         for degree in [1,2]:
@@ -113,6 +118,7 @@ class HessianLoss:
         if family=='profile':return penalty(self._ux(a,f'profile{s["degree"]}'),s['score'],-2,s.get('k',1))
         if family=='uu':return penalty(self._uu(a,s['stat'],s['part']),s['score'])
         ux=penalty(self._ux(a,s['ux']),'l1')
+        if family=='joint_sparse':return ux+s['weight']*penalty(self._uu(a,'local',s['part']),s['score'])
         if family=='joint':return ux+s['weight']*penalty(self._uu(a,'rms',s['part']),'l1')
         if family=='third_joint':
             t=self.third[:,:self.d,:self.d,:self.d]
