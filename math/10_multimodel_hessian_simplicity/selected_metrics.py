@@ -130,8 +130,8 @@ def compute_selected(zz,zx,wanted,*,threshold=.10):
             outs[name]=local()[name]
             continue
         if "_localfirst_" in name:
-            b=name.split("_",1)[0]
-            if b in ("zz","zx") and name in localfirst(b):
+            b="zz_off" if name.startswith("zz_off_localfirst_") else name.split("_",1)[0]
+            if b in ("zz_off","zx") and name in localfirst(b):
                 outs[name]=localfirst(b)[name]
             continue
         if "_gram_" in name:
