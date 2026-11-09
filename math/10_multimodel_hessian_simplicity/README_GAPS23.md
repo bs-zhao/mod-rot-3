@@ -129,6 +129,25 @@ Accuracy is reported separately for ZZ, ZZ diagonal, ZZ offdiagonal, ZX: MAE, RM
 
 **Important limitation:** The Z-to-T affine mapping uses true T on TRAIN subjects. It is an intentionally supervised *benchmark coordinate*, not an unsupervised solution to rotating Z. The NN gap combines decoder fidelity and Z-to-T mapping mismatch. No NN-Y accuracy result implies automatically accurate Hessians.
 
+## 2026-11-09 output audit and reranking correction
+
+The uploaded C2.zip actually contains all four models, C1/C2/C3/CR3. The original cross_model_threeway_ranking.csv could rank an indicator with 100% near-axis success from C1 alone above indicators tested in all four models: the example zx_mean_abs_column_tail2sq_k1_loss has 24 comparisons all from C1 and none from C2/C3/CR3. This is **not** universal success.
+
+The ranking has therefore been corrected. For the four models, complete coverage requires (6+6+15+6) pairwise planes x 2 methods x 2 Y channels = **132 records per comparison**, and the new fields include models_covered, expected_conditions, full_coverage, worst-model near-axis fraction, both analytic-and-estimated near-axis fraction, and worst-model curve correlation. Rerank previously saved outputs without refitting or decoding:
+
+~~~cmd
+git pull origin main
+python math/10_multimodel_hessian_simplicity/rerank_existing.py
+~~~
+
+This writes cross_model_threeway_ranking_coverage_aware.csv; it preserves the old ranking. In the uploaded results, 71 candidate loss metrics have full four-model/method/channel/plane coverage. None is yet a verified four-model universal recovery solution.
+
+Also, C1/C2/C3 have analytically zero Logit ZZ Hessian. Relative error divided by a zero oracle is **undefined**, not an enormous numerical percentage. New field_errors.csv outputs use reference_zero=1, relative_frobenius blank, and the absolute fitted RMSE to quantify false curvature.
+
+The leading scientific bottleneck is CR3: polynomial sieve gives Gap2 logit ZZ cosine ~0.933 but ZX cosine ~0.540; Gap2 probability ZX cosine ~0.253. High decoder-vs-formula output correlation alone cannot fix these derivative errors. A useful next experiment is numeric logit regression followed by the known sigmoid chain rule to obtain probability Hessian, compared to direct probability regression. That proposed estimator enhancement is **not implemented in this version**.
+
+---
+
 ## 5. Outputs
 
 All new files are written separately from the Gap1 root under:
