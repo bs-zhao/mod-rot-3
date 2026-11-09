@@ -330,9 +330,18 @@ def compare_field(reference,fit):
                                       np.diagonal(az,axis1=1,axis2=2)),
                         ("ZZ_offdiag",zz[:,mask],az[:,mask]),("ZX",zx,bz)):
         a=np.asarray(t,float).reshape(-1);b=np.asarray(pred,float).reshape(-1)
-        den=np.linalg.norm(a)*np.linalg.norm(b)
-        out[name]=dict(mae=float(np.mean(abs(a-b))),rmse=float(np.sqrt(np.mean((a-b)**2))),
-                       relative_frobenius=float(np.linalg.norm(a-b)/max(np.linalg.norm(a),1e-12)),
+        anorm=float(np.linalg.norm(a))
+        bnorm=float(np.linalg.norm(b))
+        den=anorm*bnorm
+        # When true logit ZZ is identically zero (C1/C2/C3), a relative
+        # error is mathematically undefined. A tiny denominator used to
+        # manufacture errors of 1e12 and invited wrong interpretation.
+        zero_ref=bool(anorm<=1e-12)
+        out[name]=dict(mae=float(np.mean(abs(a-b))),
+                       rmse=float(np.sqrt(np.mean((a-b)**2))),
+                       relative_frobenius=(None if zero_ref else
+                           float(np.linalg.norm(a-b)/anorm)),
+                       reference_zero=int(zero_ref),
                        cosine=float((a@b)/den) if den>1e-14 else None,
                        reference_rms=float(np.sqrt(np.mean(a*a))),
                        fitted_rms=float(np.sqrt(np.mean(b*b))))
