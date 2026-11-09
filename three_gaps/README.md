@@ -1,0 +1,37 @@
+# three_gaps — 依次跨越三大鸿沟的简单性指标搜索
+
+本文件夹是一个**独立**实验系列（不导入其他 rotations/math 套餐），目标见
+[`readmes/rotation_research/02_hessian_simplicity_experiment.md`](../readmes/rotation_research/02_hessian_simplicity_experiment.md) §9.0：
+找到一个 (导数视图 M1 × 估计器 M2 × 复杂度 M3) 组合，使其
+
+1. **Gap 1**：在精确解析生成函数上，真实 Tstd 轴（带符号置换）是全 SO(d) 的极小；
+2. **Gap 2**：只给数值 (W, Y=formula) 时仍复现；
+3. **Gap 3**：Y 改为冻结 NP decoder 输出时仍复现，且搜索不读 T。
+
+所有脚本都接受 `--model --beta --zdim --pca`（README §11.2）。输出全部写在被 git 忽略的
+`outputs/three_gaps/` 下。
+
+## 结构
+
+```
+three_gaps/
+  common/analytic.py   四个生成器的 torch 解析 logit（与 S1 predictive_true 校验到 1e-16）
+  common/derivs.py     torch.func 精确导数场 g, Htt, Htx, Tttx, Ttxx, Tttt
+  common/rotlib.py     视图 (block, 聚合方式)、坐标变换 A = S inv(M)^T、旋转与轴误差
+  common/losses.py     M3 复杂度目录（全部对符号/置换/逐轴尺度严格不变）
+  common/io.py         读取 S1/S5/S3（--beta --zdim --pca），T 单独放在 Truth 对象
+  expNN_*/run.py       每个实验一个入口
+  EXPERIMENT_LOG.md    每轮实验的结果与决策
+```
+
+## 运行（Windows CMD）
+
+```cmd
+conda activate py11
+cd /d D:\Projects\mod-rot-3
+git pull --ff-only
+python three_gaps/exp01_gap1_analytic/run.py --model C1  --beta 0.0005  --zdim 4 --pca 0
+python three_gaps/exp01_gap1_analytic/run.py --model C2  --beta 0.0005  --zdim 4 --pca 0
+python three_gaps/exp01_gap1_analytic/run.py --model C3  --beta 0.0005  --zdim 6 --pca 0
+python three_gaps/exp01_gap1_analytic/run.py --model CR3 --beta 0.00005 --zdim 4 --pca 0
+```
