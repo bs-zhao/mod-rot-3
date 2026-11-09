@@ -6,6 +6,7 @@ z-scored candidate coordinates) per-axis scale.  Lower = simpler.
 """
 from __future__ import annotations
 
+import numpy as np
 import torch
 
 EPS = 1e-12
@@ -15,13 +16,18 @@ def _E2(B):
     return (B * B).mean(0)  # (d, C)
 
 
+def _ssqrt(E2):
+    # smooth sqrt: finite gradient at exactly-zero cells (relative epsilon keeps scale invariance)
+    return (E2 + 1e-12 * E2.mean().detach() + 1e-30).sqrt()
+
+
 def rmsL1(B):
     E2 = _E2(B)
-    return E2.clamp_min(0).sqrt().sum() / (E2.sum().sqrt() + EPS)
+    return _ssqrt(E2).sum() / (E2.sum().sqrt() + EPS)
 
 
 def absL1(B):
-    A = B.abs().mean(0)
+    A = (B * B + 1e-24).sqrt().mean(0)
     return A.sum() / ((A * A).sum().sqrt() + EPS)
 
 
@@ -85,7 +91,7 @@ def kurtMin(B):
 
 def varL1(B):
     v = B.var(0, unbiased=False)
-    return v.clamp_min(0).sqrt().sum() / (v.sum().sqrt() + EPS)
+    return _ssqrt(v).sum() / (v.sum().sqrt() + EPS)
 
 
 def _softL0k(k):
@@ -102,6 +108,18 @@ def logSp(B):
     return torch.log(E2 / (E2.mean() + EPS) + 1e-3).mean()
 
 
+def _colLog(delta):
+    def f(B):
+        E2 = _E2(B)                       # (d, C) axis x context energies
+        col = E2.sum(0)                   # context energy
+        q = E2 / (col + EPS)              # share of each axis in that context
+        w = col / (col.sum() + EPS)
+        return (w * torch.log(q + delta).sum(0)).sum()
+    f.__name__ = f"colLog{int(round(-np.log10(delta)))}"
+    return f
+
+
 LOSSES = {f.__name__: f for f in (rmsL1, absL1, colL1L2, rowNeff, cellNeff, softL0, quartimax,
                                   localL1, localHoyer, kurtMax, kurtMin, varL1, logSp,
-                                  _softL0k(0.03), _softL0k(0.1), _softL0k(0.3))}
+                                  _softL0k(0.03), _softL0k(0.1), _softL0k(0.3),
+                                  _colLog(1e-1), _colLog(1e-2), _colLog(1e-3))}

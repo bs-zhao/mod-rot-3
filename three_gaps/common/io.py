@@ -41,6 +41,8 @@ def add_common_args(ap):
     ap.add_argument("--beta", type=float, required=True)
     ap.add_argument("--zdim", type=int, required=True)
     ap.add_argument("--pca", type=int, choices=[0, 1], required=True)
+    ap.add_argument("--whiten", type=int, choices=[0, 1], default=0,
+                    help="extra condition: TRAIN ZCA-whiten the rotated coordinates (README 02 sec 1.4)")
     ap.add_argument("--repeat", type=int, default=1)
     ap.add_argument("--device", default="auto")
     ap.add_argument("--seed", type=int, default=20261108)
@@ -71,7 +73,7 @@ class Truth:
         return t if ids is None else t[ids]
 
 
-def load_all(model, beta, zdim, pca, repeat=1, need_checkpoint=True):
+def load_all(model, beta, zdim, pca, repeat=1, need_checkpoint=True, whiten=0):
     p = paths(model, beta, zdim, repeat)
     for k in ("latent", "dataset") + (("checkpoint",) if need_checkpoint else ()):
         if not p[k].exists():
@@ -103,9 +105,15 @@ def load_all(model, beta, zdim, pca, repeat=1, need_checkpoint=True):
     else:
         C = np.eye(zdim)
     V = zc @ C.T  # coordinates that are rotated: U = R V
+    Minv = C.T.copy()  # z = mu_z + Minv @ v  (exact inverse when zdim == d_T)
+    if whiten:
+        ev, evec = np.linalg.eigh(np.cov(V[tr].T))
+        Wz = evec @ np.diag(ev ** -0.5) @ evec.T
+        V = V @ Wz.T
+        Minv = C.T @ np.linalg.inv(Wz)
     data = np.load(p["dataset"], allow_pickle=False)
-    out = dict(model=model, condition=p["condition"], paths={k: str(v) for k, v in p.items() if k != "condition"},
-               z=z, mu_z=mu_z, C=C, V=V, train_ids=tr, val_ids=va, test_ids=te,
+    out = dict(model=model, condition=p["condition"] + ("_white" if whiten else ""), paths={k: str(v) for k, v in p.items() if k != "condition"},
+               z=z, mu_z=mu_z, C=C, Minv=Minv, V=V, whiten=whiten, train_ids=tr, val_ids=va, test_ids=te,
                x=np.asarray(data["x"], np.float64), y=np.asarray(data["y"]).reshape(-1),
                subject_index=np.asarray(data["subject_index"]),
                predictive_true=np.asarray(data["predictive_true"]).reshape(-1))

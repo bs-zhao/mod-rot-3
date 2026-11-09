@@ -38,7 +38,11 @@ def optimize(base, t_dev, view, loss, d, rng, starts=8, steps=200, lr=0.05, Q0s=
         for _ in range(steps):
             Q = torch.matrix_exp(W - W.T) @ Q0
             Lq = LOSSES[loss](apply_view(base, view, effective_A(Q, t_dev)))
-            opt.zero_grad(); Lq.backward(); opt.step()
+            opt.zero_grad(); Lq.backward()
+            if not torch.isfinite(W.grad).all():
+                W.grad.zero_()
+                break
+            opt.step()
         with torch.no_grad():
             Q = torch.matrix_exp(W - W.T) @ Q0
             Lf = float(LOSSES[loss](apply_view(base, view, effective_A(Q, t_dev))))
@@ -77,3 +81,46 @@ def landscape(base, t_dev, view, loss, d, rng, ref=None, nrand=200, starts=8, st
                  opt_hit=float(np.mean(np.array(angs) < 5)), opt_near_best_max_angle=float(max(near)),
                  opt_best_Q=fin[0][1])
     return r, np.array(curves)
+
+
+def complement(F):
+    """Orthonormal basis (d, d-m) of the orthogonal complement of rows F (m, d)."""
+    d = F.shape[1]
+    if len(F) == 0:
+        return np.eye(d)
+    q, _ = np.linalg.qr(np.c_[F.T, np.eye(d)])
+    return q[:, len(F):d]
+
+
+def optimize_constrained(base, t_dev, view, loss, F, rng, starts=16, steps=300, lr=0.05):
+    """Rotation whose first rows are the fixed unit rows F (m, d); search SO(d-m) on the rest."""
+    dev = t_dev.device
+    d = t_dev.shape[1]
+    F = np.asarray(F, float).reshape(-1, d)
+    m = len(F)
+    Bp = torch.tensor(complement(F), dtype=torch.float32, device=dev)
+    Ft = torch.tensor(F, dtype=torch.float32, device=dev)
+    k = d - m
+    finals = []
+    for s in range(starts):
+        Q0 = torch.tensor(haar(k, rng) if k > 1 else np.eye(1), dtype=torch.float32, device=dev)
+        W = torch.zeros(k, k, device=dev, requires_grad=True)
+        opt = torch.optim.Adam([W], lr=lr)
+
+        def build():
+            Rr = torch.matrix_exp(W - W.T) @ Q0
+            return torch.cat([Ft, Rr @ Bp.T], 0)
+        for _ in range(steps if k > 1 else 0):
+            Lq = LOSSES[loss](apply_view(base, view, effective_A(build(), t_dev)))
+            opt.zero_grad(); Lq.backward()
+            if not torch.isfinite(W.grad).all():
+                break
+            opt.step()
+        with torch.no_grad():
+            Q = build()
+            Lf = float(LOSSES[loss](apply_view(base, view, effective_A(Q, t_dev))))
+        finals.append((Lf, Q.cpu().numpy()))
+        if k <= 1:
+            break
+    finals.sort(key=lambda z: z[0])
+    return finals

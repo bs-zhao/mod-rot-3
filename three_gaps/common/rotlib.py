@@ -37,6 +37,11 @@ VIEWS = {
     "HUUP": ("HttP", 2, None, "trial"),
     "HUUdP": ("HttP", 2, "diag2", "trial"),
     "HUUoP": ("HttP", 2, "off2", "trial"),
+    # design-category cells (CR3 bank: gain_only / loss_only / gamma_neutral / other);
+    # for continuous-X models the categories are the Legendre basis functions.
+    "GCat": ("gP", 1, None, "cat"),
+    "HUUCat": ("HttP", 2, None, "cat"),
+    "HUUdCat": ("HttP", 2, "diag2", "cat"),
 }
 
 
@@ -67,6 +72,15 @@ def legendre_basis(X, deg):
     return torch.stack(cols, 1), names
 
 
+def bank_categories(X):
+    ga, la, pa, gb, lb, pb = X.T
+    cat = torch.full((X.shape[0],), 3, dtype=torch.long, device=X.device)
+    cat[(pa == 0.5) & (pb == 0.5)] = 2
+    cat[(ga == 0) & (gb == 0)] = 1
+    cat[(la == 0) & (lb == 0)] = 0
+    return cat
+
+
 def add_projected(base, X, bank, deg=3):
     """Project derivative fields over the K stimuli onto basis Psi (least squares).
     bank=True: Psi = indicators (projection = identity)."""
@@ -74,6 +88,7 @@ def add_projected(base, X, bank, deg=3):
         for src, dst in (("g", "gP"), ("Htx", "HtxP"), ("Htt", "HttP")):
             if src in base:
                 base[dst] = base[src]
+        base["cat_index"] = bank_categories(X)
         return base
     Psi, _ = legendre_basis(X.to(base["g"].dtype), deg)
     Pm = torch.linalg.pinv(Psi)  # (nb, K)
@@ -109,6 +124,22 @@ def apply_view(base, view, A):
     elif post == "diag3":
         B = torch.einsum("skiii...->ski...", B)
     S, K, d = B.shape[:3]
+    if mode == "cat" and "cat_index" in base:
+        # equal-weight energy per category: pad each category's (S*K_c, d, rest) block to S*K_max
+        ci = base["cat_index"]
+        cats = []
+        kmax = max(int((ci == c).sum()) for c in range(int(ci.max()) + 1))
+        for c in range(int(ci.max()) + 1):
+            Bc = B[:, ci == c]
+            kc = Bc.shape[1]
+            Bc = torch.movedim(Bc, 2, 1).reshape(S, d, kc, -1) * math.sqrt(kmax / kc)
+            if kc < kmax:
+                Bc = torch.cat([Bc, Bc.new_zeros(S, d, kmax - kc, Bc.shape[-1])], 2)
+            cats.append(Bc)
+        Bc = torch.stack(cats, 3)  # (S, d, kmax, C, rest)
+        return torch.movedim(Bc, 2, 1).reshape(S * kmax, d, -1)
+    if mode == "cat":
+        mode = "trial"
     if mode == "pool":
         return B.reshape(S * K, d, -1)
     return torch.movedim(B, 1, 2).reshape(S, d, -1)
