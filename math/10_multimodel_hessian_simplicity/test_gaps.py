@@ -41,6 +41,16 @@ class NumericalHessians(unittest.TestCase):
             self.assertAlmostEqual(full[key],fast[key],delta=1e-8*max(1,abs(full[key])),
                                    msg=key)
 
+    def test_zero_reference_relative_error_is_undefined(self):
+        reference=(np.zeros((7,4,4)),np.ones((7,4,3)))
+        estimate=(np.ones((7,4,4))*.01,np.ones((7,4,3)))
+        result=numeric.compare_field(reference,estimate)
+        self.assertEqual(result["ZZ"]["reference_zero"],1)
+        self.assertIsNone(result["ZZ"]["relative_frobenius"])
+        self.assertAlmostEqual(result["ZZ"]["rmse"],.01)
+        self.assertEqual(result["ZX"]["reference_zero"],0)
+        self.assertAlmostEqual(result["ZX"]["relative_frobenius"],0)
+
     def test_sieve_recovers_known_quadratic_hessians(self):
         rng=np.random.default_rng(9)
         n=600; p=3
