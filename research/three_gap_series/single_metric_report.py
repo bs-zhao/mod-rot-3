@@ -57,7 +57,8 @@ def main():
         counts=Counter(r['state'] for r in atlases[model]['results'])
         lines.append(f'| {model} | {counts["PLANE_COUNTEREXAMPLE"]} | {counts["FLAT_PLANE"]} | {counts["NEEDS_JOINT_OPTIMIZATION"]} |')
     lines+=['','## All-four survivors requiring joint optimization','']
-    lines+=['- `'+name+'`' for name in survivors] if survivors else ['No all-four survivor in the completed atlas.']
+    lines+=['- `'+name+'`' for name in survivors] if survivors else [
+        'No all-four survivor.' if len(atlases)==4 else 'Pending: wait for all four models before drawing a shared-metric conclusion.']
     lines+=['','## Family breakdown','',
         'Each cell is counterexample / flat / needs optimization; counts include predeclared statistic and threshold variants.',
         '', '| Family | C1 | C2 | C3 | CR3 |','|---|---:|---:|---:|---:|']
