@@ -6,6 +6,12 @@ METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
            'ux_mean_l1', 'signature_l1', 'signature_plain_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios','conditional_anchor','conditional_bilinear','conditional_bilinear_hrow')
 
+COMBINATIONS={f'combo_{stat}_t{tau:g}_w{weight:g}':(stat,tau,weight)
+              for stat in ['rms','sd'] for tau in [.03,.1,.3,1.] for weight in [.25,1.,4.]}
+UX_VARIANTS={f'ux_{stat}_{score}':(stat,score) for stat in ['rms','sd','absmean']
+             for score in ['l1','gini','column_entropy','row_entropy']}
+METRICS=METRICS+tuple(COMBINATIONS)+tuple(UX_VARIANTS)
+
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
     p=np.divide(v,total,out=np.zeros_like(v),where=total>1e-28)
@@ -51,6 +57,25 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind in COMBINATIONS or kind in UX_VARIANTS:
+            raw=np.maximum(np.einsum('ia,pab,ib->ip',a,self.ux_moment,a,optimize=True),0)
+            stat=(COMBINATIONS.get(kind) or UX_VARIANTS[kind])[0]
+            if stat=='sd': raw=np.maximum(raw-(a@self.uxmean)**2,0)
+            if stat=='absmean':raw=(a@self.uxmean)**2
+            if kind in COMBINATIONS:
+                _,tau,weight=COMBINATIONS[kind]
+                k=np.einsum('ia,ib->iab',a,a).reshape(d,d*d)
+                diagonal=np.maximum(np.einsum('ia,ab,ib->i',k,self.hh,k),0)
+                if stat=='sd':diagonal=np.maximum(diagonal-np.diag(a@self.hm@a.T)**2,0)
+                def count(v): return float(np.mean(v/(v+tau*tau*max(v.mean(),1e-30))))
+                return count(raw)+weight*count(diagonal)
+            score=UX_VARIANTS[kind][1]
+            if score=='l1':return float(np.sqrt(raw).sum())
+            if score=='row_entropy':return entropy(raw,1)
+            if score=='column_entropy':return entropy(raw,0)
+            total=raw.sum(0,keepdims=True)
+            prob=np.divide(raw,total,out=np.zeros_like(raw),where=total>1e-28)
+            return float(np.sum(1-np.sum(prob*prob,axis=0)))
         if kind=='conditional_anchor':
             energy=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
             energy=energy/np.maximum(energy.sum(axis=1,keepdims=True),1e-30)
