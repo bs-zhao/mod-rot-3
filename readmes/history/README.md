@@ -1,5 +1,7 @@
 # Hessian 指标研究历程与完整方法档案（截至 2026-11-09）
 
+> **新增专项归档（2026-11-09）**：[Hessian 复杂度与稀疏性指标全集、Tail-L2 数值对照及参考文献](README_HESSIAN_COMPLEXITY_SPARSITY_METRICS_20261109.md)。涵盖局部/整体曲率、M01–M20、Offdiag、Top-k Tail-L1/L2/L2²、软 L0、Hoyer/熵/Gini、三四阶、Sobol 与跨解析式/WY/NN 的三鸿沟检验。
+
 > **新专题（2026-11-09）**：[旋转简单性与稀疏损失：CR3 06/07 实证、Toy M001–M024、ZZ/ZX 高阶结构和三个技术 gap](README_SPARSITY_SIMPLICITY_AND_FUNCTIONAL_ROTATION_20261109.md)。聚焦“多主作用 + 小残余”的 L1/L2/Top-k/Soft-L0/Log-sum/Capped 惩罚，并区分解析成功、Formula-Y 回归成功及 NN-Y 成功。
 
 
