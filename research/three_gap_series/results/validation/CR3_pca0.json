@@ -1,0 +1,49 @@
+{
+  "model": "CR3",
+  "pca": 0,
+  "hashes": {
+    "checkpoint": "943c05afd688127ddec4f4fe8581832e7e4aa7ec27acc2b4ff3d2db3b27784f9",
+    "latent": "5b037c09d86ef5483fc67275673568b37f9002c30209f9e10c64be16fb767434",
+    "dataset": "6a7b7773300d6052f062b034a0f1733ca4a431b77935c97197a167b993b21b45"
+  },
+  "formula_probability_max_error": 2.220446049250313e-16,
+  "decoder_inverse_max_error": 2.6645352591003757e-15,
+  "finite_difference": [
+    {
+      "source": "formula",
+      "step": 0.02,
+      "gradient_relative": 0.0008667211983291234,
+      "hessian_relative": 0.008995957698419318
+    },
+    {
+      "source": "formula",
+      "step": 0.01,
+      "gradient_relative": 0.00021326711230992457,
+      "hessian_relative": 0.0021970450440777266
+    },
+    {
+      "source": "formula",
+      "step": 0.005,
+      "gradient_relative": 5.3110859329218364e-05,
+      "hessian_relative": 0.000546138779347942
+    },
+    {
+      "source": "decoder",
+      "step": 0.02,
+      "gradient_relative": 0.009664195555579859,
+      "hessian_relative": 0.13399631772176618
+    },
+    {
+      "source": "decoder",
+      "step": 0.01,
+      "gradient_relative": 0.0027070337388773865,
+      "hessian_relative": 0.030411212310414628
+    },
+    {
+      "source": "decoder",
+      "step": 0.005,
+      "gradient_relative": 0.0007019535181720731,
+      "hessian_relative": 0.0072866548827495315
+    }
+  ]
+}

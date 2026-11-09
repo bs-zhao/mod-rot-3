@@ -1,0 +1,51 @@
+{
+  "converged": true,
+  "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+  "iterations": 74,
+  "validation_nll": 0.6136639257054374,
+  "degree": 3,
+  "ridge": 1e-06,
+  "features": 120,
+  "train_rows": 128000,
+  "validation_rows": 32000,
+  "capabilities": [
+    "F0",
+    "F1",
+    "F2",
+    "F3"
+  ],
+  "protocol": "original-table WY only; isotropic total-degree basis",
+  "relative_errors": {
+    "g": 0.13372681353747393,
+    "h": 0.2445964377961335
+  },
+  "hidden_rotation": [
+    [
+      0.5584165497460791,
+      -0.5128124453566172,
+      -0.6218183873677956,
+      -0.19630651030560706
+    ],
+    [
+      -0.38175156895019935,
+      -0.15617974493263423,
+      -0.4619071990644301,
+      0.7851849249248811
+    ],
+    [
+      0.5022326479321207,
+      -0.3649955581384819,
+      0.5885609657765439,
+      0.517819079847827
+    ],
+    [
+      -0.5387012752210972,
+      -0.7611895464989794,
+      0.23147272441466765,
+      -0.27714939694665236
+    ]
+  ],
+  "train_row_hash": "46b1f4c071f6a26b7f6e53422313408261732f46657f5800a45149e3b8a77697",
+  "validation_row_hash": "1ab17edc433233f733547773bda3d3b6badac5865d2e9b8ce34065c39bc54816",
+  "binary_protocol": "one fixed-seed Bernoulli draw per selected original row"
+}
