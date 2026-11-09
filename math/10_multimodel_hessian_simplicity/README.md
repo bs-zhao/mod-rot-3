@@ -118,8 +118,8 @@ CR3/ ...
 - curves.csv: wide rows, model × channel × plane × angle, measured scores.
 - cross_model_ranking.csv: per-metric coverage and worst/mean successful-plane fraction across **all four models and both Y channels**. Missing metrics are flagged as partial coverage, not silently treated as successes.
 - screens.csv: actual minimum angle, 0/90 endpoint values, flatness flag, minimum direction.
-- ranking_by_model_channel.csv: fraction of planes having **nonflat** minimum at 0° or 90°. Flat curves are failures, not successes.
-- multiway_comparison.csv: how many random SO(3)/SO(4)/SO(d) candidates beat the identity.
+- ranking_by_model_channel.csv: both **strict** (exact 0°/90°) and **near endpoint** (default within 10°, configurable via --endpoint-tolerance) fractions of planes with a **nonflat** minimum. Flat curves are failures, not successes.
+- multiway_comparison.csv: how many random SO(3)/SO(4)/SO(d) candidates beat the identity. The top-level cross_model_ranking.csv also counts these sampled counterexamples and records metric coverage; this is not an exhaustive SO(d) search.
 - metadata.json: source hash, original units, singular-domain coverage, derivative method and essential provenance.
 
 **These outputs do not establish NN recovery.** In particular: C1–C3 logit H_TT is exactly zero, so ZZ-logit metrics are flat and cannot distinguish parameter axes. Even if a complexity loss prefers a particular basis, that does not prove the basis is the true psychological coordinate system.
