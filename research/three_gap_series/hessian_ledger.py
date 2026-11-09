@@ -11,7 +11,7 @@ MODELS={'C1','C2','C3','CR3'}
 
 def main():
     records=[];sets=defaultdict(list)
-    for path in ROOT.glob('h*/**/summary.json'):
+    for path in list(ROOT.glob('h*/**/summary.json'))+list(ROOT.glob('s*/**/summary.json')):
         j=json.loads(path.read_text(encoding='utf8'));a=j['args']
         if not a['metric'].startswith('hs_'):continue
         label=a['label'];stage=j.get('stage','G1' if a['source']=='formula' and a['estimator']=='direct' else 'G2' if a['source']=='formula' else 'G3')
