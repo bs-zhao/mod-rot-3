@@ -1,6 +1,8 @@
 """M1 summaries and M3 losses; source and estimator agnostic."""
 import numpy as np
 import itertools
+from scipy.linalg import eigh
+from scipy.optimize import linear_sum_assignment
 
 METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
@@ -11,6 +13,7 @@ COMBINATIONS={f'combo_{stat}_t{tau:g}_w{weight:g}':(stat,tau,weight)
 UX_VARIANTS={f'ux_{stat}_{score}':(stat,score) for stat in ['rms','sd','absmean']
              for score in ['l1','gini','column_entropy','row_entropy']}
 METRICS=METRICS+tuple(COMBINATIONS)+tuple(UX_VARIANTS)
+METRICS=METRICS+('conditional_relative_directions','conditional_relative_dual')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -34,6 +37,28 @@ class Loss:
             self.group_gram=np.array([fields['g'][fields['groups']==k,:d].T@fields['g'][fields['groups']==k,:d]/np.sum(fields['groups']==k)
                                       for k in np.unique(fields['groups'])])
             self.gradient_gram=fields['g'][:,:d].T@fields['g'][:,:d]/len(fields['g'])
+        if metric in ['conditional_relative_directions','conditional_relative_dual']:
+            def null_direction(matrix,reference):
+                ridge=1e-8*max(np.trace(reference)/d,1e-30)
+                values,vectors=eigh(matrix,reference+ridge*np.eye(d))
+                vector=vectors[:,0];return vector/np.linalg.norm(vector),values
+            lam,el=null_direction(self.group_gram[0],self.gradient_gram)
+            gamma,eg=null_direction(self.group_gram[1],self.gradient_gram)
+            tau,et=null_direction(fields['relative_cov'],fields['relative_gram'])
+            forward=np.column_stack((lam,gamma,tau))
+            u,_,_=np.linalg.svd(forward,full_matrices=True)
+            alpha_covector=u[:,-1]
+            # EXTRA assumption: independent underlying factors and covariance
+            # completion. This is not a pure decoder-Hessian loss.
+            alpha_forward=self.cov@alpha_covector
+            mixing=np.column_stack((alpha_forward,lam,gamma,tau))
+            mixing/=np.linalg.norm(mixing,axis=0)
+            if np.linalg.cond(mixing)>1e8:raise ValueError('Inferred factor directions are degenerate')
+            dual=np.linalg.inv(mixing);dual/=np.linalg.norm(dual,axis=1,keepdims=True)
+            self.direction_targets=forward.T if metric.endswith('directions') else dual
+            self.direction_diagnostics=dict(forward_directions=forward,completed_mixing=mixing,
+                dual_covectors=dual,absence_gain_eigenvalues=el,absence_neutral_eigenvalues=eg,relative_eigenvalues=et,
+                assumption='Covariance completion assumes independent factors; additional geometric prior, no T labels')
 
     def describe(self,r):
         d=self.d;sd=np.sqrt(np.diag(r@self.cov@r.T));a=sd[:,None]*np.linalg.inv(r).T
@@ -50,6 +75,7 @@ class Loss:
         if 'relative_cov' in self.fields:
             result['relative_gradient_covariance']=a@self.fields['relative_cov']@a.T
             result['relative_gradient_gram']=a@self.fields['relative_gram']@a.T
+        if hasattr(self,'direction_diagnostics'):result['inferred_direction_diagnostics']=self.direction_diagnostics
         return result
 
     def __call__(self, r):
@@ -60,6 +86,11 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind in ['conditional_relative_directions','conditional_relative_dual']:
+            normalized=a/np.linalg.norm(a,axis=1,keepdims=True)
+            similarity=(normalized@self.direction_targets.T)**2
+            i,j=linear_sum_assignment(-similarity)
+            return float(len(j)-similarity[i,j].sum())
         if kind=='conditional_relative':
             energy=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
             total=np.maximum(np.einsum('ia,ab,ib->i',a,self.gradient_gram,a),1e-30)

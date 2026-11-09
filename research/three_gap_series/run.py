@@ -333,9 +333,9 @@ def main():
         raise ValueError('Subject-mean currently requires CR3 conditional canonical-logit direct or bank fields')
     if args.metric=='conditional_anchor' and args.channel!='logit' and args.structure_link!='log_odds':
         raise ValueError('Additional anchor experiment currently targets canonical log odds only')
-    if args.metric=='conditional_relative' and args.channel!='logit' and args.structure_link!='log_odds':
+    if args.metric.startswith('conditional_relative') and args.channel!='logit' and args.structure_link!='log_odds':
         raise ValueError('Relative-gradient structure requires canonical log odds')
-    if args.metric=='conditional_relative' and (args.center_point or args.subject_mean or args.field_mean or not 0<=args.relative_cutoff<1):
+    if args.metric.startswith('conditional_relative') and (args.center_point or args.subject_mean or args.field_mean or not 0<=args.relative_cutoff<1):
         raise ValueError('Relative-gradient has its own conditional averaging protocol; use a cutoff in [0,1)')
     if args.field_mean and (args.model!='CR3' or args.metric.startswith(('conditional_','signature_')) or args.metric=='zzx_mixed_rms'):
         raise ValueError('Full-field subject mean currently supports CR3 F2 metrics only')
@@ -344,7 +344,7 @@ def main():
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
-    config['field_protocol']=('anchors' if args.metric=='conditional_anchor' else 'relative' if args.metric=='conditional_relative' else 'original')
+    config['field_protocol']=('anchors' if args.metric=='conditional_anchor' else 'relative' if args.metric.startswith('conditional_relative') else 'original')
     config_hash=hashlib.sha256(json.dumps(config,sort_keys=True).encode()).hexdigest()[:12]
     # Compact directories avoid Windows MAX_PATH problems. Full flags in summary.
     out=out.with_name(f's{args.seed}_n{args.samples}_cfg{config_hash}')
@@ -363,7 +363,7 @@ def main():
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.metric=='conditional_relative':
+        if args.metric.startswith('conditional_relative'):
             fields,estimator_info=relative_fields(args,c,fn,v,protocol)
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.center_point and args.estimator!='stimulus':
