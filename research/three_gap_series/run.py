@@ -323,7 +323,7 @@ def main():
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
-    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','stimulus','utility'],default='direct')
+    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','stimulus','utility','profile'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
     p.add_argument('--metric',choices=METRICS,required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
@@ -364,8 +364,8 @@ def main():
     if args.q_weight!='uniform' and (not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.subject_mean or args.field_mean or args.estimator not in ['direct','finite_difference','stimulus']):
         raise ValueError('Fisher-Q currently supports point/local original-bank conditional fields only')
     if not np.isfinite(args.fisher_power) or args.fisher_power<=0:raise ValueError('Fisher power must be positive')
-    if args.metric.startswith('transport_') and (args.model!='CR3' or args.channel!='logit' and args.structure_link!='log_odds'):
-        raise ValueError('Current transport dictionary requires CR3 canonical log odds')
+    if args.metric.startswith('transport_') and args.channel!='logit' and args.structure_link!='log_odds':
+        raise ValueError('Current transport dictionaries require canonical log odds')
     if args.metric=='conditional_fingerprint' and (not args.center_point or args.channel=='binary' or args.channel!='logit' and args.structure_link!='log_odds'):
         raise ValueError('Algebraic fingerprint currently uses centered Gamma-null plus deterministic canonical-logit queries; binary not yet supported')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
@@ -390,10 +390,14 @@ def main():
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.estimator=='utility':
-            from utility_sieve import fit_utility_sieve
+        if args.estimator in ['utility','profile']:
             from types import SimpleNamespace
-            estimated,estimator_info=fit_utility_sieve(args,c,structure_function(fn,args),v,protocol)
+            if args.estimator=='utility':
+                from utility_sieve import fit_utility_sieve
+                estimated,estimator_info=fit_utility_sieve(args,c,structure_function(fn,args),v,protocol)
+            else:
+                from profile_tensor import fit_profile_tensor
+                estimated,estimator_info=fit_profile_tensor(args,c,structure_function(fn,args),v,protocol)
             calc=SimpleNamespace(**vars(args));calc.estimator='direct';calc.channel='logit';calc.structure_link='native'
             if args.metric=='conditional_fingerprint':
                 fields,field_info=center_fields(calc,c,estimated,protocol)
