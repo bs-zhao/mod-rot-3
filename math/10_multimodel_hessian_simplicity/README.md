@@ -25,6 +25,8 @@ python np/s1_generate.py --model CR3
 
 The oracle experiment will never silently replace real simulation data with synthetic data. A synthetic debug flag is provided for C1–C3 only; debug outputs are not scientific data.
 
+By default function-value contrasts are enabled; use --no-functional to benchmark Hessian-only speed, or adjust --function-anchors / --function-step. Higher-order third derivatives use centered finite differences of analytically exact second derivatives, with fourth-order optional.
+
 More thorough run, including fourth derivatives and 5-degree pairwise grid:
 
 ~~~cmd
@@ -75,6 +77,7 @@ The metric registry is computed by metrics.py, not written as claims about futur
 | Local-first versus matrix-first | average pointwise row Tail-L2/soft-L0 versus Tail-L2 of aggregated RMS/mean |
 | Spectral/matrix | row Gram E[HH^T], Gram offdiag, spectral absolute, covariance of unique Hessian elements, Gram effective rank |
 | Higher order | Third derivatives via finite differences OF EXACT ANALYTIC SECOND derivatives; self/other-U and ZX-U modulation; optional fourth own-axis |
+| Function-value contrasts (separate from Hessian) | Default controlled 3-point own-axis second differences; 4-corner UU/UX mixed non-additivity; row-wise Tail-L1/L2 and soft support; **NOT** population Sobol |
 | Sanity diagnostics | Exact orthogonal invariance of local Frobenius squared norm, flatness, cancellation and sign persistence |
 
 Each recorded metric is labelled loss (candidate lower-is-simpler) or diagnostic (not a legitimate blind optimization target). Do not mistake invariant metrics for successful axis recovery.
@@ -97,6 +100,7 @@ All new artifacts are written to **outputs/math/10_multimodel_hessian_simplicity
 ~~~text
 manifest.json
 all_models_summary.csv
+cross_model_ranking.csv
 C1/
   metadata.json
   metric_catalog.csv
@@ -112,6 +116,7 @@ CR3/ ...
 ~~~
 
 - curves.csv: wide rows, model × channel × plane × angle, measured scores.
+- cross_model_ranking.csv: per-metric coverage and worst/mean successful-plane fraction across **all four models and both Y channels**. Missing metrics are flagged as partial coverage, not silently treated as successes.
 - screens.csv: actual minimum angle, 0/90 endpoint values, flatness flag, minimum direction.
 - ranking_by_model_channel.csv: fraction of planes having **nonflat** minimum at 0° or 90°. Flat curves are failures, not successes.
 - multiway_comparison.csv: how many random SO(3)/SO(4)/SO(d) candidates beat the identity.
