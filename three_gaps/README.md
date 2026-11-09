@@ -24,6 +24,29 @@ three_gaps/
   EXPERIMENT_LOG.md    每轮实验的结果与决策
 ```
 
+## 当前最佳方法：两阶段“输出等变轴 + 设计情境关联稀疏性”（EXP06）
+
+对每个候选 U = R V（V = 以 TRAIN 均值中心化的冻结 Z），只使用函数 h(V, X)（解析式 / sieve
+拟合的 WY / decoder）的**一阶梯度场**：
+
+1. **阶段 A — 输出等变轴**。若某个位移方向 w 的梯度剖面 ∂h/∂w(·) 与“平移剖面”
+   （logit: 1；prob: p(1−p)）或“增益剖面”（logit: η；prob: p(1−p)·logit p）共线，
+   则该方向是平移轴（C 模型的 b1）或增益轴（CR3 的 τ）。用广义特征问题求最小相对残差 e1，
+   **仅当 e1 < 0.3 且 e1 < 0.3·e2 时固定该轴**（阈值预先固定）。
+2. **阶段 B — 情境关联稀疏性**。把梯度场投影到刺激设计的“情境”上：连续 X 用正交
+   Legendre 张量基（总次数 ≤ 3）的基函数，CR3 固定 bank 用设计类别（gain-only / loss-only /
+   p=0.5 / general）。单元格 = (轴, 情境)，对被试求平均绝对值，损失
+   `absL1 = Σ M / ‖M‖_F`（M 为逐轴 z-score 后的单元格均值绝对梯度），在阶段 A 轴的正交补上
+   用 SO(d−m) 多起点 Adam 最小化。
+
+所有损失对逐轴尺度 D、符号、置换严格不变（G0 审计误差 ≤ 4e-6）。T 只在 R 固定后用于 TEST 评价。
+
+```cmd
+python three_gaps/exp00_oracle/run.py    --model CR3 --beta 0.00005 --zdim 4 --pca 0
+python three_gaps/exp06_two_stage/run.py --model CR3 --beta 0.00005 --zdim 4 --pca 0 --view GCat --losses absL1,rmsL1 --tag final
+python three_gaps/exp07_summary/run.py   --tag final --variant AB --loss absL1
+```
+
 ## 运行（Windows CMD）
 
 ```cmd

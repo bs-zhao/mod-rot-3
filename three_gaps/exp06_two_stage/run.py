@@ -52,6 +52,7 @@ def main():
     ap.add_argument("--dx", type=int, default=3)
     ap.add_argument("--starts", type=int, default=16)
     ap.add_argument("--steps", type=int, default=300)
+    ap.add_argument("--reps", type=int, default=1, help="Bernoulli draws per (U,X) for the binary channel (Y = mean)")
     ap.add_argument("--tag", default="v1")
     a = ap.parse_args()
     dev = io.pick_device(a.device)
@@ -87,7 +88,8 @@ def main():
 
     def ys(eta, seed):
         pr = 1 / (1 + np.exp(-eta))
-        return dict(logit=eta, prob=pr, binary=(np.random.default_rng(seed).uniform(size=len(pr)) < pr).astype(float))
+        yb = np.random.default_rng(seed).binomial(a.reps, pr) / a.reps
+        return dict(logit=eta, prob=pr, binary=yb.astype(float))
     Yf, Yd = ys(eta_f, a.seed + 1), ys(eta_d, a.seed + 2)
 
     for src in a.sources.split(","):

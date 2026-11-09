@@ -60,3 +60,50 @@ RMS→L1 产生尖点，并且按 Birkhoff 凹性论证真轴是全局极小。
 - CR3 解析：阶段 A 精确找到 τ（e1=0.000）；阶段 B 用逐试次单元格时只有 prob·softL0_03 恢复（4.4°）。
 - CR3 decoder：阶段 A 找到增益轴（0.11–0.19），整体 MCC 约 0.74（B-only 约 0.63）。
 - 正在测试：CR3 的情境单元格改为**设计类别**（gain-only / loss-only / p=0.5 / general）。
+
+### EXP06 补充测试（CR3）
+
+- 设计类别单元格（GCat）+ 阶段 A：解析 softL0_10 完美（1.2°/0.4°），但 decoder 仅 0.74；
+  colLog3 decoder logit 0.830 但 prob 0.744；absL1 两通道最一致（0.80/0.79）。
+- 白化坐标（`--whiten 1`）：0.76–0.79，不优于原始坐标。
+- 另外两个 CR3 checkpoint（β=1e-5 / 1e-4，仅报告不选择）：0.68–0.78，Oracle 0.866 / 0.773。
+- 广义特征“类别零轴”逐个/贪心检测：解析 MCC 1.000，decoder 0.67–0.78（出现解析式中不存在的伪零轴）。
+- binary 通道：逐试次 sieve 的梯度噪声给单元格加正能量下限，抹掉相对零结构；du=2/3、
+  重复抽样 R=10/50 均无法救回（R=50 时 Gap 2 仍偏 38°）。
+
+## EXP07 — 冻结方法的最终三鸿沟表（AB 两阶段，阶段 B 损失 absL1，GCat 视图）
+
+判据（预先固定）：Gap 1/2 与真 Tstd 轴最差夹角 < 5°；Gap 3 TEST 匹配 |corr| ≥ Oracle − 0.02。
+
+| model, channel | Gap1 解析 | Gap2 公式WY→sieve | Gap3 decoder autodiff (诊断) | Gap3 decoder WY→sieve |
+|---|---|---|---|---|
+| C1 logit | PASS 0.7° | PASS 0.7° | PASS 0.969/0.969 | PASS 0.969/0.969 |
+| C1 prob | PASS 0.0° | PASS 0.1° | PASS 0.969/0.969 | PASS 0.969/0.969 |
+| C1 binary | – | PASS 0.7° | – | PASS 0.969/0.969 |
+| C2 logit | PASS 0.3° | PASS 0.4° | PASS 0.971/0.971 | PASS 0.971/0.971 |
+| C2 prob | PASS 0.4° | PASS 1.0° | PASS 0.971/0.971 | PASS 0.971/0.971 |
+| C2 binary | – | PASS 0.9° | – | PASS 0.971/0.971 |
+| C3 logit | PASS 1.6° | PASS 1.3° | PASS 0.962/0.963 | PASS 0.962/0.963 |
+| C3 prob | PASS 0.1° | PASS 0.8° | PASS 0.963/0.963 | PASS 0.963/0.963 |
+| C3 binary | – | PASS 0.8° | – | PASS 0.963/0.963 |
+| CR3 logit | fail 10.2° | fail 10.0° | fail 0.803/0.872 | fail 0.805/0.872 |
+| CR3 prob | fail 5.4° | fail 5.7° | fail 0.793/0.872 | fail 0.792/0.872 |
+| CR3 binary | – | fail 33.8° | – | fail 0.708/0.872 |
+
+（恒等变换 TEST MCC：C1 0.668，C2 0.956，C3 0.588，CR3 0.573。）
+
+- rmsL1 代替 absL1：C1–C3 结论相同；CR3 更差（logit 0.771，prob 0.742）。
+- 不用阶段 A（B-only）：C1–C3 结论相同（阶段 A 对 C 模型非必需）；CR3 降到 0.60/0.66。
+  ⇒ 阶段 A 的增益轴是 CR3 从 ~0.60 提升到 ~0.80 的主要来源。
+
+## 结论（当前）
+
+1. **C1、C2、C3：同一个冻结指标（刺激基投影梯度 × absL1，可选阶段 A）连续跨过三个鸿沟**，
+   logit / prob / binary 三通道都在 TEST 上达到监督 Oracle（与 Oracle 方向相差 ≤ 3.6°）。
+   理论依据：真实参数的梯度剖面在正交刺激基上支撑互不重叠，RMS/均值→L1 在带符号置换处形成尖点，
+   Birkhoff 凹性论证给出全局极小。C2 的原始 Z 已近对齐（恒等 0.956），对它的检验信息量低。
+2. **CR3 未通过**。解析式上需要三种结构：增益轴（τ）+ 设计类别零模式（λ: gain-only；γ: p=0.5）
+   + 正交补（α）；只有组合起来才能在解析式上恢复。decoder 上一阶零模式只以相对对比形式保留，
+   二阶零模式（对 λ/τ 线性）完全消失；最好结果约 0.80（Oracle 0.872 的 92%，恒等 0.573）。
+   decoder-WY→sieve 与 decoder autodiff 几乎一致 ⇒ 瓶颈是 **decoder 函数失真（Gap 3）**，不是 M2 估计。
+3. 不是独立验证：所有设计决策都在同一批数据/checkpoint 上做出；需要新训练的 NP 重复确认。
