@@ -23,20 +23,22 @@ def entropy(v, axis):
 class Loss:
     def __init__(self, fields, covariance, d, metric):
         self.fields=fields; self.cov=covariance; self.d=d; self.metric=metric
+        weights=fields.get('weights',np.ones(len(fields['h'])))
+        weights=weights/weights.sum()
         h=fields['h'][:,:d,:d].reshape(len(fields['h']),d*d)
-        self.hm=h.mean(0).reshape(d,d)
-        self.hh=h.T@h/len(h)
+        self.hm=(weights@h).reshape(d,d)
+        self.hh=h.T@(h*weights[:,None])
         ux=fields['h'][:,:d,d:]
-        self.ux_moment=np.einsum('nap,nbp->pab',ux,ux)/len(h)
-        self.uxmean=ux.mean(0)
-        sig=[fields['g'][:,:d].mean(0)[:,None], self.uxmean]
+        self.ux_moment=np.einsum('n,nap,nbp->pab',weights,ux,ux)
+        self.uxmean=np.einsum('n,nap->ap',weights,ux)
+        sig=[(weights@fields['g'][:,:d])[:,None], self.uxmean]
         if 'third' in fields:
-            sig.append(fields['third'][:,:d,d:,d:].mean(0).reshape(d,-1))
+            sig.append(np.einsum('n,nabc->abc',weights,fields['third'][:,:d,d:,d:]).reshape(d,-1))
         self.signature=np.concatenate(sig,axis=1)
         if 'groups' in fields:
-            self.group_gram=np.array([fields['g'][fields['groups']==k,:d].T@fields['g'][fields['groups']==k,:d]/np.sum(fields['groups']==k)
+            self.group_gram=np.array([fields['g'][fields['groups']==k,:d].T@(fields['g'][fields['groups']==k,:d]*weights[fields['groups']==k,None])/weights[fields['groups']==k].sum()
                                       for k in np.unique(fields['groups'])])
-            self.gradient_gram=fields['g'][:,:d].T@fields['g'][:,:d]/len(fields['g'])
+            self.gradient_gram=fields['g'][:,:d].T@(fields['g'][:,:d]*weights[:,None])
         if metric in ['conditional_relative_directions','conditional_relative_dual']:
             def null_direction(matrix,reference):
                 ridge=1e-8*max(np.trace(reference)/d,1e-30)

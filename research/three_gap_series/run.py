@@ -9,6 +9,7 @@ import json
 import numpy as np
 import torch
 from scipy.optimize import minimize
+from scipy.special import expit
 from core import DIMS, load, dump, formula, decoder, derivatives, correspondence, sha
 from metrics import METRICS, Loss
 
@@ -160,12 +161,18 @@ def bank_fields(args,c,fn,w,v,protocol,rows):
         f=sieve.mean_fields(v[c['splits']['train']]@hidden.T)
     else: f=sieve.fields(w[:,:d]@hidden.T,False,args.structure_link)
     fields=dict(g=f['g']@hidden,h=np.einsum('ai,nab,bj->nij',hidden,f['h'],hidden,optimize=True))
+    if args.center_point:
+        values=sieve.raw_derivative(np.zeros((500,d)),())
+        fields['value']=values if args.channel=='logit' or args.structure_link=='log_odds' else expit(values)
+    elif not args.subject_mean:
+        values=sieve.raw_derivative(w[:,:d]@hidden.T,())
+        fields['value']=values if args.channel=='logit' or args.structure_link=='log_odds' else expit(values)
     if args.subject_mean or args.center_point:
         fields['groups']=group_labels(bank)
         errors=None
     else:
         reference=derivatives(structure_function(fn,args),w,d,False,True)
-        errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
+        errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in ['g','h']}
     return fields,dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_ids=ids_used[0],validation_ids=ids_used[1],
                        structure_link=args.structure_link)
 
@@ -176,6 +183,7 @@ def center_fields(args,c,fn,protocol):
     target=structure_function(fn,args)
     f=derivatives(target,query,d,False,True) if args.estimator=='direct' else numerical_fields(target,query,d,args.step,False,True)
     f['groups']=group_labels(bank)
+    with torch.no_grad():f['value']=torch.vmap(target)(torch.tensor(query)).numpy()
     return f,dict(protocol='Q11: TRAIN latent center, full original CR3 bank; latent derivatives only',latent_center=np.zeros(d),bank_trials=500)
 
 def group_labels(xx):
@@ -294,10 +302,14 @@ def relative_fields(args,c,fn,v,protocol):
     for values,gradient in zip(eta,g):
         mask=abs(values)>args.relative_cutoff*max(np.sqrt(np.mean(values*values)),1e-20)
         if mask.sum()<d+2:raise ValueError('Too few nonzero-logit stimuli')
-        rel=gradient[mask]/values[mask,None];center=rel-rel.mean(0)
-        covariance.append(center.T@center/len(rel));gram.append(rel.T@rel/len(rel));retained.append(mask.mean())
+        rel=gradient[mask]/values[mask,None]
+        probability=expit(values[mask])
+        qw=(probability*(1-probability)).clip(1e-12)**args.fisher_power if args.q_weight=='fisher' else np.ones(len(rel))
+        qw/=qw.sum();center=rel-qw@rel
+        covariance.append(center.T@(center*qw[:,None]));gram.append(rel.T@(rel*qw[:,None]));retained.append(mask.mean())
     fields=dict(g=g.reshape(-1,d),h=h.reshape(-1,d,d),groups=np.tile(group_labels(bank),len(ids)),
                 relative_cov=np.mean(covariance,axis=0),relative_gram=np.mean(gram,axis=0))
+    fields['value']=eta.reshape(-1)
     info.update(protocol='Conditional raw-gradient absence plus within-subject stimulus variance of gradient log|eta|',
                 mean_subject_ids=ids,relative_cutoff=args.relative_cutoff,retained_fraction=np.mean(retained),
                 derivative_target='canonical log odds; relative gradients use log absolute canonical log odds')
@@ -326,6 +338,8 @@ def main():
     p.add_argument('--mean-stimuli',type=int,default=64)
     p.add_argument('--center-point',type=int,choices=[0,1],default=0)
     p.add_argument('--relative-cutoff',type=float,default=.1)
+    p.add_argument('--q-weight',choices=['uniform','fisher'],default='uniform')
+    p.add_argument('--fisher-power',type=float,default=1.)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -341,6 +355,9 @@ def main():
         raise ValueError('Full-field subject mean currently supports CR3 F2 metrics only')
     if args.center_point and (args.model!='CR3' or not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.estimator not in ['direct','finite_difference','stimulus']):
         raise ValueError('Center-point control requires CR3 original-bank conditional F2 metrics')
+    if args.q_weight!='uniform' and (not args.metric.startswith('conditional_') or args.metric=='conditional_anchor' or args.subject_mean or args.field_mean or args.estimator not in ['direct','finite_difference','stimulus']):
+        raise ValueError('Fisher-Q currently supports point/local original-bank conditional fields only')
+    if not np.isfinite(args.fisher_power) or args.fisher_power<=0:raise ValueError('Fisher power must be positive')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
@@ -359,7 +376,7 @@ def main():
     if cache.exists():
         with np.load(cache) as saved:
             if str(saved['checkpoint_hash']) != c['hashes']['checkpoint']: raise ValueError('Stale field cache')
-            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram'] if k in saved.files}
+            fields={k:saved[k] for k in ['g','h','third','groups','relative_cov','relative_gram','value','weights'] if k in saved.files}
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
@@ -390,6 +407,16 @@ def main():
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if not all(np.isfinite(f).all() for f in fields.values()): raise ValueError('Nonfinite derivative')
     if latent_only and 'groups' not in fields: fields['groups']=protocol['groups']
+    if args.q_weight=='fisher':
+        if 'value' not in fields:
+            target=structure_function(fn,args)
+            with torch.no_grad():fields['value']=torch.vmap(target)(torch.tensor(w)).numpy()
+        probability=expit(fields['value']) if args.channel=='logit' or args.structure_link=='log_odds' else fields['value']
+        fields['weights']=(probability*(1-probability)).clip(1e-12)**args.fisher_power
+        if len(fields['weights'])!=len(fields['h']):raise ValueError('Weight/field domain mismatch')
+        protocol['q_weight']=dict(name='predictive Fisher p(1-p)',power=args.fisher_power,
+            field_effective_points=float(fields['weights'].sum()**2/np.sum(fields['weights']**2)),
+            note='Weighted field points are not independent latent subjects')
     loss=Loss(fields,cov,d,args.metric)
     rng=np.random.default_rng(args.seed+1)
     # Mathematical invariance audit over arbitrary signed scales, permutations and rotations.
