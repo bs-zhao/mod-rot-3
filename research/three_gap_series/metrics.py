@@ -1,9 +1,10 @@
 """M1 summaries and M3 losses; source and estimator agnostic."""
 import numpy as np
+import itertools
 
 METRICS = ('uu_off_rms', 'uu_self_rms', 'uu_self_variance', 'uu_self_meanabs',
            'uu_off_q99', 'ux_soft_count', 'ux_row_entropy', 'ux_column_entropy',
-           'ux_mean_l1', 'signature_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count')
+           'ux_mean_l1', 'signature_l1', 'signature_column_entropy', 'zzx_mixed_rms', 'conditional_soft_count','conditional_ratios')
 
 def entropy(v, axis):
     total=v.sum(axis=axis,keepdims=True)
@@ -26,6 +27,7 @@ class Loss:
         if 'groups' in fields:
             self.group_gram=np.array([fields['g'][fields['groups']==k,:d].T@fields['g'][fields['groups']==k,:d]/np.sum(fields['groups']==k)
                                       for k in np.unique(fields['groups'])])
+            self.gradient_gram=fields['g'][:,:d].T@fields['g'][:,:d]/len(fields['g'])
 
     def __call__(self, r):
         d=self.d
@@ -35,6 +37,15 @@ class Loss:
         # derivatives in v=r z: h_v = inv(r).T h_z inv(r)
         a=sd[:,None]*np.linalg.inv(r).T
         kind=self.metric
+        if kind=='conditional_ratios':
+            energy=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
+            total=np.maximum(np.einsum('ia,ab,ib->i',a,self.gradient_gram,a),1e-30)
+            k=np.einsum('ia,ib->iab',a,a).reshape(d,d*d)
+            self_energy=np.maximum(np.einsum('ia,ab,ib->i',k,self.hh,k),0)
+            absence_gain=energy[0]/total
+            absence_neutral=energy[1]/total
+            linearity=self_energy/total
+            return float(min(absence_gain[i]+absence_neutral[j]+linearity[k] for i,j,k in itertools.permutations(range(d),3)))
         if kind=='conditional_soft_count':
             energies=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
             score=np.sum(energies/(energies+1e-3*energies.mean(axis=1,keepdims=True)+1e-30))

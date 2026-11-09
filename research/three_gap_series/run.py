@@ -48,7 +48,7 @@ def prepare(args, c):
     candidates=np.flatnonzero(np.isin(subject,train))
     x=data['x']
     # G1/G2 derivative protocol: CR3 positive-money interior domain only.
-    if args.model=='CR3' and args.metric!='conditional_soft_count':
+    if args.model=='CR3' and not args.metric.startswith('conditional_'):
         selected=x[candidates]
         mask=(selected[:,[0,1,3,4]]>1.).all(1)&(selected[:,[2,5]]>.03).all(1)&(selected[:,[2,5]]<.97).all(1)
         candidates=candidates[mask]
@@ -70,7 +70,7 @@ def prepare(args, c):
         def fn(w): return torch.sigmoid(base(w))
     w=np.concatenate((v[subject[rows]],xs),axis=1)
     groups=None
-    if args.metric=='conditional_soft_count':
+    if args.metric.startswith('conditional_'):
         if args.model!='CR3': raise ValueError('This conditional candidate is CR3-design-specific')
         xx=x[rows]
         groups=np.full(len(rows),3)
@@ -104,9 +104,9 @@ def polynomial_fields(args,c,fn,w,v,protocol,third):
     f=sieve.fields(w@b.T,third,args.structure_link)
     fields=dict(g=f['g']@b,h=np.einsum('ai,nab,bj->nij',b,f['h'],b,optimize=True))
     if third: fields['third']=np.einsum('ai,bj,ck,nabc->nijk',b,b,b,f['third'],optimize=True)
-    if args.metric=='conditional_soft_count':
+    if args.metric.startswith('conditional_'):
         fields=dict(g=fields['g'][:,:d],h=fields['h'][:,:d,:d])
-    reference=derivatives(structure_function(fn,args),w,d,third,args.metric=='conditional_soft_count')
+    reference=derivatives(structure_function(fn,args),w,d,third,args.metric.startswith('conditional_'))
     errors={k:float(np.linalg.norm(fields[k]-reference[k])/max(np.linalg.norm(reference[k]),1e-20)) for k in fields}
     info=dict(**sieve.info,relative_errors=errors,hidden_rotation=hidden,train_row_hash=__import__('hashlib').sha256(selected_rows[0].tobytes()).hexdigest(),
               validation_row_hash=__import__('hashlib').sha256(selected_rows[1].tobytes()).hexdigest(),
@@ -121,7 +121,7 @@ def structure_function(fn,args):
 
 def bank_fields(args,c,fn,w,v,protocol,rows):
     from estimators import BankSieve
-    if args.model!='CR3' or args.metric!='conditional_soft_count':
+    if args.model!='CR3' or not args.metric.startswith('conditional_'):
         raise ValueError('Fixed-bank sieve currently supports CR3 conditional loss only')
     rng=np.random.default_rng(args.seed+411);d=c['d'];data=c['data']
     indices=np.flatnonzero(data['subject_index']==0)
@@ -181,7 +181,7 @@ def main():
     # One field cache shared among candidate losses, no fitted R or T labels.
     third=args.metric.startswith('signature') or args.metric=='zzx_mixed_rms'
     fn,w,cov,v,rows,protocol=prepare(args,c)
-    latent_only=args.metric=='conditional_soft_count'
+    latent_only=args.metric.startswith('conditional_')
     cache=out.parents[1]/f'fields_n{args.samples}_s{args.seed}_h{args.step:g}_third{int(third)}_degree{args.degree}_ridge{args.ridge:g}_nt{args.train_rows}_nv{args.validation_rows}_latent{int(latent_only)}_link{args.structure_link}_ns{args.train_subjects}_vs{args.validation_subjects}.npz'
     estimator_info=None
     if cache.exists():
