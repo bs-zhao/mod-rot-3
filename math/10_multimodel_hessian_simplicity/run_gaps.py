@@ -17,6 +17,7 @@ import numpy as np
 from oracle import DIMENSIONS
 from run import ROOT, rotation, rotate_h, angles_from_spec, write_csv
 from metrics import compute_metrics
+from selected_metrics import compute_selected
 from numeric import (resolve_latent, choose_subject_trials, numeric_channels,
                      sieve_fit, rbf_fit, analytic_test_hessian, compare_field)
 
@@ -105,13 +106,13 @@ def select_estimator(method,parts,y,args,seed):
     return best[2],best[1],candidates
 
 
-def curve_metrics(zz,zx,R,allowed):
+def curve_metrics(zz,zx,R,allowed,metric_mode="shortlist"):
     a,b=rotate_h(zz,zx,R)
-    metrics=compute_metrics(a,b)
+    metrics=(compute_metrics(a,b) if metric_mode=="all" else compute_selected(a,b,allowed))
     return {k:metrics[k] for k in allowed if k in metrics}
 
 
-def make_curves(model,method,ref,fit,angles,shortlist,planes="all"):
+def make_curves(model,method,ref,fit,angles,shortlist,planes="all",metric_mode="shortlist"):
     """All channels/sources computed from exactly the SAME TEST W anchors."""
     d=ref["logit"][0].shape[1]
     curves=[]
@@ -133,7 +134,7 @@ def make_curves(model,method,ref,fit,angles,shortlist,planes="all"):
                 for ch in CHANNELS:
                     for source,bych in sources.items():
                         zz,zx=bych[ch]
-                        vals=curve_metrics(zz,zx,R,shortlist)
+                        vals=curve_metrics(zz,zx,R,shortlist,metric_mode)
                         curves.append(dict(model=model,method=method,channel=ch,
                                            source=source,plane=plane,angle=angle,
                                            **vals))
@@ -283,7 +284,7 @@ def process_model(model,args,root,out):
             for block,v in compare_field(candidate[ch],nn[ch]).items():
                 accuracy.append(dict(model=model,method=method,channel=ch,
                                      comparison="gap3_vs_gap2",block=block,**v))
-        rows=make_curves(model,method,test_oracle,fit,angles_from_spec(args.angles),selected,args.planes)
+        rows=make_curves(model,method,test_oracle,fit,angles_from_spec(args.angles),selected,args.planes,args.metric_mode)
         available=set(rows[0])-{"model","method","channel","source","plane","angle"}
         missing=[m for m in selected if m not in available]
         write_csv(base_dir/f"{method}__missing_oracle_metrics.csv",
@@ -357,6 +358,7 @@ def parse_args(argv=None):
     p.add_argument("--endpoint-tolerance",type=float,default=10.)
     p.add_argument("--top-per-model",type=int,default=30)
     p.add_argument("--top-global",type=int,default=50)
+    p.add_argument("--metric-mode",choices=("shortlist","all"),default="shortlist")
     p.add_argument("--plots",type=int,default=3)
     p.add_argument("--seed",type=int,default=20261109)
     args=p.parse_args(argv)
