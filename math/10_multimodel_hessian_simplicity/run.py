@@ -114,13 +114,23 @@ def load_samples(model, subjects, trials, seed, *, debug=False):
     offsets=np.r_[0,np.cumsum(counts)]
     t_rows=[]; x_rows=[]; subject_ids=[]
     total_valid=0; total_trial=0
+    common_cr3_indices=None
+    if model=="CR3":
+        # Keep identical X positions for every selected subject. This permits
+        # genuine subject x fixed-X conditional decomposition later.
+        common_valid=np.flatnonzero(valid_x_mask(x_all[:counts[0]],model))
+        common_cr3_indices=np.sort(rng.choice(
+            common_valid,size=min(trials,len(common_valid)),replace=False))
     for sid in selected:
         lo,hi=offsets[sid:sid+2]
         valid=np.flatnonzero(valid_x_mask(x_all[lo:hi],model))
         total_valid+=len(valid); total_trial+=hi-lo
         if len(valid)<1:
             raise ValueError(f"{model}: subject {sid} has no differentiable stimuli")
-        chosen=np.sort(rng.choice(valid,size=min(trials,len(valid)),replace=False))
+        chosen=(common_cr3_indices if model=="CR3" else
+                np.sort(rng.choice(valid,size=min(trials,len(valid)),replace=False)))
+        if model=="CR3" and not np.all(valid_x_mask(x_all[lo+chosen],model)):
+            raise ValueError("CR3 fixed stimuli disagree across subjects")
         x_rows.append(x_all[lo+chosen])
         t_rows.append(np.repeat(t_all[sid:sid+1],len(chosen),axis=0))
         subject_ids.extend([int(sid)]*len(chosen))
@@ -156,6 +166,38 @@ def write_csv(path, rows, fields=None):
         w.writeheader()
         for row in rows:
             w.writerow(row)
+
+
+def global_ranking(out, models):
+    """Compare the same metric across all models and both channels.
+
+    Metrics absent in a model (e.g. tail_k beyond dimension) are explicitly
+    labelled as partially covered, never counted as a universal success.
+    """
+    buckets={}
+    for model in models:
+        path=out/model/"ranking_by_model_channel.csv"
+        with path.open(newline="",encoding="utf-8") as f:
+            rows=list(csv.DictReader(f))
+        for r in rows:
+            buckets.setdefault(r["metric"],[]).append(r)
+    report=[]
+    for metric,rows in buckets.items():
+        mod={r["model"] for r in rows}
+        frac=[float(r["success_fraction"]) for r in rows]
+        fl=[int(r["flat_planes"]) for r in rows]
+        full=(len(mod)==len(models) and len(rows)==2*len(models))
+        report.append(dict(metric=metric,models_covered=len(mod),
+                           conditions_covered=len(rows),full_coverage=int(full),
+                           mean_success_fraction=float(np.mean(frac)),
+                           min_success_fraction=float(np.min(frac)),
+                           max_success_fraction=float(np.max(frac)),
+                           conditions_all_planes_success=int(sum(x==1.0 for x in frac)),
+                           total_flat_planes=sum(fl)))
+    report.sort(key=lambda r:(-r["full_coverage"],-r["min_success_fraction"],
+                              -r["mean_success_fraction"],r["total_flat_planes"],r["metric"]))
+    write_csv(out/"cross_model_ranking.csv",report)
+    return report
 
 
 def third_fields(base_t, x, model, st, sx, step):
@@ -427,6 +469,7 @@ def main(argv=None):
                             valid_x_fraction=meta["valid_x_fraction"],
                             data_source=meta["data_source"]))
     write_csv(out/"all_models_summary.csv",summary)
+    global_ranking(out,models)
     (out/"manifest.json").write_text(json.dumps(dict(models=models,cr1_alias_used=alias,
         modes=["oracle_exact_TT_TX"],args=vars(args),
         caution="This is analytic-oracle screening, NOT NN/WY recovery or blind rotation. "
