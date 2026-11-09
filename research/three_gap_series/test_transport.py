@@ -2,10 +2,22 @@ import unittest
 import numpy as np
 import torch
 from core import formula
-from transport import operator_targets
+from transport import operator_targets,flow_input
 from metrics import Loss
 
 class EquivarianceTests(unittest.TestCase):
+    def test_flow_generators_include_zero_amount_trials(self):
+        x=np.array([[100,0,.5,0,0,.5],[50,0,.3,100,0,.7],[0,100,.5,0,50,.5],[80,20,.2,100,50,.8]],float)
+        t=torch.tensor([.8,2.,.7,2.2],dtype=torch.float64)
+        w=torch.cat((t.expand(len(x),-1),torch.tensor(x)),dim=1)
+        def fn(w):return formula('CR3',w[:4],w[4:])
+        g=torch.vmap(torch.func.jacrev(fn))(w).numpy()[:,:4]
+        coefficients=np.array([.8,.8*2,.7,2.2])
+        for kind in range(3):
+            def along(e):return torch.vmap(fn)(flow_input(w,e,kind,4,torch.zeros(6,dtype=torch.float64),torch.ones(6,dtype=torch.float64)))
+            _,got=torch.func.jvp(along,(torch.tensor(0.,dtype=torch.float64),),(torch.tensor(1.,dtype=torch.float64),))
+            np.testing.assert_allclose(got.numpy(),g[:,kind]*coefficients[kind],atol=1e-12,rtol=1e-12)
+
     def test_cr3_input_generator_identities_and_true_axis_minimum(self):
         rng=np.random.default_rng(81);n=3;k=32
         x=rng.uniform(5,200,(k,6));x[:,[2,5]]=rng.uniform(.05,.95,(k,2))

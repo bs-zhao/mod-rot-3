@@ -343,6 +343,7 @@ def main():
     p.add_argument('--fisher-power',type=float,default=1.)
     p.add_argument('--transport-power',type=float,default=1.)
     p.add_argument('--transport-ridge',type=float,default=1e-6)
+    p.add_argument('--transport-access',choices=['partial','flow'],default='partial')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
