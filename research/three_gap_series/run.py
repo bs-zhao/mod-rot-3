@@ -335,6 +335,11 @@ def main():
     result['field_cache']=str(cache)
     result['code_hashes']={f.name:sha(f) for f in Path(__file__).resolve().parent.glob('*.py')}
     result['near10_diagnostic']=bool(best['axis_min']>np.cos(np.deg2rad(10)) and min(ranges)>1e-5*(1+abs(truth)))
+    result['preprocessing']=dict(train_mean=c['mean'],components=c['components'],
+                                 explained_variance_ratio=c['explained_variance_ratio'],covariance=cov,
+                                 pca_whitened=False,source_latent_sha256=c['hashes']['latent'])
+    result['matrix_metrics_best']=loss.describe(rhat)
+    result['matrix_metrics_identity']=loss.describe(np.eye(d))
     dump(out/'summary.json',result)
     print(args.model,args.source,args.channel,args.metric,'truth',round(truth,6),'best',round(best['loss'],6),
           'axis_min',round(best['axis_min'],5),'G1',strict_pass,'seconds',round(time.time()-started,1),flush=True)

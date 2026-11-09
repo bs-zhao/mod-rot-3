@@ -29,6 +29,20 @@ class Loss:
                                       for k in np.unique(fields['groups'])])
             self.gradient_gram=fields['g'][:,:d].T@fields['g'][:,:d]/len(fields['g'])
 
+    def describe(self,r):
+        d=self.d;sd=np.sqrt(np.diag(r@self.cov@r.T));a=sd[:,None]*np.linalg.inv(r).T
+        k=np.einsum('ia,jb->ijab',a,a).reshape(d*d,d*d)
+        square=np.maximum(np.einsum('ia,ab,ib->i',k,self.hh,k),0).reshape(d,d)
+        mean=a@self.hm@a.T
+        result=dict(candidate_sd=sd,zz_signed_mean=mean,zz_rms=np.sqrt(square),
+                    zz_variance=np.maximum(square-mean*mean,0),self_rms=np.sqrt(np.diag(square)),
+                    ux_signed_mean=a@self.uxmean,
+                    ux_rms=np.sqrt(np.maximum(np.einsum('ia,pab,ib->ip',a,self.ux_moment,a,optimize=True),0)),
+                    signed_effect_signature=a@self.signature)
+        if hasattr(self,'group_gram'):
+            result['group_gradient_mean_square']=np.maximum(np.einsum('ia,kab,ib->ki',a,self.group_gram,a,optimize=True),0)
+        return result
+
     def __call__(self, r):
         d=self.d
         # r can also be D R or a signed permutation, for invariance tests.

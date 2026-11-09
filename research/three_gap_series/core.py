@@ -57,6 +57,8 @@ def load(args):
         if not np.array_equal(ids, np.asarray(checkpoint['subject_splits'][k])): raise ValueError('Checkpoint split mismatch')
     mean = z[splits['train']].mean(0)
     components = np.eye(args.zdim)
+    eigenvalues=np.linalg.eigvalsh(np.cov(z[splits['train']],rowvar=False,bias=True))[::-1]
+    explained=eigenvalues/eigenvalues.sum()
     if args.pca:
         _, _, vt = np.linalg.svd(z[splits['train']]-mean, full_matrices=False)
         components = vt[:d]
@@ -64,7 +66,7 @@ def load(args):
     data = np.load(dp, allow_pickle=False)
     return dict(root=root, d=d, cond=cond, cp=checkpoint, latent_path=lp,
                 data=data, z=z, v=v, mean=mean, components=components,
-                splits=splits, hashes=hashes)
+                splits=splits, hashes=hashes,explained_variance_ratio=explained)
 
 def formula(model, t, x):
     if model == 'C1': return t[0]+np.sqrt(3)*(t[1:]*x).sum()
