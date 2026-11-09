@@ -85,6 +85,11 @@ CR3 六平面最小角分别 17.5、0、15、72.5、55、20 度，只有 alpha�
 将这个具体假设提交为 `hs_jd_profile1_strength0_selfl1_w8`，先用新 seed、更大 Q、64 起点
 确认四模型 G1，再测试 generic TensorWY 的 G2，不跳关。
 
+用户随后明确“5.8°也行啦，先宽松一些”。当前初筛以 **6°** 为验收容差，原5°诊断保留。
+h05 的全维最大角度为 C1≈0、C2≈0.038、C3≈0.040、CR3≈5.796°，故可进入 G2。
+不覆盖原 summary 的5°失败记录，台账按新用户规则重新判定并注明。
+此前准备的 weight=10 跟进暂缓，不为0.8°继续调权重；**冻结 weight=8 做 inference**。
+
 `tensor_wy.py` 是通用 E02 inference：全部≤2次原始 X 单项式 + 同一各向同性 Gaussian RBF
 字典，以及完整 latent polynomial。模型名称、option 差分、金额参考、真参数式均不进入拟合器。
 是否共享 X bank 仅从数值输入检测，以优化同一回归式的计算。它不是先前的 utility/profile 方法。
