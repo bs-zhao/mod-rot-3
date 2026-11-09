@@ -45,6 +45,20 @@ def numerical_fields(fn, w, d, step, third=False,latent_only=False):
             h[:,i,j]=h[:,j,i]=mixed
     return dict(g=g,h=h)
 
+
+def hessian_study_fields(fn,w,d,third=False):
+    """Full F2, but only the latent F3 needed by UU-curvature variation.
+
+    Does not compute unused X third derivatives. Same estimand as slicing the
+    full third tensor, with much smaller memory and forward-mode cost.
+    """
+    fields=derivatives(fn,w,d,False,False)
+    if third:
+        def fixed(z,x):return fn(torch.cat((z,x)))
+        op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(fixed,argnums=0),argnums=0),argnums=0)
+        fields['third']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(w).split(16)])
+    return fields
+
 def prepare(args, c):
     rng=np.random.default_rng(args.seed)
     data=c['data']; d=c['d']; train=c['splits']['train']
@@ -170,7 +184,7 @@ def tensor_fields(args,c,fn,w,v,protocol,third,extra_w=None):
     def estimated(q):
         eta=fit.value(torch.cat((q[:d]@torch.tensor(hidden).T,q[d:])))
         return torch.sigmoid(eta) if args.channel=='probability' and args.structure_link=='native' else eta
-    fields=derivatives(estimated,w,d,third,False)
+    fields=hessian_study_fields(estimated,w,d,third) if args.metric in HESSIAN_CATALOG else derivatives(estimated,w,d,third,False)
     if extra_w is not None:
         fields['uu_h']=derivatives(estimated,extra_w,d,False,True)['h']
         if third:
@@ -182,7 +196,7 @@ def tensor_fields(args,c,fn,w,v,protocol,third,extra_w=None):
         prediction=fit.predict_subject(v[sid]@hidden.T,x)
         if args.channel=='probability' and args.structure_link=='native':y=expit(y);prediction=expit(prediction)
         sse+=float(np.sum((prediction-y)**2));nval+=len(y)
-    reference=derivatives(structure_function(fn,args),w,d,third,False)
+    reference=hessian_study_fields(structure_function(fn,args),w,d,third) if args.metric in HESSIAN_CATALOG else derivatives(structure_function(fn,args),w,d,third,False)
     errors={key:float(np.linalg.norm(fields[key]-reference[key])/max(np.linalg.norm(reference[key]),1e-20)) for key in ['g','h']+(['third'] if third else [])}
     block_errors={}
     for name,sl in [('UU',(slice(None),slice(None,d),slice(None,d))),('UX',(slice(None),slice(None,d),slice(d,None))),('XX',(slice(None),slice(d,None),slice(d,None)))]:
@@ -576,7 +590,7 @@ def main():
             dump(cache.with_suffix('.json'),estimator_info)
         else:
             target=structure_function(fn,args)
-            fields=(derivatives(target,w,d,third,latent_only) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
+            fields=((hessian_study_fields(target,w,d,third) if args.metric in HESSIAN_CATALOG else derivatives(target,w,d,third,latent_only)) if args.estimator=='direct' else numerical_fields(target,w,d,args.step,third,latent_only))
         np.savez_compressed(cache,**fields,checkpoint_hash=c['hashes']['checkpoint'])
     if args.uu_full_domain:
         if 'uu_h' not in fields:
@@ -684,9 +698,10 @@ def main():
                 worst_axis_error_degrees=worst_axis_error,plane_minima=plane_axes,
                 evaluation=evaluation,elapsed_seconds=time.time()-started)
     result['estimator_info']=estimator_info
-    result['stage']='G1' if args.source=='formula' and args.estimator=='direct' else 'G2' if args.source=='formula' else 'G3'
+    result['stage']='G1' if args.source=='formula' and args.estimator=='direct' else 'G2' if args.source=='formula' else 'DECODER_DIRECT_DIAGNOSTIC' if args.estimator=='direct' else 'G3'
+    result['angle_diagnostic_coordinate']='Tstd true axes' if args.source=='formula' else 'Raw latent identity only; NOT a parameter recovery error'
     if args.metric in HESSIAN_CATALOG and args.source=='formula' and args.estimator!='direct':
-        reference=derivatives(structure_function(fn,args),w,d,third,False)
+        reference=hessian_study_fields(structure_function(fn,args),w,d,third)
         reference['strict_x']=w[:,d:]
         if grid_groups is not None:reference['strict_subject_groups']=grid_groups
         if full_w is not None:
@@ -723,6 +738,6 @@ def main():
     result['matrix_metrics_identity']=loss.describe(np.eye(d))
     dump(out/'summary.json',result)
     print(args.model,args.source,args.channel,args.metric,'truth',round(truth,6),'best',round(best['loss'],6),
-          'axis_min',round(best['axis_min'],5),'G1_exact',strict_pass,'G1_angle',angle_pass,'max_angle',round(worst_axis_error,3),'seconds',round(time.time()-started,1),flush=True)
+          'axis_min',round(best['axis_min'],5),'G1_exact',strict_pass if args.source=='formula' else None,'G1_angle',angle_pass if args.source=='formula' else None,'max_true_axis_angle',round(worst_axis_error,3) if args.source=='formula' else None,'seconds',round(time.time()-started,1),flush=True)
 
 if __name__=='__main__': main()

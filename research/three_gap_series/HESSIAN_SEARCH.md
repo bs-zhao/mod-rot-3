@@ -114,3 +114,19 @@ CR3 prediction validation RMSE≈0.10764；整体 Hessian 相对误差≈0.816�
   [第9章原文](https://www.gaussianprocess.org/gpml/chapters/RW9.pdf)：可微核与导数建模的背景。
 
 这些文献为数值方法和误差分析提供依据，不证明本项目某一 loss 的参数语义可恢复。
+
+## h08 / h09：G2 改进通过，但必须接受 G3 的否决
+
+保持同一 loss 与 weight=8，增加到256个去重 TRAIN RBF 中心、length=0.5 后，
+四模型 G2 均通过。CR3 最差轴约0.866°、曲线相对误差0.02226、最低平面相关0.98947。
+UU 全域相对误差约0.0631、UX约0.2019、XX约0.8792；目标 loss 通过不等于整张 Hessian 精确。
+
+h09 严格保持这一 inference 与 loss，换冻结 decoder：CR3 匹配均值约0.72062，
+监督参考0.87197，最大错配约0.67819，故该具体组合 **止步 G3**，不能称统一成功。
+需要同时保留其余模型结果，以及直接 NN Hessian 对照，以区分网络结构失真和 estimator 不足。
+直接 NN 对照单列为 DIAGNOSTIC，不冒充 WY inference。
+
+新的单项假设来自这个失败：区分自身曲率 H_ii 的常量/二次偏差与它受其他 Z 调节的变化。
+`hs_uu_third_repeat_l1 = E |d_(U_j) H_(U_i,U_i)|` 保留所有 j；不同于只看 own third d_i H_ii。
+乘积 z0*z1*z2 的控制例子说明，旋转 z0/z1 后 own third 仍为0，但 d_z2 H_ii 可以检测
+新增自身曲率。这一单项先做 G1，只有观察到与 UX 单项的互补，才考虑新的组合。

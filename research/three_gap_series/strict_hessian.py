@@ -47,7 +47,7 @@ for degree in [1,2]:
             for weight in [0.,.1,1.,10.]:
                 register(f'jd_profile{degree}_strength{strength:g}_self{self_score}_w{weight:g}',
                     family='jd',degree=degree,strength=strength,self_score=self_score,weight=weight)
-for kind in ['self','mixed']:
+for kind in ['self','mixed','repeat']:
     for score in ['l1','lp05','soft01']:
         name=f'uu_third_{kind}_{score}'
         register(name,family='third',kind=kind,score=score)
@@ -161,6 +161,7 @@ class HessianLoss:
             t=self.third[:,:self.d,:self.d,:self.d]
             transformed=np.einsum('ia,jb,kc,nabc->nijk',a,a,a,t,optimize=True)/self.scale
             if s['kind']=='self':v=transformed[:,np.arange(self.d),np.arange(self.d),np.arange(self.d)]
+            elif s['kind']=='repeat':v=transformed[:,np.arange(self.d),np.arange(self.d),:]
             else:
                 mask=np.ones((self.d,)*3,dtype=bool);mask[np.arange(self.d),np.arange(self.d),np.arange(self.d)]=False
                 v=transformed[:,mask]

@@ -28,5 +28,19 @@ class StrictHessianTests(unittest.TestCase):
         self.assertLess(off(r),off(np.eye(d)))
         self.assertGreater(own(r),own(np.eye(d)))
 
+    def test_curvature_modulation_detects_bilinear_rotation_that_own_third_misses(self):
+        # f=z0*z1*z2: rotate only z0/z1. Pure own third remains zero,
+        # but d_z2 H_ii exposes the self curvature produced by that rotation.
+        n=8;d=3;h=np.zeros((n,4,4));h[:,0,1]=h[:,1,0]=1
+        t=np.zeros((n,3,3,3))
+        import itertools
+        for ijk in itertools.permutations(range(3)):t[(slice(None),*ijk)]=1
+        fields=dict(h=h,third=t,strict_x=np.linspace(-1,1,n)[:,None])
+        r=np.eye(d);r[:2,:2]=np.array([[1.,1.],[-1.,1.]])/np.sqrt(2)
+        own=HessianLoss(fields,np.eye(d),d,'hs_uu_third_self_l1')
+        modulation=HessianLoss(fields,np.eye(d),d,'hs_uu_third_repeat_l1')
+        self.assertAlmostEqual(own(r),own(np.eye(d)),places=12)
+        self.assertGreater(modulation(r),modulation(np.eye(d)))
+
 
 if __name__=='__main__':unittest.main()

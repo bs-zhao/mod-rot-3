@@ -15,6 +15,7 @@ def main():
         j=json.loads(path.read_text(encoding='utf8'));a=j['args']
         if not a['metric'].startswith('hs_'):continue
         label=a['label'];stage=j.get('stage','G1' if a['source']=='formula' and a['estimator']=='direct' else 'G2' if a['source']=='formula' else 'G3')
+        if a['source']=='decoder' and a['estimator']=='direct':stage='DECODER_DIRECT_DIAGNOSTIC'
         old_rule=label.startswith(('h01_','h02_'))
         unmotivated=label.startswith('h03_') and j['matrix_metrics_best']['specification'].get('weight',0)!=0
         # User later explicitly accepted the 5.796-degree result and asked
@@ -35,7 +36,7 @@ def main():
         status=('SUPERSEDED_EXACT_AXIS_RULE' if old_rule else 'EXPLORATORY_UNMOTIVATED_COMBINATION' if unmotivated else f'PASSED_{stage}' if passed else f'FAILED_{stage}' if passed is False else 'NOT_ASSESSED')
         record=dict(round=label,model=a['model'],channel=a['channel'],structure_link=a.get('structure_link','native'),
             metric=a['metric'],stage=stage,estimator=a['estimator'],status=status,
-            axis_error_degrees=j.get('worst_axis_error_degrees'),g1_exact=j.get('gap1_strict_pass'),
+            axis_error_degrees=j.get('worst_axis_error_degrees') if a['source']=='formula' else None,g1_exact=j.get('gap1_strict_pass'),
             g1_angle=g1_revised if stage=='G1' else j.get('gap1_angle_pass'),g1_original_angle_flag=j.get('gap1_angle_pass'),
             g2_curve_error=j.get('gap2_audit',{}).get('curve_relative_error'),
             g2_min_curve_correlation=j.get('gap2_audit',{}).get('minimum_plane_correlation'),
@@ -46,7 +47,7 @@ def main():
             inference_signature=json.dumps({k:a.get(k) for k in ['estimator','degree','ridge','train_rows','train_subjects','neighbors','bandwidth','rbf_centers','rbf_length','utility_ridge']},sort_keys=True),
             result=path.relative_to(HERE).as_posix())
         records.append(record)
-        if not old_rule and not unmotivated:
+        if not old_rule and not unmotivated and stage in ['G1','G2','G3']:
             key=(a['metric'],a['channel'],a.get('structure_link','native'),a.get('uu_full_domain',False),a.get('hessian_grid',0),a.get('grid_stimuli',0),a['samples'],a['seed'])
             sets[key].append(record)
     summary=[]
