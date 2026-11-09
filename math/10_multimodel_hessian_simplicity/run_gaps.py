@@ -308,24 +308,70 @@ def process_model(model,args,root,out):
     return landscapes,meta,base_dir
 
 
-def cross_summary(rows):
+def cross_summary(rows, expected_models=None):
+    """Coverage-aware comparison: never rank C1-only wins as 4-model wins.
+
+    'conditions' means plane x output channel x estimator. Number of
+    pairwise planes depends on actual theory dimension: C3 has 15, not 6.
+    Each stage comparison is ranked separately, and flat curves retain NaN
+    correlations rather than being declared a match.
+    """
+    expected_models=list(expected_models or sorted({r["model"] for r in rows}))
+    methods=sorted({r["method"] for r in rows})
+    channels=sorted({r["channel"] for r in rows})
+    expected_n=sum(DIMENSIONS[m][0]*(DIMENSIONS[m][0]-1)//2
+                   for m in expected_models)*len(methods)*len(channels)
     buckets={}
     for r in rows:
         buckets.setdefault((r["metric"],r["comparison"]),[]).append(r)
     summary=[]
     for (metric,comp),v in buckets.items():
-        rs=[float(r["curve_r"]) for r in v if np.isfinite(float(r["curve_r"]))]
-        near=[int(r["b_near_true_axis"]) for r in v]
-        summary.append(dict(metric=metric,comparison=comp,
-            conditions=len(v),finite_r_conditions=len(rs),
-            median_curve_r=float(np.median(rs)) if rs else float("nan"),
-            near_axis_fraction=float(np.mean(near)),
-            median_shape_rmse=float(np.median([float(r["normalized_shape_rmse"]) for r in v]))))
-    summary.sort(key=lambda r:(r["comparison"],-r["near_axis_fraction"],
-                               -r["median_curve_r"] if np.isfinite(r["median_curve_r"]) else 1e12,
-                               r["metric"]))
+        present={r["model"] for r in v}
+        finite=[float(r["curve_r"]) for r in v
+                if np.isfinite(float(r["curve_r"]))]
+        per_model=[]
+        for model in expected_models:
+            sub=[r for r in v if r["model"]==model]
+            if not sub:
+                continue
+            rvals=[float(r["curve_r"]) for r in sub
+                   if np.isfinite(float(r["curve_r"]))]
+            per_model.append(dict(
+                model=model,near=np.mean([int(r["b_near_true_axis"]) for r in sub]),
+                both=np.mean([int(r["a_near_true_axis"]) and
+                              int(r["b_near_true_axis"]) for r in sub]),
+                median_r=float(np.median(rvals)) if rvals else float("nan")))
+        coverage=float(len(v)/expected_n) if expected_n else 0.
+        mm=[x["median_r"] for x in per_model if np.isfinite(x["median_r"])]
+        summary.append(dict(
+            metric=metric,comparison=comp,
+            models_covered=len(present),
+            model_names_covered=";".join(sorted(present)),
+            model_coverage_fraction=len(present)/len(expected_models),
+            conditions=len(v),expected_conditions=expected_n,
+            condition_coverage_fraction=coverage,
+            full_coverage=int(len(present)==len(expected_models) and
+                              len(v)==expected_n),
+            finite_r_conditions=len(finite),
+            median_curve_r=float(np.median(finite)) if finite else float("nan"),
+            near_axis_fraction=float(np.mean([int(r["b_near_true_axis"]) for r in v])),
+            both_near_axis_fraction=float(np.mean([
+                int(r["a_near_true_axis"]) and int(r["b_near_true_axis"]) for r in v])),
+            min_model_near_axis_fraction=float(min(x["near"] for x in per_model)),
+            min_model_both_near_fraction=float(min(x["both"] for x in per_model)),
+            min_model_median_curve_r=float(min(mm)) if mm else float("nan"),
+            median_shape_rmse=float(np.median([
+                float(r["normalized_shape_rmse"]) for r in v]))))
+    # FIRST reject partial coverage, THEN compare the weakest model.
+    def score(r):
+        mr=r["min_model_median_curve_r"]
+        return (r["comparison"],-r["full_coverage"],
+                -r["model_coverage_fraction"],-r["condition_coverage_fraction"],
+                -r["min_model_both_near_fraction"],
+                -r["min_model_near_axis_fraction"],
+                -mr if np.isfinite(mr) else float("inf"),r["metric"])
+    summary.sort(key=score)
     return summary
-
 
 def parse_args(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
@@ -391,7 +437,7 @@ def main(argv=None):
                              metric_shortlist=meta["gap1_shortlist_count"]))
     args.output.mkdir(parents=True,exist_ok=True)
     write_csv(args.output/"all_models_landscape_comparisons.csv",allrows)
-    write_csv(args.output/"cross_model_threeway_ranking.csv",cross_summary(allrows))
+    write_csv(args.output/"cross_model_threeway_ranking.csv",cross_summary(allrows,modelnames))
     (args.output/"manifest.json").write_text(json.dumps(
         dict(models=modelnames,artifact_source="real S1/S3/S5 only",runs=manifest,
              gap1_directory=str(args.gap1_dir),sequential_stage="Gap1 then paired Gap2+Gap3",
