@@ -2,6 +2,8 @@
 
 > **独立研究维度与方法目录**：[真实生成模型 C1/C2/C3/CR3](TOY_GENERATIVE_MODELS.md) · [从 ZXY 提取 Hessian 的统计估计器 e](HESSIAN_FROM_ZXY_METHODS.md) · [积分/求平均的评价域、测度与权重 Q](HESSIAN_INTEGRATION_AND_AVERAGING.md) · [从 Hessian 函数获得数值矩阵的 20 类指标 a](HESSIAN_TO_MATRIX_METRICS.md) · **[Hessian 两个正交操作：消除 W 依赖 D × 输出形状 P](HESSIAN_FUNCTIONAL_OPERATIONS.md)**。不必强制所有指标先经过固定 n×n 数值矩阵；标量简单性 k 是另一层目标定义。
 
+> **历史归档（2026-11-09）**：[Hessian 指标与相关讨论完整档案](history/README.md)——M01–M20、E01–E14、D/P/Q、非线性与交互、Z–Z/Z–X 分块、Sobol 对照、三种 Y、45° 旋转反例；归档不等于指标已验证成功。
+
 > **目的**：用一份长期维护的框架文档明确研究中的不同层次、实验因素、比较对象和评价标准。本文是**研究架构说明**，不是新的运行器，也不改变已有 NP、math 或 rotations 项目。  
 > **日期**：2026-11-07。当前聚焦 C1、C2、C3、CR3；后续允许增加模型、估计器、积分方式和复杂度指标。  
 > **核心分离**：生成数据、NP 表征、Y 的类型与来源、Hessian 数值估计器 e、**积分与平均方案 Q**、**Hessian → 数值矩阵指标 a**、标量简单性 k、旋转搜索和 Hessian 准确性诊断必须分别定义。
