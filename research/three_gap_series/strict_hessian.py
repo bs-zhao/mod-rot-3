@@ -64,6 +64,12 @@ for degree in [1,2]:
     for strength in [0.,1.]:
         register(f'jd_mean_profile{degree}_strength{strength:g}',family='jd',degree=degree,
             strength=strength,self_score='l1',weight=0.,aggregation='mean_then_outer')
+for component in ['self','modulation']:
+    for score in ['soft','cap','log']:
+        for threshold in [.03,.1]:
+            name=f'nonlinearity_{component}_{score}_t{threshold:g}'
+            register(name,family='curvature_support',component=component,score=score,threshold=threshold)
+            if component=='modulation':CATALOG['hs_'+name]['order']=3
 
 
 def is_combination(metric):
@@ -103,9 +109,14 @@ class HessianLoss:
         self.ux_moment=np.einsum('nap,nbp->pab',self.ux,self.ux,optimize=True)/self.n
         sd=np.sqrt(np.diag(covariance))
         u=self.uu*sd[None,:,None]*sd[None,None,:];x=self.ux*sd[None,:,None]
-        self.scale=max(float(np.sqrt(np.mean(np.sum(u*u,axis=(1,2)))+np.mean(np.sum(x*x,axis=(1,2))))),1e-12)
+        self.uu_energy=float(np.mean(np.sum(u*u,axis=(1,2))));self.ux_energy=float(np.mean(np.sum(x*x,axis=(1,2))))
+        self.scale=max(float(np.sqrt(self.uu_energy+self.ux_energy)),1e-12)
         self.third=fields.get('uu_t',fields.get('third'))
         self.third_is_zero=self.third is not None and not np.any(self.third)
+        self.third_energy=0.
+        if self.third is not None:
+            t=self.third[:,:d,:d,:d]*sd[None,:,None,None]*sd[None,None,:,None]*sd[None,None,None,:]
+            self.third_energy=float(np.mean(np.sum(t*t,axis=(1,2,3))))
         if self.spec['order']==3 and self.third is None:raise ValueError('Third derivative of Hessian required')
         self.profiles={}
         for degree in [1,2]:
@@ -165,6 +176,18 @@ class HessianLoss:
             return penalty(v,s['score'],axis,s.get('k',1))
         if family=='profile':return penalty(self._ux(a,f'profile{s["degree"]}'),s['score'],-2,s.get('k',1))
         if family=='uu':return penalty(self._uu(a,s['stat'],s['part']),s['score'])
+        if family=='curvature_support':
+            if s['component']=='self':
+                energy=self.uu_energy;curvature=self._uu(a,'rms','self')*self.scale
+            else:
+                energy=self.third_energy;value=self._third_values(a,'repeat')*self.scale
+                curvature=np.sqrt(np.mean(value*value,axis=(0,2)))
+            strength=energy/max(energy+self.uu_energy+self.ux_energy if s['component']=='modulation' else self.uu_energy+self.ux_energy,1e-30)
+            ratio=curvature/max(s['threshold']*np.sqrt(energy),1e-30)
+            if s['score']=='soft':score=np.mean(ratio*ratio/(1+ratio*ratio))
+            elif s['score']=='cap':score=np.mean(np.minimum(ratio,1))
+            else:score=np.mean(np.log1p(ratio))
+            return float(strength*score)
         if family=='jd':
             transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
             off=transformed[:,~np.eye(self.d,dtype=bool)]
@@ -210,6 +233,7 @@ class HessianLoss:
             raw=penalty(curvature,self.spec['self_score'])
             parts=dict(hessian_profile_jd=joint,curvature_raw=raw,curvature_weight=self.spec['weight'],curvature_weighted=self.spec['weight']*raw,total=joint+self.spec['weight']*raw)
         return dict(category='Hessian-only, model-blind M1/M3',specification=self.spec,loss_components=parts,
+                    block_energy_reference=dict(uu=self.uu_energy,ux=self.ux_energy,third=self.third_energy),
                     joint_operators=self.joint_operators,
                     fixed_block_scale=self.scale,uu_diag_rms=self._uu(a,'rms','self'),
                     uu_off_rms=self._uu(a,'rms','off'),ux_rms=self._ux(a,'rms'),
