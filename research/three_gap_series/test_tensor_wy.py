@@ -15,6 +15,7 @@ class TensorWYTests(unittest.TestCase):
         got=torch.func.hessian(fitted.value)(q).detach().numpy()
         expected=torch.func.hessian(exact)(q).detach().numpy()
         np.testing.assert_allclose(got,expected,atol=2e-6)
+        self.assertAlmostEqual(fitted.predict_subject(q.numpy()[:2],q.numpy()[None,2:])[0],float(fitted.value(q)),places=10)
         self.assertFalse(fitted.info['model_identity_used'])
 
 

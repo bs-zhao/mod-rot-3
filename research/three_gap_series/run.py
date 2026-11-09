@@ -179,9 +179,8 @@ def tensor_fields(args,c,fn,w,v,protocol,third,extra_w=None):
             fields['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(extra_w).split(16)])
     sse=0.;nval=0
     for sid,x,y in zip(ids_used[1],*tables[1]):
-        query=np.column_stack((np.repeat(v[sid][None],len(x),axis=0),x))
-        with torch.no_grad():prediction=torch.vmap(estimated)(torch.tensor(query)).numpy()
-        if args.channel=='probability' and args.structure_link=='native':y=expit(y)
+        prediction=fit.predict_subject(v[sid]@hidden.T,x)
+        if args.channel=='probability' and args.structure_link=='native':y=expit(y);prediction=expit(prediction)
         sse+=float(np.sum((prediction-y)**2));nval+=len(y)
     reference=derivatives(structure_function(fn,args),w,d,third,False)
     errors={key:float(np.linalg.norm(fields[key]-reference[key])/max(np.linalg.norm(reference[key]),1e-20)) for key in ['g','h']+(['third'] if third else [])}

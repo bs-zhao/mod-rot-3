@@ -60,6 +60,10 @@ class TensorWY:
         self._tensors=tuple(torch.tensor(a) for a in [self.powers,self.zweights,self.xbasis.powers_,self.xweights,self.centers,self.xscale,self.coefficient])
         return self
 
+    def predict_subject(self,z,x):
+        phi=self.zbasis.transform(np.asarray(z)[None])*self.zweights
+        return ((phi@self.coefficient)@(self.xfeatures(x)/self.xscale).T).ravel()
+
     def value(self,w):
         powers,zw,xpowers,xw,centers,xscale,coef=self._tensors
         z=w[:self.d];x=w[self.d:];zf=torch.ones(len(zw),dtype=w.dtype,device=w.device)

@@ -1,0 +1,19 @@
+{
+  "component_runs": [
+    "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfge39f5b343922/summary.json",
+    "results/h04_single_components/C1_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfge39f5b343922/summary.json",
+    "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd1f842f81486/summary.json",
+    "results/h04_single_components/C2_beta0.0005_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfgd1f842f81486/summary.json",
+    "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfgd909fc250745/summary.json",
+    "results/h04_single_components/C3_beta0.0005_zdim6_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfgd909fc250745/summary.json",
+    "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_jd_profile1_strength0_selfl1_w0/s20261127_n1024_cfg5e0f134adf1b/summary.json",
+    "results/h04_single_components/CR3_beta5e-05_zdim4_pca0/formula/logit/direct/hs_uu_self_local_l1/s20261127_n1024_cfg5e0f134adf1b/summary.json"
+  ],
+  "complementarity": "Pure Hessian-UX profile JD passes C1-C3 and the CR3 alpha-gamma plane, but fails five other CR3 planes. UU self mean absolute curvature is flat for C1-C3, recovers those five CR3 planes, and fails alpha-gamma. Same Q and seed in h04.",
+  "weight_rule": "Single-loss complementarity is unchanged. Weight 8 failed the new-seed full-dimensional G1 test at 5.796 degrees despite passing every plane. Increase only the self-curvature coefficient to 10 to oppose the observed simultaneous alpha/tau and gamma/tau leakage. 10 stays inside the all-model five-degree plane-feasible interval [4.9545,15.3109]. Same fixed coefficient in every model; no decoder T, no broad weight sweep. Require all-model 64-start G1 confirmation before inference.",
+  "weight": 10,
+  "source_label": "h04_single_components",
+  "new_confirmation_label": "h06_complementarity_joint",
+  "channel": "logit",
+  "scope": "Hessian-only; no model-specific operators or stimulus templates"
+}
