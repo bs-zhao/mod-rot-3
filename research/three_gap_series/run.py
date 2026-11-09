@@ -222,6 +222,25 @@ def anchor_fields(args,c,fn,v,protocol):
                 warning='Some anchors are dominated/degenerate lotteries absent from training; extrapolation, not original-table inference')
     return fields,info
 
+def cross_mean_fields(args,c,fn,v,protocol):
+    """Q06 on actual CR3 interior bank: average signed full fields over Z first."""
+    if args.estimator not in ['direct','finite_difference']:
+        raise ValueError('Full-field subject mean currently supports direct or E09 query inference')
+    data=c['data'];sub=data['subject_index'];xx=data['x'];ti=data['trial_index']
+    ix=np.flatnonzero(sub==0);ix=ix[np.argsort(ti[ix])]
+    bank=xx[ix];valid=(bank[:,[0,1,3,4]]>1).all(1)&(bank[:,[2,5]]>.03).all(1)&(bank[:,[2,5]]<.97).all(1)
+    rng=np.random.default_rng(args.seed+819)
+    stim=rng.choice(np.flatnonzero(valid),min(args.mean_stimuli,int(valid.sum())),replace=False)
+    ids=rng.choice(c['splits']['train'],min(args.mean_subjects,len(c['splits']['train'])),replace=False)
+    x=(bank[stim]-protocol['x_mean'])/protocol['x_sd'];k=len(x);d=c['d']
+    query=np.concatenate((np.repeat(v[ids],k,axis=0),np.tile(x,(len(ids),1))),axis=1)
+    target=structure_function(fn,args)
+    f=derivatives(target,query,d,False) if args.estimator=='direct' else numerical_fields(target,query,d,args.step)
+    fields={key:value.reshape(len(ids),k,*value.shape[1:]).mean(0) for key,value in f.items()}
+    return fields,dict(protocol='Q06 TRAIN subjects x actual interior bank; signed full derivatives averaged over subjects first',
+                       mean_subject_ids=ids,bank_trial_ids=stim,domain_fraction=float(valid.mean()),query_points=len(query),
+                       final_field_points=k,capabilities=['mean_F1','mean_F2_ZZ','mean_F2_ZX','mean_F2_XX'])
+
 def main():
     p=argparse.ArgumentParser(__doc__)
     p.add_argument('--repo',default=str(Path(__file__).resolve().parents[2]))
@@ -241,6 +260,8 @@ def main():
     p.add_argument('--structure-link',choices=['native','log_odds'],default='native')
     p.add_argument('--subject-mean',type=int,choices=[0,1],default=0)
     p.add_argument('--mean-subjects',type=int,default=128)
+    p.add_argument('--field-mean',type=int,choices=[0,1],default=0)
+    p.add_argument('--mean-stimuli',type=int,default=64)
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.channel=='binary' and args.estimator not in ['polynomial','stimulus']:
         raise ValueError('Binary observations require a Bernoulli sieve; use --estimator polynomial')
@@ -248,6 +269,8 @@ def main():
         raise ValueError('Subject-mean currently requires CR3 conditional canonical-logit direct or bank fields')
     if args.metric=='conditional_anchor' and args.channel!='logit' and args.structure_link!='log_odds':
         raise ValueError('Additional anchor experiment currently targets canonical log odds only')
+    if args.field_mean and (args.model!='CR3' or args.metric.startswith(('conditional_','signature_')) or args.metric=='zzx_mixed_rms'):
+        raise ValueError('Full-field subject mean currently supports CR3 F2 metrics only')
     c=load(args); d=c['d']; nangle=d*(d-1)//2
     out=Path(__file__).resolve().parent/'results'/args.label/f'{args.model}_beta{args.beta:g}_zdim{args.zdim}_pca{args.pca}'/args.source/args.channel/args.estimator/args.metric/f'seed{args.seed}'
     config={k:value for k,value in vars(args).items() if k not in ['repo','label','metric']}
@@ -270,7 +293,10 @@ def main():
         if cache.with_suffix('.json').exists():
             estimator_info=json.loads(cache.with_suffix('.json').read_text())
     else:
-        if args.metric=='conditional_anchor':
+        if args.field_mean:
+            fields,estimator_info=cross_mean_fields(args,c,fn,v,protocol)
+            dump(cache.with_suffix('.json'),estimator_info)
+        elif args.metric=='conditional_anchor':
             fields,estimator_info=anchor_fields(args,c,fn,v,protocol)
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.estimator=='polynomial':
