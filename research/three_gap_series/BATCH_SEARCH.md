@@ -127,3 +127,11 @@ RBF 的 latent H 与三阶变化均用已拟合函数的解析公式计算，并
 现有 Gaussian、ANOVA、五阶多项式与 latent Gaussian 代理的 CR3 decoder UX 相对误差仍接近 1，
 因此增加 `nn_direct_diagnostic`：G3 换为冻结网络自身的精确 Hessian，隔离 M2 误差与 M1 偏好。
 这不是数值 WY inference 的成功，运行器与报告均禁止将它记作跨三 gap 通用解。
+
+## B09：局部交互模式与幅度分开
+
+按 Hessian 张量与 TRAIN 协方差的内积计算局部能量，比较逐评价点、逐被试、逐刺激的共同幅度归一化，
+然后施加已有单一稀疏度。能量为 `tr(H_UU Cov H_UU Cov)+tr(H_UXᵀ Cov H_UX)`，
+不使用响应或响应梯度，权重在 R 搜索中固定。
+这检验原始幅度变化是否掩盖交互模式；不是对多个 loss 调权。
+所有分量使用共同可微网格，并有不加权的同域对照，防止把换域误当作归一化改善。

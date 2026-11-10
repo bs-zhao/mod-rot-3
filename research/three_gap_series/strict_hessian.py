@@ -170,6 +170,10 @@ for original in ['hs_ux_rms_soft003','hs_b01_ux_rms_soft_t0.05_reference','hs_b0
     'hs_b05_taylor_fit2_order3_lp05','hs_ux_rms_l2sq']:
     for axis_scale in ['conditional','geometric','isotropic']:
         CATALOG['hs_b08_'+original.removeprefix('hs_')+'_'+axis_scale]=dict(CATALOG[original],axis_scale=axis_scale)
+for original in ['hs_ux_rms_soft003','hs_ux_rms_l1','hs_b02_unique_edges_soft_t0.02','hs_b02_unique_edges_log01',
+    'hs_b06_rank_degree1_edges_schatten05','hs_b07_nonlinear_axes_global_log0.3']:
+    for field_scale in ['common','point','subject','stimulus']:
+        CATALOG['hs_b09_'+original.removeprefix('hs_')+'_'+field_scale]=dict(CATALOG[original],field_scale=field_scale)
 
 
 def reference_sd(covariance,kind='marginal'):
@@ -238,6 +242,9 @@ class HessianLoss:
     def __init__(self,fields,covariance,d,metric):
         if 'h' not in fields:raise ValueError('Hessian required, missing F2 cannot be treated as zero')
         self.spec=CATALOG[metric];self.metric=metric;self.d=d;self.cov=covariance
+        if 'field_scale' in self.spec and fields.get('_field_scaled')!=self.spec['field_scale']:
+            from field_normalization import normalize_hessian_field
+            fields=normalize_hessian_field(fields,covariance,d,self.spec['field_scale'])
         if 'density_quantile' in self.spec:
             if 'strict_rank' not in fields:raise ValueError('Density-restricted Hessian needs numerical TRAIN radius ranks')
             fields=dict(fields);mask=fields['strict_rank']<=self.spec['density_quantile']
