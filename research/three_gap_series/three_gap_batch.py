@@ -29,6 +29,9 @@ def reference_path(label,model):
 
 def ensure_reference(args,stage):
     if stage=='G1':return reference_path('h13_modulation_combination_g1',args.model)
+    if args.inference=='nn_direct_diagnostic':
+        if stage=='G2':return reference_path('h08_g2_resolution',args.model)
+        if args.model=='CR3':return reference_path('h11_decoder_direct_diagnostic',args.model)
     if args.inference=='gaussian256':return reference_path('h08_g2_resolution' if stage=='G2' else 'h09_g3_frozen_decoder',args.model)
     label=f'b01_fields_{args.inference}_{stage}'
     existing=list((ROOT/'results'/label).glob(f'{args.model}_*/**/summary.json'))
@@ -48,6 +51,8 @@ def ensure_reference(args,stage):
         '--train-subjects','3500','--validation-subjects','750','--rbf-centers',str(centers),
         '--rbf-length',str(length),'--utility-ridge',str(stimulus_ridge),'--stimulus-kernel',kernel,'--label',label]
     command+=latent_args
+    if args.inference=='nn_direct_diagnostic':
+        command[command.index('--estimator')+1]='direct'
     logs=ROOT/'results'/'batch_logs';logs.mkdir(exist_ok=True)
     print(args.model,args.inference,'building',stage,'numeric fields',flush=True)
     with (logs/f'{label}_{args.model}.log').open('w',encoding='utf8') as f:
@@ -140,7 +145,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--repo',default=str(ROOT.parents[1]));p.add_argument('--model',choices=['C1','C2','C3','CR3'],required=True)
     p.add_argument('--beta',type=float,required=True);p.add_argument('--zdim',type=int,required=True);p.add_argument('--pca',type=int,required=True,choices=[0,1])
-    p.add_argument('--inference',choices=['gaussian256','anova2','anova3','gaussian512d5','zrbf'],default='gaussian256')
+    p.add_argument('--inference',choices=['gaussian256','anova2','anova3','gaussian512d5','zrbf','nn_direct_diagnostic'],default='gaussian256')
     p.add_argument('--starts',type=int,default=8);p.add_argument('--maxiter',type=int,default=160)
     p.add_argument('--label',default='b01_three_gap_batch');p.add_argument('--only',nargs='+')
     p.add_argument('--prefix',help='Predeclared catalogue family prefix; default hs_b01_')
@@ -190,10 +195,10 @@ def main():
         # Raw latent identity is never reported as a true-parameter axis error.
         row['gaps']['G3']=dict(evaluation=evaluation,oracle=reference,mean_gap=gap,
             pass_gate=bool(gap<=.01 and evaluation['off_max']<=reference['off_max']+.02),
-            eligible=bool(row['gaps']['G1']['pass_gate'] and row['gaps']['G2']['pass_gate']),
+            eligible=bool(row['gaps']['G1']['pass_gate'] and row['gaps']['G2']['pass_gate'] and args.inference!='nn_direct_diagnostic'),
             best={k:v for k,v in best.items() if k!='axis_error'},solutions=[{k:v for k,v in s.items() if k!='axis_error'} for s in solutions],
             rotation_lock_file=str(locked))
-        row['all_local_gates']=all(g['pass_gate'] for g in row['gaps'].values()) and not CATALOG[metric].get('control',False)
+        row['all_local_gates']=all(g['pass_gate'] for g in row['gaps'].values()) and not CATALOG[metric].get('control',False) and args.inference!='nn_direct_diagnostic'
         dump(destination,row);completed.append(metric)
         dump(out/'progress.json',dict(completed=completed,total=len(names),seconds=time.time()-started))
         print(args.model,args.inference,index+1,'/',len(names),metric,

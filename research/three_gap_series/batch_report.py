@@ -50,6 +50,7 @@ def main():
         gates={stage:complete and all(models[m][stage] for m in MODELS) for stage in ['g1','g2','g3']}
         first='PENDING' if not complete else 'FAILED_G1' if not gates['g1'] else 'FAILED_G2' if not gates['g2'] else 'FAILED_G3' if not gates['g3'] else 'ALL_GATES_PROVISIONAL_CONFIRM64'
         if any(r['is_control'] for r in models.values()):first='ENERGY_CONTROL'
+        if inference=='nn_direct_diagnostic':first='NN_DIRECT_DIAGNOSTIC'
         candidates.append(dict(metric=metric,inference=inference,starts=starts,state=first,complete=complete,
             gates=gates,models=models,max_mean_gap=max(r['test_mean_gap'] for r in models.values()),
             max_excess_offmax=max(r['test_offmax']-r['oracle_offmax'] for r in models.values())))
