@@ -14,6 +14,7 @@ def signature(spec):
     spec=dict(spec)
     if spec['family']=='ux':spec.setdefault('normalization','reference')
     if spec.get('score')=='soft@0.03':spec['score']='soft003'
+    if spec['family'] in ['ux','full'] and (spec.get('score') in ['l1','lp05','soft003','soft01'] or spec.get('score','').startswith('soft@')):spec.pop('axis',None)
     if spec.get('score') in ['l1','lp05','soft003'] and spec['family']=='functional':spec.pop('axis',None)
     return json.dumps(spec,sort_keys=True)
 

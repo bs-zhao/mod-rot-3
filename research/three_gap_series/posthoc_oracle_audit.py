@@ -16,7 +16,7 @@ def main():
     p.add_argument('--repo',default=str(ROOT.parents[1]));p.add_argument('--model',choices=['C1','C2','C3','CR3'],required=True)
     p.add_argument('--beta',type=float,required=True);p.add_argument('--zdim',type=int,required=True);p.add_argument('--pca',type=int,required=True)
     args=p.parse_args();context=load(args);cases=[]
-    for folder in ['b01_three_gap_batch','b02_three_gap_batch','b03_three_gap_batch','b04_three_gap_batch']:
+    for folder in [f'b{i:02d}_three_gap_batch' for i in range(1,8)]:
         for path in (ROOT/'results'/folder/args.model/'gaussian256'/'starts8').glob('hs_*.json'):
             if path.stem.endswith('_rotation'):continue
             j=json.loads(path.read_text(encoding='utf8'))

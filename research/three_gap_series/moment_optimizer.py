@@ -22,7 +22,7 @@ class MomentObjective:
     def __init__(self,loss):
         self.loss=loss;self.s=loss.spec;self.d=loss.d
         for name in ['cov','ux_moment','xm','common_uu_moment','common_uu_mean','functional_operators','operator_matrices',
-                     'subject_ux_moment','subject_uu_moment','subject_scale']:
+                     'subject_ux_moment','subject_uu_moment','subject_scale','uu_moment']:
             value=getattr(loss,name)
             setattr(self,name,None if value is None else torch.tensor(value,dtype=torch.float64))
         self.taylor_tensors=None if loss.taylor_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.taylor_tensors)
@@ -59,6 +59,15 @@ class MomentObjective:
     def __call__(self,angles):
         r=rotation_torch(angles,self.d);a=torch.sqrt(torch.diag(r@self.cov@r.T))[:,None]*r
         s=self.s;family=s['family']
+        if family=='nonlinear_axes':
+            transform=torch.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)
+            square=torch.clamp((transform@self.uu_moment*transform).sum(dim=1),min=0).reshape(self.d,self.d)
+            own=self.root(torch.diag(square))
+            if s['normalization']=='global':denominator=max(np.sqrt(self.loss.uu_energy),1e-12)
+            elif s['normalization']=='row':denominator=torch.clamp(self.root(square.sum(dim=1)),min=1e-12)
+            else:denominator=torch.clamp(self.root(torch.clamp(torch.einsum('ia,pab,ib->i',a,self.ux_moment,a),min=0)),min=1e-12)
+            ratio=own/denominator/s['threshold']
+            return (ratio*ratio/(1+ratio*ratio)).mean() if s['score']=='soft' else torch.log1p(ratio).mean()
         if family=='rank':
             hx,hu=self.rank_tensors;ux=torch.einsum('ia,apuv->ipuv',a,hx)
             matrices=ux.reshape(-1,*ux.shape[-2:])

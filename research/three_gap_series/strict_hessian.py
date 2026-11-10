@@ -158,6 +158,11 @@ for degree in [1,2]:
     for part in ['ux','edges']:
         for score in ['schatten1','schatten05','log01','soft@0.003','soft@0.01','soft@0.03','soft@0.1']:
             register(f'b06_rank_degree{degree}_{part}_'+score.replace('@','_t'),family='rank',degree=degree,part=part,score=score)
+for normalization in ['global','row','ux']:
+    for threshold in [.03,.1,.2,.3,.5]:
+        for score in ['soft','log']:
+            register(f'b07_nonlinear_axes_{normalization}_{score}{threshold:g}',family='nonlinear_axes',
+                normalization=normalization,threshold=threshold,score=score)
 
 
 def is_combination(metric):
@@ -383,6 +388,13 @@ class HessianLoss:
         sd=np.sqrt(np.diag(r@self.cov@r.T))
         a=sd[:,None]*np.linalg.inv(r).T
         s=self.spec;family=s['family']
+        if family=='nonlinear_axes':
+            matrix=self._uu(a,'rms','all')*self.scale;own=np.diag(matrix)
+            if s['normalization']=='global':denominator=max(np.sqrt(self.uu_energy),1e-12)
+            elif s['normalization']=='row':denominator=np.maximum(np.sqrt(np.sum(matrix*matrix,axis=1)),1e-12)
+            else:denominator=np.maximum(np.sqrt(np.sum((self._ux(a,'rms')*self.scale)**2,axis=1)),1e-12)
+            ratio=own/denominator/s['threshold']
+            return float(np.mean(ratio*ratio/(1+ratio*ratio) if s['score']=='soft' else np.log1p(ratio)))
         if family=='rank':
             from functional_rank import rank_score
             return rank_score(self._rank(a),s['score'])
