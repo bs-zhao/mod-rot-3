@@ -5,6 +5,16 @@ from tensor_wy import TensorWY
 
 
 class TensorWYTests(unittest.TestCase):
+    def test_latent_gaussian_derivatives_match_the_fitted_surrogate(self):
+        rng=np.random.default_rng(992);z=rng.normal(size=(90,2));x=rng.normal(size=(100,2))
+        ys=[np.sin(zz[0])*x[:,0]+np.cos(zz[1])*x[:,0]*x[:,1] for zz in z]
+        fit=TensorWY(2,1e-6,1e-5,12,1.,1,latent_kernel='gaussian',latent_centers=24).fit(z,[x for _ in z],ys)
+        q=torch.tensor([.2,-.4,.5,.3],dtype=torch.float64)
+        self.assertAlmostEqual(float(fit.value(q)),fit.predict_subject(q.numpy()[:2],q.numpy()[None,2:])[0],places=10)
+        h=torch.func.hessian(fit.value)(q).numpy();t=torch.func.jacfwd(torch.func.hessian(fit.value))(q).numpy()
+        fields=fit.latent_fields(q.numpy()[None,:2],q.numpy()[None,2:],True)
+        np.testing.assert_allclose(fields['h'][0],h[:2,:2],atol=1e-10)
+        np.testing.assert_allclose(fields['third'][0],t[:2,:2,:2],atol=1e-10)
     def test_anova_kernel_value_and_derivatives_use_same_generic_dictionary(self):
         rng=np.random.default_rng(202);z=rng.normal(size=(50,2));x=rng.normal(size=(70,3))
         tables=[x for _ in z]

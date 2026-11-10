@@ -180,7 +180,8 @@ def tensor_fields(args,c,fn,w,v,protocol,third,extra_w=None):
             for x,count_ in zip(xs,counts):xt.append(x);yt.append(y[start:start+count_]);start+=count_
         tables.append((xt,yt))
     hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d)
-    fit=TensorWY(args.degree,args.ridge,args.utility_ridge,args.rbf_centers,args.rbf_length,args.seed,args.stimulus_kernel).fit(v[ids_used[0]]@hidden.T,*tables[0])
+    fit=TensorWY(args.degree,args.ridge,args.utility_ridge,args.rbf_centers,args.rbf_length,args.seed,args.stimulus_kernel,
+        args.latent_kernel,args.latent_centers,args.latent_length).fit(v[ids_used[0]]@hidden.T,*tables[0])
     def estimated(q):
         eta=fit.value(torch.cat((q[:d]@torch.tensor(hidden).T,q[d:])))
         return torch.sigmoid(eta) if args.channel=='probability' and args.structure_link=='native' else eta
@@ -454,6 +455,9 @@ def main():
     p.add_argument('--rbf-centers',type=int,default=64)
     p.add_argument('--rbf-length',type=float,default=1.)
     p.add_argument('--stimulus-kernel',choices=['gaussian','anova2','anova3'],default='gaussian')
+    p.add_argument('--latent-kernel',choices=['polynomial','gaussian'],default='polynomial')
+    p.add_argument('--latent-centers',type=int,default=256)
+    p.add_argument('--latent-length',type=float,default=1.)
     p.add_argument('--field-reference',help='Reuse fixed numerical fields from a compatible Hessian-only summary; no old R or T evaluation is consumed')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.metric in HESSIAN_CATALOG and is_combination(args.metric):

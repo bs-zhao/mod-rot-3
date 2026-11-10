@@ -12,10 +12,12 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 class TensorWY:
-    def __init__(self,degree=3,ridge=1e-6,stimulus_ridge=1e-5,centers=64,length=1.,seed=20261127,kernel='gaussian'):
+    def __init__(self,degree=3,ridge=1e-6,stimulus_ridge=1e-5,centers=64,length=1.,seed=20261127,kernel='gaussian',
+                 latent_kernel='polynomial',latent_centers=256,latent_length=1.):
         self.degree=degree;self.ridge=ridge;self.stimulus_ridge=stimulus_ridge
         self.ncenters=centers;self.length=length;self.seed=seed;self.kernel=kernel
         if kernel not in ['gaussian','anova2','anova3']:raise ValueError(kernel)
+        self.latent_kernel=latent_kernel;self.latent_centers=latent_centers;self.latent_length=latent_length
 
     def xfeatures(self,x):
         poly=self.xbasis.transform(x/np.sqrt(x.shape[1]))*self.xweights
@@ -57,24 +59,35 @@ class TensorWY:
             profiles=np.asarray(profiles)
         self.zbasis=PolynomialFeatures(self.degree).fit(z[:1]);self.powers=self.zbasis.powers_
         self.zweights=np.array([math.sqrt(math.factorial(int(a.sum()))/math.prod(math.factorial(int(j)) for j in a)) for a in self.powers])
-        phi=self.zbasis.transform(z)*self.zweights
-        latent_penalty=np.full(phi.shape[1],self.ridge);latent_penalty[0]=0
+        self.zcenters=z[rng.choice(len(z),min(self.latent_centers,len(z)),replace=False)].copy() if self.latent_kernel=='gaussian' else np.empty((0,z.shape[1]))
+        self.zsigma=self.latent_length*max(float(np.sqrt(np.trace(np.cov(z,rowvar=False,bias=True)))),1e-8)
+        phi=self.zfeatures(z)
+        latent_penalty=np.full(phi.shape[1],self.ridge)
+        if self.latent_kernel=='gaussian':latent_penalty[:len(self.powers)]=1e-10
+        latent_penalty[0]=0
         self.coefficient=np.linalg.solve(phi.T@phi/len(phi)+np.diag(latent_penalty),phi.T@profiles/len(phi))
         self.d=z.shape[1]
         self.info=dict(protocol='Generic E02 full latent polynomial x complete quadratic-plus-Gaussian stimulus dictionary',
             assumptions=['Smooth response surface','Complete latent polynomial truncation','Generic isotropic RBF interpolation in original standardized X'],
             model_identity_used=False,latent_degree=self.degree,latent_ridge=self.ridge,stimulus_ridge=self.stimulus_ridge,
-            stimulus_features=q,latent_features=len(self.powers),centers=self.centers,length_scale=self.sigma,
+            stimulus_features=q,latent_features=phi.shape[1],centers=self.centers,length_scale=self.sigma,
             center_rule='Uniform sample without replacement from distinct TRAIN X rows; no model condition groups',
             shared_stimulus_design_detected=shared,train_subjects=len(z),train_rows=sum(len(y) for y in y_tables),
             capabilities=['F0','F1','F2','F3'],warning='Prediction accuracy does not imply Hessian accuracy; fixed X designs require interpolation assumptions')
         self.info['stimulus_kernel']=self.kernel
+        self.info['latent_kernel']=self.latent_kernel;self.info['latent_rbf_centers']=len(self.zcenters);self.info['latent_rbf_length']=self.zsigma
         self.info['kernel_interaction_rule']='All coordinate subsets up to order k, equal averaged weights; no named X groups' if self.kernel!='gaussian' else 'Isotropic Gaussian'
-        self._tensors=tuple(torch.tensor(a) for a in [self.powers,self.zweights,self.xbasis.powers_,self.xweights,self.centers,self.xscale,self.coefficient])
+        self._tensors=tuple(torch.tensor(a) for a in [self.powers,self.zweights,self.xbasis.powers_,self.xweights,self.centers,self.xscale,self.coefficient,self.zcenters])
         return self
 
+    def zfeatures(self,z):
+        polynomial=self.zbasis.transform(z)*self.zweights
+        if not len(self.zcenters):return polynomial
+        radial=np.exp(-np.sum((z[:,None,:]-self.zcenters[None,:,:])**2,axis=2)/(2*self.zsigma**2))
+        return np.column_stack((polynomial,radial))
+
     def predict_subject(self,z,x):
-        phi=self.zbasis.transform(np.asarray(z)[None])*self.zweights
+        phi=self.zfeatures(np.asarray(z)[None])
         return ((phi@self.coefficient)@(self.xfeatures(x)/self.xscale).T).ravel()
 
     def latent_fields(self,z,x,third=False):
@@ -91,7 +104,18 @@ class TensorWY:
             valid=np.all(powers>=0,axis=1)&(factor!=0)
             value=np.ones((n,int(valid.sum())))
             for j in range(d):value*=z[:,j,None]**powers[None,valid,j]
-            return np.sum(value*factor[None,valid]*profiles[:,valid],axis=1)
+            result=np.sum(value*factor[None,valid]*profiles[:,:len(self.powers)][:,valid],axis=1)
+            if len(self.zcenters):
+                delta=z[:,None,:]-self.zcenters[None,:,:];s2=self.zsigma**2
+                radial=np.exp(-np.sum(delta*delta,axis=2)/(2*s2))
+                if len(indices)==1:radial=radial*(-delta[:,:,indices[0]]/s2)
+                elif len(indices)==2:
+                    i,j=indices;radial=radial*(delta[:,:,i]*delta[:,:,j]/s2**2-(i==j)/s2)
+                elif len(indices)==3:
+                    i,j,k=indices;radial=radial*(-delta[:,:,i]*delta[:,:,j]*delta[:,:,k]/s2**3+
+                        ((i==j)*delta[:,:,k]+(i==k)*delta[:,:,j]+(j==k)*delta[:,:,i])/s2**2)
+                result+=np.sum(radial*profiles[:,len(self.powers):],axis=1)
+            return result
         result=dict(value=derivative(()),g=np.empty((n,d)),h=np.empty((n,d,d)))
         for j in range(d):result['g'][:,j]=derivative((j,))
         for j,k in itertools.combinations_with_replacement(range(d),2):result['h'][:,j,k]=result['h'][:,k,j]=derivative((j,k))
@@ -103,7 +127,7 @@ class TensorWY:
         return result
 
     def value(self,w):
-        powers,zw,xpowers,xw,centers,xscale,coef=self._tensors
+        powers,zw,xpowers,xw,centers,xscale,coef,zcenters=self._tensors
         z=w[:self.d];x=w[self.d:];zf=torch.ones(len(zw),dtype=w.dtype,device=w.device)
         for j in range(self.d):
             pp=[torch.ones_like(z[j])]
@@ -120,4 +144,6 @@ class TensorWY:
                 terms.append(sum(torch.prod(one[:,list(ix)],dim=1) for ix in itertools.combinations(range(len(x)),order))/math.comb(len(x),order))
             radial=sum(terms)/len(terms)
         features=torch.cat((xf*xw,radial))/xscale
-        return ((zf*zw)@coef)@features
+        zfeatures=zf*zw
+        if len(zcenters):zfeatures=torch.cat((zfeatures,torch.exp(-torch.sum((z[None]-zcenters)**2,dim=1)/(2*self.zsigma**2))))
+        return (zfeatures@coef)@features
