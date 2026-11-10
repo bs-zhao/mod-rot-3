@@ -53,7 +53,7 @@ def scan(data,fit,output,pair=(0,1),step=5.,detector='fd',n_eval=96,seed=31,
                         'zx_effective_degree':result['zx_effective_degree'],
                         'cr3_stimulus_modulation_l1':float(np.nansum(result.get('valid_stimulus_z_modulation',[])))
                                 if meta['model']=='CR3' else None})
-    (output/'rotation_curve.json').write_text(json.dumps({'model':meta['model'],'detector':detector,
+    (output/'rotation_curve.json').write_text(json.dumps({'model':meta['model'],'label':meta['label'],'detector':detector,
         'oracle_scale':oracle_scale,'pair':list(pair),'records':records},indent=2),encoding='utf8')
     import matplotlib;matplotlib.use('Agg')
     import matplotlib.pyplot as plt

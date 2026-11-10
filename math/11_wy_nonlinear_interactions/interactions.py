@@ -200,5 +200,6 @@ if __name__=='__main__':
     predict=(lambda x:m.predict_proba(x)[:,1]) if info['method']=='ebm' and meta['label']=='bernoulli' else m.predict
     matrix,details=detect(predict,W,meta['z_dim'],meta['model'],args.detector,args.n_eval,args.seed,
                           args.order,m if info['method']=='mlp' and args.detector=='hessian' else None)
+    details.update({'model':meta['model'],'target_scale':meta['label']})
     save_result(matrix,details,args.output,meta)
     print(json.dumps(details,indent=2))

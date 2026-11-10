@@ -12,6 +12,11 @@ def score(estimated,oracle,out,threshold=.05):
     T=np.loadtxt(oracle/'interaction_matrix.csv',delimiter=',')
     a=json.loads((estimated/'interaction.json').read_text())
     b=json.loads((oracle/'interaction.json').read_text())
+    expected={'bernoulli':'prob','prob':'prob','softplus':'softplus','logit':'logit'}
+    if a.get('model')!=b.get('model'):
+        raise ValueError('Model mismatch')
+    if expected.get(a.get('target_scale'))!=b.get('target_scale'):
+        raise ValueError('Estimator and oracle use different output scales')
     if a['detector']!=b['detector']:
         raise ValueError('Detector estimands differ: cannot compare Hessian with Friedman/ANOVA')
     if E.shape!=T.shape:raise ValueError('Matrix shapes differ')

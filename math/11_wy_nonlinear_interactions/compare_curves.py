@@ -10,6 +10,9 @@ def compare(estimated,oracle,output,metric='zx_effective_degree'):
     e=json.loads(Path(estimated).read_text());o=json.loads(Path(oracle).read_text())
     if e['model']!=o['model'] or e['pair']!=o['pair']:
         raise ValueError('Must compare same model and rotation plane')
+    expected={'bernoulli':'prob','prob':'prob','logit':'logit','softplus':'softplus'}
+    if expected.get(e.get('label'))!=o.get('oracle_scale'):
+        raise ValueError('Must compare matching target scales')
     em={r['rotation']:r for r in e['records']};om={r['rotation']:r for r in o['records']}
     keys=[k for k in em if k in om and em[k].get(metric) is not None and om[k].get(metric) is not None]
     if not keys:raise ValueError(f'No comparable scores for {metric}')

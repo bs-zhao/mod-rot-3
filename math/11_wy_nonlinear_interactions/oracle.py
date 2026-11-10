@@ -48,11 +48,11 @@ def evaluate(data,output,scale='prob',detector='fd',n_eval=96,seed=31,order=3):
     with np.load(data/'oracle_reference.npz') as d:
         W=np.asarray(d['W']);eta_ref=np.asarray(d['eta'])
     predict=oracle_predict(meta['model'],meta['z_dim'],scale)
-    if not np.allclose(logits(meta['model'],W,meta['z_dim']),eta_ref,atol=3e-5):
+    if not np.allclose(expit(logits(meta['model'],W,meta['z_dim'])),expit(eta_ref),atol=1e-6):
         raise AssertionError('Generator and sealed oracle reference disagree')
     if detector=='hessian':raise ValueError('Use finite difference for analytic oracle (no trained network).')
     matrix,details=detect(predict,W,meta['z_dim'],meta['model'],detector,n_eval,seed,order)
-    details.update({'oracle_scale':scale,'oracle_only':True})
+    details.update({'oracle_scale':scale,'target_scale':scale,'model':meta['model'],'oracle_only':True})
     save_result(matrix,details,output,{**meta,'label':scale})
     print(json.dumps(details,indent=2))
     return matrix,details
