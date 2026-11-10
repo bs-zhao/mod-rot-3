@@ -10,6 +10,11 @@ generic WY inference, and explicit G1/G2/G3 failure records.
 combinations and weight tuning are paused. See the
 [single-metric results](results/single_metric_study/REPORT.md).
 
+**Latest continuous search:** [batch definitions](BATCH_SEARCH.md) and
+[all-three-gap batch checkpoint](results/batch_search/REPORT.md).
+The earlier single-metric report is a historical checkpoint; newer runs measure
+G3 as well, including explicit failures after G1/G2 success.
+
 **Earlier numerical result, outside the requested scope:** `transport_dual_cosine` with structured
 numerical-WY estimators meets the requested mean-correlation gap <= 0.01
 against each model's supervised reference on four fresh cohorts of 2,000

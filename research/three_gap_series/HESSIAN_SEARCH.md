@@ -3,6 +3,10 @@
 **当前优先级：按用户最新要求暂停组合与调权，先系统研究大量单一指标。**
 流程与指标族见 [SINGLE_METRIC_STUDY.md](SINGLE_METRIC_STUDY.md)。下文组合为历史记录。
 
+用户随后要求持续批量同时测三个 gap。最新流程与新指标见 [BATCH_SEARCH.md](BATCH_SEARCH.md)，
+结果见 [三鸿沟批次检查点](results/batch_search/REPORT.md)。已有多个单项通过 G1/G2、止步 G3，
+不能沿用早期“尚未运行 G3”的阶段性结论。
+
 2026-11-09。用户纠正后，之前 transport/utility 模型结构方案仅保留为范围外对照，
 不再作为本任务成功。研究未完成。
 
