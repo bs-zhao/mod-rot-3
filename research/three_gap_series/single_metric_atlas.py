@@ -38,7 +38,14 @@ class BatchLoss:
         base=HessianLoss(fields,cov,d,'hs_ux_rms_soft003')
         self.losses={};special={};prepared_fields={}
         for name in names:
-            if 'field_scale' in CATALOG[name]:
+            if 'latent_smoothing' in CATALOG[name]:
+                from latent_smoothing import integrate_latent_hessian
+                kind=CATALOG[name]['latent_smoothing'];field_key=('latent',kind)
+                if field_key not in prepared_fields:prepared_fields[field_key]=integrate_latent_hessian(fields,cov,d,kind)
+                key=json.dumps({k:v for k,v in CATALOG[name].items() if k!='score'},sort_keys=True)
+                if key not in special:special[key]=HessianLoss(prepared_fields[field_key],cov,d,name)
+                obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
+            elif 'field_scale' in CATALOG[name]:
                 from field_normalization import normalize_hessian_field
                 kind=CATALOG[name]['field_scale']
                 if kind not in prepared_fields:prepared_fields[kind]=normalize_hessian_field(fields,cov,d,kind)
@@ -85,7 +92,7 @@ class BatchLoss:
                 if key not in memo:memo[key]=_bound(a,*args)
                 return memo[key]
             for obj in self.losses.values():
-                if not any(k in obj.spec for k in ['density_quantile','axis_scale','field_scale']):setattr(obj,method,cached)
+                if not any(k in obj.spec for k in ['density_quantile','axis_scale','field_scale','latent_smoothing']):setattr(obj,method,cached)
         for obj in self.losses.values():
             if obj.spec['family']=='taylor':
                 key=('taylor',obj.spec['fit_degree'],obj.spec['response_order'],obj.spec.get('axis_scale','marginal'));bound=obj._taylor
@@ -94,7 +101,7 @@ class BatchLoss:
                     return memo[_key]
                 obj._taylor=cached_taylor
             if obj.spec['family']=='rank':
-                key=('rank',obj.spec['degree'],obj.spec['part'],obj.spec.get('axis_scale','marginal'),obj.spec.get('field_scale'));bound=obj._rank
+                key=('rank',obj.spec['degree'],obj.spec['part'],obj.spec.get('axis_scale','marginal'),obj.spec.get('field_scale'),obj.spec.get('latent_smoothing'));bound=obj._rank
                 def cached_rank(a,_key=key,_bound=bound):
                     if _key not in memo:memo[_key]=_bound(a)
                     return memo[_key]

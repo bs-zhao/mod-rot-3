@@ -11,7 +11,7 @@ HERE=Path(__file__).resolve().parent;ROOT=HERE/'results'
 
 
 def main():
-    folders=sorted(ROOT.glob('b[0-9][0-9]_three_gap_batch'))
+    folders=sorted(ROOT.glob('b[0-9][0-9]*batch'))
     summaries=[];all_rows=[];definitions=set()
     for folder in folders:
         cases=list(folder.glob('*/**/hs_*.json'))
@@ -20,33 +20,32 @@ def main():
         index=json.loads((folder/'report'/'candidates.json').read_text(encoding='utf8'))
         with (folder/'report'/'cases.csv').open(newline='',encoding='utf8') as f:rows=list(csv.DictReader(f))
         all_rows+=rows
-        current=[]
-        for candidate in index['candidates']:
-            if candidate['inference']!='gaussian256' or candidate['starts']!=8 or candidate['metric'] in index['exact_aliases']:continue
-            if candidate['complete']:current.append(candidate)
         for path in cases:
             if path.stem.endswith('_rotation'):continue
             j=json.loads(path.read_text(encoding='utf8'))
             if 'specification' in j:definitions.add(signature(j['specification']))
-        summaries.append(dict(batch=folder.name,cases=len(rows),complete_common_candidates=len(current),
-            all4_g1=sum(c['gates']['g1'] for c in current),all4_g1_g2=sum(c['gates']['g1'] and c['gates']['g2'] for c in current),
-            all4_all3=sum(c['state']=='ALL_GATES_PROVISIONAL_CONFIRM64' for c in current)))
+        for inference in sorted(set(r['inference'] for r in rows)):
+            current=[c for c in index['candidates'] if c['inference']==inference and c['starts']==8 and c['complete'] and c['metric'] not in index['exact_aliases']]
+            summaries.append(dict(batch=folder.name,inference=inference,cases=sum(r['inference']==inference for r in rows),complete_common_candidates=len(current),
+                all4_g1=sum(c['gates']['g1'] for c in current),all4_g1_g2=sum(c['gates']['g1'] and c['gates']['g2'] for c in current),
+                all4_all3=sum(c['state']=='ALL_GATES_PROVISIONAL_CONFIRM64' for c in current)))
+    batch_count=len(set(s['batch'] for s in summaries))
     out=ROOT/'batch_search';out.mkdir(exist_ok=True)
     with (out/'batches.csv').open('w',newline='',encoding='utf8') as f:
         w=csv.DictWriter(f,fieldnames=list(summaries[0]));w.writeheader();w.writerows(summaries)
     dump(out/'checkpoint.json',dict(batches=summaries,cases=len(all_rows),gate_measurements=3*len(all_rows),
         unique_definitions=len(definitions),definition_rule='Exact mathematical aliases merged; statistics/threshold/normalization variants remain explicit definitions, not distinct scientific ideas'))
     lines=['# 连续批量搜索：当前检查点','',
-        f'已完成 {len(summaries)} 批，累计 {len(all_rows)} 个“单指标 × 模型 × inference × 优化设置”案例，'
+        f'已执行 {batch_count} 批，累计完成 {len(all_rows)} 个“单指标 × 模型 × inference × 优化设置”案例，'
         f'对应 {3*len(all_rows)} 次 gap 测量。跨批去除精确别名后有 {len(definitions)} 个定义；'
         '阈值、汇总方式及尺度变体均明确列出，不把它们当作同样数量的独立思想。','',
         '研究仍未完成。每个候选在四模型用同一公式和推断规则；不同 inference 分支不能拼接。',
         '所有案例同批测 G1/G2/G3，上游失败时下游结果仍保留作诊断。','',
-        '| 批次 | 完成案例 | 四模型齐全的去重候选 | 四模型 G1 | 四模型 G1+G2 | 四模型全部通过 |',
+        '| 批次 / 推断 | 完成案例 | 四模型齐全的去重候选 | 四模型 G1 | 四模型 G1+G2 | 四模型全部通过 |',
         '|---|---:|---:|---:|---:|---:|']
     for s in summaries:
-        label=s['batch'];lines.append(f'| [{label}](../{label}/report/REPORT.md) | {s["cases"]} | {s["complete_common_candidates"]} | {s["all4_g1"]} | {s["all4_g1_g2"]} | {s["all4_all3"]} |')
-    lines+=['','表中四模型计数采用统一 Gaussian256、8 起点初筛；另行复核与替代推断也计入完成案例。'
+        label=s['batch'];lines.append(f'| [{label} / {s["inference"]}](../{label}/report/REPORT.md) | {s["cases"]} | {s["complete_common_candidates"]} | {s["all4_g1"]} | {s["all4_g1_g2"]} | {s["all4_all3"]} |')
+    lines+=['','表中四模型计数采用各行明确标注的同一推断分支、8 起点初筛；另行复核也计入完成案例。'
         'G1 平面反例和不可辨识方向均如实列出；初筛成功仍需更多起点及新样本确认。','',
         '## 已确认的推进与失败','',
         '- 无向 UU 边与 UX 边的单一 RMS 软计数（阈值 .02）在四模型的 64 起点复核中通过 G1、G2，'
@@ -63,7 +62,7 @@ def main():
         '原始 NP、数据、Z 与其他实验目录未修改。TEST 已用于探索，最终候选必须冻结后再用独立新样本验证。','',
         '[指标定义与文献依据](../../BATCH_SEARCH.md) · [批次计数](batches.csv)']
     (out/'REPORT.md').write_text('\n'.join(lines)+'\n',encoding='utf8')
-    print(json.dumps(dict(batches=len(summaries),cases=len(all_rows),definitions=len(definitions))))
+    print(json.dumps(dict(batches=batch_count,cases=len(all_rows),definitions=len(definitions))))
 
 
 if __name__=='__main__':main()

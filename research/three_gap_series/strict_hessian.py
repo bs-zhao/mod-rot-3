@@ -179,6 +179,10 @@ for conditioning in ['pooled','subject','stimulus']:
         for threshold in [.003,.01,.03,.1]:
             register(f'b10_activation_{conditioning}_{kind}_t{threshold:g}',family='activation',
                 conditioning=conditioning,kind=kind,threshold=threshold)
+for original in ['hs_ux_rms_soft003','hs_ux_rms_l1','hs_b02_unique_edges_soft_t0.02',
+    'hs_b06_rank_degree1_edges_schatten05','hs_b07_nonlinear_axes_global_log0.3']:
+    for bandwidth in [0.,.25,.5,1.,2.,'mean']:
+        CATALOG['hs_b13_'+original.removeprefix('hs_')+'_s'+str(bandwidth)]=dict(CATALOG[original],latent_smoothing=bandwidth)
 
 
 def reference_sd(covariance,kind='marginal'):
@@ -247,6 +251,9 @@ class HessianLoss:
     def __init__(self,fields,covariance,d,metric):
         if 'h' not in fields:raise ValueError('Hessian required, missing F2 cannot be treated as zero')
         self.spec=CATALOG[metric];self.metric=metric;self.d=d;self.cov=covariance
+        if 'latent_smoothing' in self.spec and fields.get('_latent_smoothed')!=self.spec['latent_smoothing']:
+            from latent_smoothing import integrate_latent_hessian
+            fields=integrate_latent_hessian(fields,covariance,d,self.spec['latent_smoothing'])
         if 'field_scale' in self.spec and fields.get('_field_scaled')!=self.spec['field_scale']:
             from field_normalization import normalize_hessian_field
             fields=normalize_hessian_field(fields,covariance,d,self.spec['field_scale'])

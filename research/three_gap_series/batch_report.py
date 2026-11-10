@@ -12,6 +12,8 @@ MODELS=['C1','C2','C3','CR3']
 
 def signature(spec):
     spec=dict(spec)
+    if spec.get('latent_smoothing')==0:
+        spec.pop('latent_smoothing');spec['field_scale']='common'
     if spec['family']=='ux':spec.setdefault('normalization','reference')
     if spec.get('score')=='soft@0.03':spec['score']='soft003'
     if spec['family'] in ['ux','full'] and (spec.get('score') in ['l1','lp05','soft003','soft01'] or spec.get('score','').startswith('soft@')):spec.pop('axis',None)
@@ -27,12 +29,16 @@ def main():
         if path.stem.endswith('_rotation'):continue
         j=json.loads(path.read_text(encoding='utf8'))
         if 'gaps' not in j:continue
+        refinement=ROOT/'plane_refinements'/args.label/j['model']/(j['metric']+'_'+j['inference']+f'_starts{j["starts"]}.json')
+        verified=json.loads(refinement.read_text(encoding='utf8'))['results'] if refinement.exists() else {}
         key=signature(j['specification'])
         if key not in canonical:canonical[key]=j['metric']
         elif canonical[key]!=j['metric']:aliases[j['metric']]=canonical[key]
         row=dict(metric=j['metric'],model=j['model'],inference=j['inference'],starts=j['starts'],
             is_control=j['specification'].get('control',False),
-            family=j['specification']['family'],g1=j['gaps']['G1']['pass_gate'],g2=j['gaps']['G2']['pass_gate'],g3=j['gaps']['G3']['pass_gate'],
+            family=j['specification']['family'],g1=verified.get('G1',{}).get('refined_plane_gate',j['gaps']['G1']['pass_gate']),
+            g2=verified.get('G2',{}).get('refined_plane_gate',j['gaps']['G2']['pass_gate']),g3=j['gaps']['G3']['pass_gate'],
+            g1_sampled=j['gaps']['G1']['pass_gate'],g2_sampled=j['gaps']['G2']['pass_gate'],continuous_plane_check=bool(verified),
             g1_mode=j['gaps']['G1']['mode'],g1_angle=(j['gaps']['G1'].get('best') or {}).get('axis_error'),
             g2_mode=j['gaps']['G2']['mode'],g2_angle=(j['gaps']['G2'].get('best') or {}).get('axis_error'),
             g2_curve_error=j['gaps']['G2']['curve_relative_error'],g2_min_correlation=j['gaps']['G2']['minimum_plane_correlation'],
@@ -76,6 +82,7 @@ def main():
     lines+=['','## 证据与限制','',
         '- G1/G2 的 PLANE_COUNTEREXAMPLE 表示已有平面反例，没有将该角度冒充全空间最优误差。FLAT_UNRESOLVED 表示不可辨识方向。',
         '- G2 还检查相同 W 上的 loss 曲线误差与最低平面相关；预测拟合好不等于指标推断好。',
+        '- 若已有连续平面复核，报告采用更严格的复核标记；原始采样标记仍保留在 cases.csv，避免边界网格造成假通过。',
         '- G3 每个旋转先写入独立锁定文件，随后才读取真实参数作 TEST 评价。',
         '- G3 的通过要求相对各自监督旋转参考的均值差≤.01、最大错配≤参考+.02，四模型一致。',
         '- TEST 已用于探索性比较，最终候选仍需冻结方案后用独立新样本确认。','',
