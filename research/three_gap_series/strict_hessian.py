@@ -132,6 +132,12 @@ for statistic in ['signed','rms']:
 for score in ['l1','lp05','lp@0.25','lp@0.75','log01','cap01','entropy','hoyer','gini','kurtosis']+[
     f'soft@{t:g}' for t in [.001,.003,.01,.02,.03,.05,.07,.1,.2]]:
     register('b02_unique_edges_'+score.replace('@','_t'),family='edge',stat='rms',axis='global',score=score)
+for collection in ['xcolumns','functional1']:
+    for centered in [False,True]:
+        for normalization in ['raw','trace']:
+            for score in ['l1','l2sq','relative']:
+                register(f'b03_operator_{collection}_center{int(centered)}_{normalization}_{score}',
+                    family='operator',collection=collection,centered=centered,normalization=normalization,score=score)
 
 
 def is_combination(metric):
@@ -218,11 +224,11 @@ class HessianLoss:
             coeff=np.linalg.solve(phi.T@phi/self.n+ridge,phi.T@self.ux.reshape(self.n,-1)/self.n)
             self.profiles[degree]=coeff.reshape(-1,d,self.ux.shape[2]).transpose(1,0,2).reshape(d,-1)
         self.joint_operators=None
-        self.functional_operators=None
-        if self.spec['family']=='functional':
+        self.functional_operators=None;self.operator_matrices=None
+        if self.spec['family']=='functional' or self.spec['family']=='operator' and self.spec['collection']=='functional1':
             if 'strict_subject_groups' not in fields:raise ValueError('Functional Hessian needs product grid groups')
             groups=fields['strict_subject_groups'];ids=np.unique(groups);coefs=[]
-            phi_all=PolynomialFeatures(self.spec['degree']).fit_transform(fields['strict_x'])
+            phi_all=PolynomialFeatures(self.spec.get('degree',1)).fit_transform(fields['strict_x'])
             phi_scale=np.maximum(np.sqrt(np.mean(phi_all**2,axis=0)),1e-12)
             phi_all=phi_all/phi_scale
             for sid in ids:
@@ -233,6 +239,21 @@ class HessianLoss:
             coefficients=np.asarray(coefs)
             self.functional_operators=np.einsum('saq,sbq->qab',coefficients,coefficients)/len(ids)
             self.functional_scale=max(float(np.sqrt(np.einsum('i,qii,i->',sd,self.functional_operators,sd))),1e-12)
+        if self.spec['family']=='operator':
+            matrices=self.ux_moment.copy() if self.spec['collection']=='xcolumns' else self.functional_operators.copy()
+            uu=self.common_uu
+            if self.spec['centered']:
+                groups=fields['strict_subject_groups'];ids=np.unique(groups)
+                blocks=np.stack([uu[groups==sid] for sid in ids])
+                uu=(blocks-blocks.mean(axis=0,keepdims=True)).reshape(uu.shape)
+            curvature=np.einsum('nab,bc,ncd->ad',uu,self.cov,uu,optimize=True)/len(uu)
+            matrices+=curvature[None]/len(matrices)
+            trace=np.trace(matrices,axis1=1,axis2=2)
+            active=trace>max(float(trace.max())*1e-10,1e-25)
+            matrices=matrices[active]
+            if self.spec['normalization']=='trace':matrices=matrices/trace[active,None,None]
+            else:matrices=matrices/max(float(trace.sum()),1e-25)
+            self.operator_matrices=matrices
         if self.spec['family']=='jd':
             if 'strict_subject_groups' not in fields:raise ValueError('Hessian profile JD requires a grouped subject x stimulus grid')
             groups=fields['strict_subject_groups'];ids=np.unique(groups);coefs=[]
@@ -303,6 +324,11 @@ class HessianLoss:
         sd=np.sqrt(np.diag(r@self.cov@r.T))
         a=sd[:,None]*np.linalg.inv(r).T
         s=self.spec;family=s['family']
+        if family=='operator':
+            matrices=np.einsum('ia,kab,jb->kij',a,self.operator_matrices,a,optimize=True)
+            off=matrices[:,~np.eye(self.d,dtype=bool)]
+            if s['score']=='relative':return float(np.sum(off*off)/max(float(np.sum(matrices*matrices)),1e-30))
+            return penalty(off,s['score'])
         if family in ['full','functional']:
             values=self._full(a,s['stat']) if family=='full' else self._functional(a)
             if s['axis']=='global':values=values.reshape(-1)

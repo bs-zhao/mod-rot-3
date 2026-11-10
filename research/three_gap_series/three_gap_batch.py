@@ -34,13 +34,15 @@ def ensure_reference(args,stage):
     existing=list((ROOT/'results'/label).glob(f'{args.model}_*/**/summary.json'))
     if existing:return existing[0]
     kernel='anova2' if args.inference=='anova2' else 'anova3'
+    degree=3;centers=256;length=.75;stimulus_ridge=1e-5
+    if args.inference=='gaussian512d5':kernel='gaussian';degree=5;centers=512;length=1.;stimulus_ridge=1e-7
     command=[sys.executable,str(ROOT/'run.py'),'--repo',args.repo,'--model',args.model,'--beta',str(args.beta),
         '--zdim',str(args.zdim),'--pca',str(args.pca),'--source','formula' if stage=='G2' else 'decoder',
         '--channel','logit','--estimator','tensor','--metric','hs_ux_rms_soft003','--samples','4096',
         '--starts','1','--maxiter','1','--seed','20261128','--g1-angle-tolerance','6','--uu-full-domain',
-        '--hessian-grid','128','--grid-stimuli','128','--degree','3','--ridge','1e-6',
-        '--train-subjects','3500','--validation-subjects','750','--rbf-centers','256',
-        '--rbf-length','.75','--utility-ridge','1e-5','--stimulus-kernel',kernel,'--label',label]
+        '--hessian-grid','128','--grid-stimuli','128','--degree',str(degree),'--ridge','1e-6',
+        '--train-subjects','3500','--validation-subjects','750','--rbf-centers',str(centers),
+        '--rbf-length',str(length),'--utility-ridge',str(stimulus_ridge),'--stimulus-kernel',kernel,'--label',label]
     logs=ROOT/'results'/'batch_logs';logs.mkdir(exist_ok=True)
     print(args.model,args.inference,'building',stage,'numeric fields',flush=True)
     with (logs/f'{label}_{args.model}.log').open('w',encoding='utf8') as f:
@@ -120,7 +122,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--repo',default=str(ROOT.parents[1]));p.add_argument('--model',choices=['C1','C2','C3','CR3'],required=True)
     p.add_argument('--beta',type=float,required=True);p.add_argument('--zdim',type=int,required=True);p.add_argument('--pca',type=int,required=True,choices=[0,1])
-    p.add_argument('--inference',choices=['gaussian256','anova2','anova3'],default='gaussian256')
+    p.add_argument('--inference',choices=['gaussian256','anova2','anova3','gaussian512d5'],default='gaussian256')
     p.add_argument('--starts',type=int,default=8);p.add_argument('--maxiter',type=int,default=160)
     p.add_argument('--label',default='b01_three_gap_batch');p.add_argument('--only',nargs='+')
     p.add_argument('--prefix',help='Predeclared catalogue family prefix; default hs_b01_')

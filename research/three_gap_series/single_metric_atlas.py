@@ -44,6 +44,10 @@ class BatchLoss:
                 key=CATALOG[name]['degree']
                 if key not in special:special[key]=HessianLoss(fields,cov,d,name)
                 obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
+            elif CATALOG[name]['family']=='operator':
+                spec=CATALOG[name];key=('operator',spec['collection'],spec['centered'],spec['normalization'])
+                if key not in special:special[key]=HessianLoss(fields,cov,d,name)
+                obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
             else:obj=copy.copy(base);obj.metric=name;obj.spec=CATALOG[name]
             self.losses[name]=obj
         self.base=base

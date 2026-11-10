@@ -21,7 +21,7 @@ def rotation_torch(angles,d):
 class MomentObjective:
     def __init__(self,loss):
         self.loss=loss;self.s=loss.spec;self.d=loss.d
-        for name in ['cov','ux_moment','xm','common_uu_moment','common_uu_mean','functional_operators']:
+        for name in ['cov','ux_moment','xm','common_uu_moment','common_uu_mean','functional_operators','operator_matrices']:
             value=getattr(loss,name)
             setattr(self,name,None if value is None else torch.tensor(value,dtype=torch.float64))
 
@@ -32,6 +32,7 @@ class MomentObjective:
     def score(self,values,kind,axis):
         v=values.abs()
         if kind=='l1':return v.mean()
+        if kind=='l2sq':return (v*v).mean()
         if kind=='lp05':return torch.sqrt(v+1e-16).mean()
         if kind.startswith('lp@'):return ((v+1e-16)**float(kind.split('@')[1])).mean()
         if kind=='log01':return torch.log1p(v/.1).mean()
@@ -55,6 +56,11 @@ class MomentObjective:
     def __call__(self,angles):
         r=rotation_torch(angles,self.d);a=torch.sqrt(torch.diag(r@self.cov@r.T))[:,None]*r
         s=self.s;family=s['family']
+        if family=='operator':
+            matrices=torch.einsum('ia,kab,jb->kij',a,self.operator_matrices,a)
+            off=matrices[:,~torch.eye(self.d,dtype=torch.bool)]
+            if s['score']=='relative':return (off*off).sum()/torch.clamp((matrices*matrices).sum(),min=1e-30)
+            return self.score(off,s['score'],-1)
         ux_square=torch.clamp(torch.einsum('ia,pab,ib->ip',a,self.ux_moment,a),min=0)
         ux=self.root(ux_square)
         if family=='ux':
