@@ -1,0 +1,80 @@
+{
+  "batches": [
+    {
+      "batch": "b01_three_gap_batch",
+      "cases": 385,
+      "complete_common_candidates": 64,
+      "all4_g1": 8,
+      "all4_g1_g2": 0,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b02_three_gap_batch",
+      "cases": 124,
+      "complete_common_candidates": 20,
+      "all4_g1": 10,
+      "all4_g1_g2": 1,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b03_three_gap_batch",
+      "cases": 100,
+      "complete_common_candidates": 25,
+      "all4_g1": 1,
+      "all4_g1_g2": 0,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b04_three_gap_batch",
+      "cases": 132,
+      "complete_common_candidates": 33,
+      "all4_g1": 17,
+      "all4_g1_g2": 6,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b05_three_gap_batch",
+      "cases": 84,
+      "complete_common_candidates": 21,
+      "all4_g1": 3,
+      "all4_g1_g2": 0,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b06_three_gap_batch",
+      "cases": 116,
+      "complete_common_candidates": 29,
+      "all4_g1": 12,
+      "all4_g1_g2": 6,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b07_three_gap_batch",
+      "cases": 124,
+      "complete_common_candidates": 31,
+      "all4_g1": 1,
+      "all4_g1_g2": 0,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b08_three_gap_batch",
+      "cases": 148,
+      "complete_common_candidates": 37,
+      "all4_g1": 25,
+      "all4_g1_g2": 9,
+      "all4_all3": 0
+    },
+    {
+      "batch": "b09_three_gap_batch",
+      "cases": 100,
+      "complete_common_candidates": 25,
+      "all4_g1": 12,
+      "all4_g1_g2": 9,
+      "all4_all3": 0
+    }
+  ],
+  "cases": 1313,
+  "gate_measurements": 3939,
+  "unique_definitions": 277,
+  "definition_rule": "Exact mathematical aliases merged; statistics/threshold/normalization variants remain explicit definitions, not distinct scientific ideas"
+}

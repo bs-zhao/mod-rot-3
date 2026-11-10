@@ -1,0 +1,491 @@
+{
+  "args": {
+    "repo": "D:\\Projects\\mod-rot-3",
+    "model": "C3",
+    "beta": 0.0005,
+    "zdim": 6,
+    "pca": 0,
+    "inference": "gaussian256",
+    "starts": 8,
+    "maxiter": 160,
+    "label": "b08_three_gap_batch",
+    "only": null,
+    "prefix": "hs_b08_"
+  },
+  "catalogue": {
+    "hs_b08_b01_functional1_column_hoyer_conditional": {
+      "order": 2,
+      "family": "functional",
+      "degree": 1,
+      "axis": "column",
+      "score": "hoyer",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b01_functional1_column_hoyer_geometric": {
+      "order": 2,
+      "family": "functional",
+      "degree": 1,
+      "axis": "column",
+      "score": "hoyer",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b01_functional1_column_hoyer_isotropic": {
+      "order": 2,
+      "family": "functional",
+      "degree": 1,
+      "axis": "column",
+      "score": "hoyer",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b01_ux_rms_soft_t0.05_reference_conditional": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "soft@0.05",
+      "normalization": "reference",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b01_ux_rms_soft_t0.05_reference_geometric": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "soft@0.05",
+      "normalization": "reference",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b01_ux_rms_soft_t0.05_reference_isotropic": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "soft@0.05",
+      "normalization": "reference",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b01_ux_rms_soft_t0.07_reference_conditional": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "soft@0.07",
+      "normalization": "reference",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b01_ux_rms_soft_t0.07_reference_geometric": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "soft@0.07",
+      "normalization": "reference",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b01_ux_rms_soft_t0.07_reference_isotropic": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "soft@0.07",
+      "normalization": "reference",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b02_unique_edges_lp05_conditional": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "lp05",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b02_unique_edges_lp05_geometric": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "lp05",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b02_unique_edges_lp05_isotropic": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "lp05",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b02_unique_edges_soft_t0.02_conditional": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "soft@0.02",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b02_unique_edges_soft_t0.02_geometric": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "soft@0.02",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b02_unique_edges_soft_t0.02_isotropic": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "soft@0.02",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b02_unique_edges_soft_t0.03_conditional": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "soft@0.03",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b02_unique_edges_soft_t0.03_geometric": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "soft@0.03",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b02_unique_edges_soft_t0.03_isotropic": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "soft@0.03",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b05_taylor_fit2_order3_lp05_conditional": {
+      "order": 2,
+      "family": "taylor",
+      "fit_degree": 2,
+      "response_order": 3,
+      "axis": "global",
+      "score": "lp05",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b05_taylor_fit2_order3_lp05_geometric": {
+      "order": 2,
+      "family": "taylor",
+      "fit_degree": 2,
+      "response_order": 3,
+      "axis": "global",
+      "score": "lp05",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b05_taylor_fit2_order3_lp05_isotropic": {
+      "order": 2,
+      "family": "taylor",
+      "fit_degree": 2,
+      "response_order": 3,
+      "axis": "global",
+      "score": "lp05",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b06_rank_degree1_edges_schatten05_conditional": {
+      "order": 2,
+      "family": "rank",
+      "degree": 1,
+      "part": "edges",
+      "score": "schatten05",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b06_rank_degree1_edges_schatten05_geometric": {
+      "order": 2,
+      "family": "rank",
+      "degree": 1,
+      "part": "edges",
+      "score": "schatten05",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b06_rank_degree1_edges_schatten05_isotropic": {
+      "order": 2,
+      "family": "rank",
+      "degree": 1,
+      "part": "edges",
+      "score": "schatten05",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b06_rank_degree2_edges_soft_t0.03_conditional": {
+      "order": 2,
+      "family": "rank",
+      "degree": 2,
+      "part": "edges",
+      "score": "soft@0.03",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b06_rank_degree2_edges_soft_t0.03_geometric": {
+      "order": 2,
+      "family": "rank",
+      "degree": 2,
+      "part": "edges",
+      "score": "soft@0.03",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b06_rank_degree2_edges_soft_t0.03_isotropic": {
+      "order": 2,
+      "family": "rank",
+      "degree": 2,
+      "part": "edges",
+      "score": "soft@0.03",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_b07_nonlinear_axes_global_log0.3_conditional": {
+      "order": 2,
+      "family": "nonlinear_axes",
+      "normalization": "global",
+      "threshold": 0.3,
+      "score": "log",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_b07_nonlinear_axes_global_log0.3_geometric": {
+      "order": 2,
+      "family": "nonlinear_axes",
+      "normalization": "global",
+      "threshold": 0.3,
+      "score": "log",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_b07_nonlinear_axes_global_log0.3_isotropic": {
+      "order": 2,
+      "family": "nonlinear_axes",
+      "normalization": "global",
+      "threshold": 0.3,
+      "score": "log",
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_ux_rms_l2sq_conditional": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "l2sq",
+      "control": true,
+      "axis_scale": "conditional"
+    },
+    "hs_b08_ux_rms_l2sq_geometric": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "l2sq",
+      "control": true,
+      "axis_scale": "geometric"
+    },
+    "hs_b08_ux_rms_l2sq_isotropic": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "row",
+      "score": "l2sq",
+      "control": true,
+      "axis_scale": "isotropic"
+    },
+    "hs_b08_ux_rms_soft003_conditional": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "all",
+      "score": "soft003",
+      "axis_scale": "conditional"
+    },
+    "hs_b08_ux_rms_soft003_geometric": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "all",
+      "score": "soft003",
+      "axis_scale": "geometric"
+    },
+    "hs_b08_ux_rms_soft003_isotropic": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "all",
+      "score": "soft003",
+      "axis_scale": "isotropic"
+    },
+    "hs_ux_rms_soft003": {
+      "order": 2,
+      "family": "ux",
+      "stat": "rms",
+      "axis": "all",
+      "score": "soft003"
+    }
+  },
+  "fields": {
+    "G1": {
+      "summary": "D:\\Projects\\mod-rot-3\\research\\three_gap_series\\results\\h13_modulation_combination_g1\\C3_beta0.0005_zdim6_pca0\\formula\\logit\\direct\\hs_jd_profile1_strength0_repeat_w90\\s20261128_n4096_cfgc63f42d11c95\\summary.json",
+      "summary_sha256": "abc27285761a900f2b404ac5db38c7b60f7f314265e0a513d03944ccf86b6752",
+      "field_sha256": "9557479c58d5c1489fbb433eab9105c0ecc0f01bbdd83ab866107ba6238b2c5f",
+      "source": "formula",
+      "estimator": "direct",
+      "hashes": {
+        "checkpoint": "26f3b81ae9d3f8fd301f96c348c81f1c3ad5c8743ebdb634206cf95babf242eb",
+        "latent": "6e4f3462612df102d61061447728ffe88267fe3ef199f0f05a74c1961738bbc9",
+        "dataset": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+      },
+      "field_args": {
+        "seed": 20261128,
+        "degree": 3,
+        "ridge": 0.001,
+        "rbf_centers": 64,
+        "rbf_length": 1.0,
+        "utility_ridge": 1e-05,
+        "stimulus_kernel": null
+      },
+      "inference_diagnostics": {
+        "validation_rmse": null,
+        "block_errors": null
+      }
+    },
+    "G2": {
+      "summary": "D:\\Projects\\mod-rot-3\\research\\three_gap_series\\results\\h08_g2_resolution\\C3_beta0.0005_zdim6_pca0\\formula\\logit\\tensor\\hs_jd_profile1_strength0_selfl1_w8\\s20261128_n4096_cfgd4176b5e340c\\summary.json",
+      "summary_sha256": "532092565cfcf74644550c7d272b981cc597c59c33dbc342eee0d2cae45c23f7",
+      "field_sha256": "03c198ecc1d6ee3ddb07740c18383680b88e27ca698c88d46afd34a670f5598a",
+      "source": "formula",
+      "estimator": "tensor",
+      "hashes": {
+        "checkpoint": "26f3b81ae9d3f8fd301f96c348c81f1c3ad5c8743ebdb634206cf95babf242eb",
+        "latent": "6e4f3462612df102d61061447728ffe88267fe3ef199f0f05a74c1961738bbc9",
+        "dataset": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+      },
+      "field_args": {
+        "seed": 20261128,
+        "degree": 3,
+        "ridge": 1e-06,
+        "rbf_centers": 256,
+        "rbf_length": 0.5,
+        "utility_ridge": 1e-05,
+        "stimulus_kernel": null
+      },
+      "inference_diagnostics": {
+        "validation_rmse": 3.930297184945517e-06,
+        "block_errors": {
+          "UU": {
+            "relative": 1.1514513821777883e+17,
+            "absolute_rmse": 1.4992856538773285e-06
+          },
+          "UX": {
+            "relative": 3.839898914824928e-06,
+            "absolute_rmse": 2.0737317076021816e-06
+          },
+          "XX": {
+            "relative": 2.3084133152561948e-06,
+            "absolute_rmse": 1.3287392325174064e-06
+          },
+          "UU_full_domain": {
+            "relative": 5.645631277127411e+16,
+            "absolute_rmse": 1.4702164784185967e-06
+          }
+        }
+      }
+    },
+    "G3": {
+      "summary": "D:\\Projects\\mod-rot-3\\research\\three_gap_series\\results\\h09_g3_frozen_decoder\\C3_beta0.0005_zdim6_pca0\\decoder\\logit\\tensor\\hs_jd_profile1_strength0_selfl1_w8\\s20261128_n4096_cfgf7fc2c15b6f5\\summary.json",
+      "summary_sha256": "6a460b8fd4de2569d360ca16e846442573bd5db314510a6ee7f3cae151320f95",
+      "field_sha256": "6a494d9d57279277dcff2f9341eaa4b4a9b4d5011ba0b72665bb60d7c6216755",
+      "source": "decoder",
+      "estimator": "tensor",
+      "hashes": {
+        "checkpoint": "26f3b81ae9d3f8fd301f96c348c81f1c3ad5c8743ebdb634206cf95babf242eb",
+        "latent": "6e4f3462612df102d61061447728ffe88267fe3ef199f0f05a74c1961738bbc9",
+        "dataset": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+      },
+      "field_args": {
+        "seed": 20261128,
+        "degree": 3,
+        "ridge": 1e-06,
+        "rbf_centers": 256,
+        "rbf_length": 0.5,
+        "utility_ridge": 1e-05,
+        "stimulus_kernel": null
+      },
+      "inference_diagnostics": {
+        "validation_rmse": 0.0276167512669269,
+        "block_errors": {
+          "UU": {
+            "relative": 0.3867511150923474,
+            "absolute_rmse": 0.0350948830019293
+          },
+          "UX": {
+            "relative": 0.05058240313759933,
+            "absolute_rmse": 0.025800430916307994
+          },
+          "XX": {
+            "relative": 0.10571801107168323,
+            "absolute_rmse": 0.050121962943651496
+          },
+          "UU_full_domain": {
+            "relative": 0.4055241271415504,
+            "absolute_rmse": 0.03738003620221415
+          }
+        }
+      }
+    }
+  },
+  "rule": "All three stages measured; downstream passes of upstream failures are controls only",
+  "optimizer": "L-BFGS-B with derivative of Hessian-only scalar loss with respect to rotation angles",
+  "source_hashes": {
+    "checkpoint": "26f3b81ae9d3f8fd301f96c348c81f1c3ad5c8743ebdb634206cf95babf242eb",
+    "latent": "6e4f3462612df102d61061447728ffe88267fe3ef199f0f05a74c1961738bbc9",
+    "dataset": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+  },
+  "code_hashes": {
+    "batch_report.py": "a9b1812105631327210bc6ac19c811adf1584203c258d2e91670196bc4eab471",
+    "confirm_single_metrics.py": "fbdc5713459d438cfc674d3dae0641febc768e6c563ea074b952029cdcc7ea3a",
+    "core.py": "e14f401cf4e5dfa4c288d373964eeb82b93fa767175bd3d8638610bc82feefdc",
+    "cumulants.py": "cc7668f850359d8f90d621e362be3c7bebafe7bc5f9803c69429d2aac574b405",
+    "estimators.py": "2cb2f4cd6fe3235157b26f788bab46e7af9bf2b10e5442b8b32109482fb50292",
+    "field_reference.py": "48b4a4fe6f828de1cf77eb9844d579b5311cbb0e3b5e9c49a0bddd0642a6e154",
+    "final_report.py": "1393ff6b6edec3bf8e4cd58d6c8074958c1139db8f80a1a8011f7db585b50d56",
+    "fingerprints.py": "df5bd2eb41c39310cc56816eaa46d264a0c1cac098e8806d699ed0ec93041687",
+    "fresh_cohort.py": "9e7a396d5d62986d604016a7d17215d4b882938fbf47896a43b33e4b2f7b0c2c",
+    "functional_rank.py": "932aa1bb5c912701d7232d975a7ff63837de2b589ff41ce4dbb71c959a8aa999",
+    "hessian_figures.py": "f821898c7787e71a44fb60a2a9366b79cf4d80eae2b81ea7d4b0933a467e77c8",
+    "hessian_ledger.py": "8af647cd834b5d5f92fc6f5bb80408d09d4ca5c376f520e10273cd28405465f6",
+    "inverse_control.py": "802e11b12153abc743eb322c6d0a6a621c03429d8eadee0907ae85b2f5ecf86b",
+    "local_wy.py": "67b2736300191660e5f7db7e38e22e8bdb2cd00d1f235d51feb54bd7b2b07257",
+    "make_report.py": "29bbd54edf3673c731bcc201bcadb29c81f4f161fb3fca07d6565302421cc012",
+    "metrics.py": "4ae2914c79673e07820310a0ad35d84d01c2819575bf67428223473880979f85",
+    "moment_optimizer.py": "b6eef980baca900ce466d518e188ac989f0a2068b50ce1aa4dbe8baba667fac2",
+    "oracle_geometry.py": "15fc1cd8d4467822757ce89113cdf968013749480acd7d66a2b43a43ee1eab55",
+    "posthoc_oracle_audit.py": "d4e4977df66b71d27d45e9f6b5b02cd23bff91027fc327ae360c71a11c479cb6",
+    "profile_tensor.py": "dc387a98434be5efffc12ec64c892f085564c3da7b8824c11f134935b5943094",
+    "run.py": "065f5100beab7167e41f00df9eba71fb050b363cf87d62aaa4f1d6f2a0c82afc",
+    "single_metric_atlas.py": "203c3decd55d1106b22e7d72c99dcb559897a8bdf50321c1c3359c31597b1ab5",
+    "single_metric_compare.py": "0a4c09fcef404e477dd32492e6fd82fcd804a49bcd22284d584a2fbd62e1d76a",
+    "single_metric_report.py": "7e8b141e338b90db8e576ede65e7c5b22fff157de203c987704c00bb7ff84a4f",
+    "strict_hessian.py": "0622505f971f5564b024f1482e6f2234c27b513b5c91f73e780535460337eed6",
+    "summarize.py": "1c0a7923b416e78219e8eaceab9a396a1530d492b5688e72ae3c674c07d3382d",
+    "taylor_hessian.py": "b5734f26f3e1bb4ce88678fb5488513e5d2516414a7646f094dcf16fa56797eb",
+    "tensor_wy.py": "c8cc72a1d312a39186bab1845024406e5594e3689ff54b19de0c25335cf87677",
+    "test_cumulants.py": "a7c9ec487278826214751e03c8ffc591959f9cea6cce95695aa800b74e518e6a",
+    "test_estimators.py": "2983b1f2399401cd472056a9e269ec8562ce5835317915753d98fd812844d363",
+    "test_field_reference.py": "7a6f212de3bd490bc59224133585ec299f6bbe7c4b3f1934e9f35d804131ac1b",
+    "test_fingerprints.py": "cb93c4a6453f99ca0c3b09fe169c8c68bf88654f653e0c54a40d9398f3e60170",
+    "test_functional_rank.py": "a96e6e66711be96f6ac25bb9e760e54adad8ef43202154a9e1a03b1ae4310e3f",
+    "test_inverse_control.py": "7e3133213c5326704c32ea5d1fc5f6e3212f13f66f3cec7e9e223435e7907329",
+    "test_local_wy.py": "36cbdec812818db1fbbdfc4fd3cdc5c7b017a5da424894c6f8b41e0485cf91cc",
+    "test_moment_optimizer.py": "c329ec7dd69aeb06f0d75580d23c34f4f91394ad2d62e4e2069c8c711d315fca",
+    "test_profile_tensor.py": "4e661bfc37a40a1d765cd9a4e17801a765b87bc6116b2263ba9665e07f8aa03d",
+    "test_strict_hessian.py": "d6989e65f6260142f3083ae4391258bedef76828dfc4a83bc8d6e33ecf2a3779",
+    "test_taylor_hessian.py": "0b7f8daaff90501c7459a5bbd79c2b1421c8972f0cee60830541fead7056c223",
+    "test_tensor_wy.py": "6872a566229608b7fa2be4a491be3c1be3715f3f6005a269f84e562ead0e5107",
+    "test_transport.py": "90ac936fd478a01f8fde73cafd8970b48448344895e39bc094babe66304829b8",
+    "test_utility_sieve.py": "ede985344788c4592414a91e6e70944acb9466f46b378834e1c0e3f7d20ec283",
+    "three_gap_batch.py": "05b6c016840a83ab29f20f15e92a24bb7d3a88dbf29704d58c98211b8f20480f",
+    "transport.py": "8b17035495449dce7f3f8e490a30eef92613da12fae1356bde1d0db5ff645738",
+    "utility_sieve.py": "4805a779e63447f048f131a36f4e7566948e77c61ba577e4c8f5e4365c9debf9",
+    "validate.py": "da6eec08abad4bbb3db2848c07cea7b7d85253ff5250f03dd72c971ae7c3f9dc"
+  },
+  "protocol_sha256": "4bf48d92b39c7975103b3260c896703a096814db1f90ec4d6598c5abb0d0b2a6"
+}

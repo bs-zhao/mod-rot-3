@@ -1,0 +1,189 @@
+{
+  "args": {
+    "repo": "D:\\Projects\\mod-rot-3",
+    "model": "C2",
+    "beta": 0.0005,
+    "zdim": 4,
+    "pca": 0,
+    "inference": "gaussian256",
+    "starts": 64,
+    "maxiter": 160,
+    "label": "b02_three_gap_batch",
+    "only": [
+      "hs_b02_unique_edges_soft_t0.02"
+    ],
+    "prefix": "hs_b02_"
+  },
+  "catalogue": {
+    "hs_b02_unique_edges_soft_t0.02": {
+      "order": 2,
+      "family": "edge",
+      "stat": "rms",
+      "axis": "global",
+      "score": "soft@0.02"
+    }
+  },
+  "fields": {
+    "G1": {
+      "summary": "D:\\Projects\\mod-rot-3\\research\\three_gap_series\\results\\h13_modulation_combination_g1\\C2_beta0.0005_zdim4_pca0\\formula\\logit\\direct\\hs_jd_profile1_strength0_repeat_w90\\s20261128_n4096_cfg2b0703771fb2\\summary.json",
+      "summary_sha256": "f3dca32baae92724d019316d99f1e1d6ad8ba352910a46be14c97e744cd5d203",
+      "field_sha256": "3dee280981ff3459b1c92441e1219272f26d9b2669d09ce0c1f1a18231ee97da",
+      "source": "formula",
+      "estimator": "direct",
+      "hashes": {
+        "checkpoint": "987433c0da3fc72a59cfb1e1290f39b9aa1b5f5d5d8ae3f8fa7e15237cfb15a7",
+        "latent": "5fd4097ad7d299a6960b1867cad835170eda890fe2be9524c7fe5c78def38375",
+        "dataset": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+      },
+      "field_args": {
+        "seed": 20261128,
+        "degree": 3,
+        "ridge": 0.001,
+        "rbf_centers": 64,
+        "rbf_length": 1.0,
+        "utility_ridge": 1e-05,
+        "stimulus_kernel": null
+      },
+      "inference_diagnostics": {
+        "validation_rmse": null,
+        "block_errors": null
+      }
+    },
+    "G2": {
+      "summary": "D:\\Projects\\mod-rot-3\\research\\three_gap_series\\results\\h08_g2_resolution\\C2_beta0.0005_zdim4_pca0\\formula\\logit\\tensor\\hs_jd_profile1_strength0_selfl1_w8\\s20261128_n4096_cfg8a93a0f0e885\\summary.json",
+      "summary_sha256": "e88ea08b33930a51ebd7c20a45d68c1c9ff3bc60eec2b7262f5aa098d8cb59a3",
+      "field_sha256": "53414cfee5f74d732ec258a2c68108d6a8fabb5668207d082764f30d0ec0ddd8",
+      "source": "formula",
+      "estimator": "tensor",
+      "hashes": {
+        "checkpoint": "987433c0da3fc72a59cfb1e1290f39b9aa1b5f5d5d8ae3f8fa7e15237cfb15a7",
+        "latent": "5fd4097ad7d299a6960b1867cad835170eda890fe2be9524c7fe5c78def38375",
+        "dataset": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+      },
+      "field_args": {
+        "seed": 20261128,
+        "degree": 3,
+        "ridge": 1e-06,
+        "rbf_centers": 256,
+        "rbf_length": 0.5,
+        "utility_ridge": 1e-05,
+        "stimulus_kernel": null
+      },
+      "inference_diagnostics": {
+        "validation_rmse": 2.7319302618911676e-06,
+        "block_errors": {
+          "UU": {
+            "relative": 7.090232605325664e+16,
+            "absolute_rmse": 1.3848110557276685e-06
+          },
+          "UX": {
+            "relative": 3.2158171819046576e-06,
+            "absolute_rmse": 1.4910186891082859e-06
+          },
+          "XX": {
+            "relative": 2.169270079747763e-06,
+            "absolute_rmse": 8.453065973351995e-07
+          },
+          "UU_full_domain": {
+            "relative": 3.644725927123275e+16,
+            "absolute_rmse": 1.423721065282529e-06
+          }
+        }
+      }
+    },
+    "G3": {
+      "summary": "D:\\Projects\\mod-rot-3\\research\\three_gap_series\\results\\h09_g3_frozen_decoder\\C2_beta0.0005_zdim4_pca0\\decoder\\logit\\tensor\\hs_jd_profile1_strength0_selfl1_w8\\s20261128_n4096_cfg99c24db1aa28\\summary.json",
+      "summary_sha256": "1e7297f63ce682a9c70e61b558515fca2f7f0a35e8d00ae98d465458969e960c",
+      "field_sha256": "8362b23900f68d4f745396aed7dd9c542c1ca02304f58c63a666088e85f1c8ae",
+      "source": "decoder",
+      "estimator": "tensor",
+      "hashes": {
+        "checkpoint": "987433c0da3fc72a59cfb1e1290f39b9aa1b5f5d5d8ae3f8fa7e15237cfb15a7",
+        "latent": "5fd4097ad7d299a6960b1867cad835170eda890fe2be9524c7fe5c78def38375",
+        "dataset": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+      },
+      "field_args": {
+        "seed": 20261128,
+        "degree": 3,
+        "ridge": 1e-06,
+        "rbf_centers": 256,
+        "rbf_length": 0.5,
+        "utility_ridge": 1e-05,
+        "stimulus_kernel": null
+      },
+      "inference_diagnostics": {
+        "validation_rmse": 0.015607161035468844,
+        "block_errors": {
+          "UU": {
+            "relative": 0.3391299075632295,
+            "absolute_rmse": 0.030441552500599555
+          },
+          "UX": {
+            "relative": 0.04575977496084128,
+            "absolute_rmse": 0.019535415095196695
+          },
+          "XX": {
+            "relative": 0.12213216211439525,
+            "absolute_rmse": 0.0401762774509977
+          },
+          "UU_full_domain": {
+            "relative": 0.3334260188597678,
+            "absolute_rmse": 0.02994320527105496
+          }
+        }
+      }
+    }
+  },
+  "rule": "All three stages measured; downstream passes of upstream failures are controls only",
+  "optimizer": "L-BFGS-B with derivative of Hessian-only scalar loss with respect to rotation angles",
+  "source_hashes": {
+    "checkpoint": "987433c0da3fc72a59cfb1e1290f39b9aa1b5f5d5d8ae3f8fa7e15237cfb15a7",
+    "latent": "5fd4097ad7d299a6960b1867cad835170eda890fe2be9524c7fe5c78def38375",
+    "dataset": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+  },
+  "code_hashes": {
+    "batch_report.py": "477d65469f8a11834c1fb57ac00ce965cae1e83210e14d9c1dabb861e60ba180",
+    "confirm_single_metrics.py": "fbdc5713459d438cfc674d3dae0641febc768e6c563ea074b952029cdcc7ea3a",
+    "core.py": "e14f401cf4e5dfa4c288d373964eeb82b93fa767175bd3d8638610bc82feefdc",
+    "cumulants.py": "cc7668f850359d8f90d621e362be3c7bebafe7bc5f9803c69429d2aac574b405",
+    "estimators.py": "2cb2f4cd6fe3235157b26f788bab46e7af9bf2b10e5442b8b32109482fb50292",
+    "field_reference.py": "48b4a4fe6f828de1cf77eb9844d579b5311cbb0e3b5e9c49a0bddd0642a6e154",
+    "final_report.py": "1393ff6b6edec3bf8e4cd58d6c8074958c1139db8f80a1a8011f7db585b50d56",
+    "fingerprints.py": "df5bd2eb41c39310cc56816eaa46d264a0c1cac098e8806d699ed0ec93041687",
+    "fresh_cohort.py": "9e7a396d5d62986d604016a7d17215d4b882938fbf47896a43b33e4b2f7b0c2c",
+    "hessian_figures.py": "f821898c7787e71a44fb60a2a9366b79cf4d80eae2b81ea7d4b0933a467e77c8",
+    "hessian_ledger.py": "8af647cd834b5d5f92fc6f5bb80408d09d4ca5c376f520e10273cd28405465f6",
+    "inverse_control.py": "802e11b12153abc743eb322c6d0a6a621c03429d8eadee0907ae85b2f5ecf86b",
+    "local_wy.py": "67b2736300191660e5f7db7e38e22e8bdb2cd00d1f235d51feb54bd7b2b07257",
+    "make_report.py": "29bbd54edf3673c731bcc201bcadb29c81f4f161fb3fca07d6565302421cc012",
+    "metrics.py": "4ae2914c79673e07820310a0ad35d84d01c2819575bf67428223473880979f85",
+    "moment_optimizer.py": "2036e610923446676b89737082b347242b295ff2f39e01517e815addd84179d4",
+    "oracle_geometry.py": "15fc1cd8d4467822757ce89113cdf968013749480acd7d66a2b43a43ee1eab55",
+    "posthoc_oracle_audit.py": "3a70f527d1e68a0a295dac77f68212cef4bd5978c71e1623e9ad4ff055ee036e",
+    "profile_tensor.py": "dc387a98434be5efffc12ec64c892f085564c3da7b8824c11f134935b5943094",
+    "run.py": "065f5100beab7167e41f00df9eba71fb050b363cf87d62aaa4f1d6f2a0c82afc",
+    "single_metric_atlas.py": "8fa32a9088e80bd761d99c027cf80e267a67498a8f29c008d8c5b67bb8f1242a",
+    "single_metric_compare.py": "0a4c09fcef404e477dd32492e6fd82fcd804a49bcd22284d584a2fbd62e1d76a",
+    "single_metric_report.py": "7e8b141e338b90db8e576ede65e7c5b22fff157de203c987704c00bb7ff84a4f",
+    "strict_hessian.py": "7dbcdb80721d8c5e15461e841a5ad51d6404413fb1db5b4eed9703a8b721f98e",
+    "summarize.py": "1c0a7923b416e78219e8eaceab9a396a1530d492b5688e72ae3c674c07d3382d",
+    "tensor_wy.py": "c8cc72a1d312a39186bab1845024406e5594e3689ff54b19de0c25335cf87677",
+    "test_cumulants.py": "a7c9ec487278826214751e03c8ffc591959f9cea6cce95695aa800b74e518e6a",
+    "test_estimators.py": "2983b1f2399401cd472056a9e269ec8562ce5835317915753d98fd812844d363",
+    "test_field_reference.py": "7a6f212de3bd490bc59224133585ec299f6bbe7c4b3f1934e9f35d804131ac1b",
+    "test_fingerprints.py": "cb93c4a6453f99ca0c3b09fe169c8c68bf88654f653e0c54a40d9398f3e60170",
+    "test_inverse_control.py": "7e3133213c5326704c32ea5d1fc5f6e3212f13f66f3cec7e9e223435e7907329",
+    "test_local_wy.py": "36cbdec812818db1fbbdfc4fd3cdc5c7b017a5da424894c6f8b41e0485cf91cc",
+    "test_moment_optimizer.py": "84ace8d3595c5668dd95fb9a86f81adc5abd8a0c2fcceb17070f6bdebb4ae3e3",
+    "test_profile_tensor.py": "4e661bfc37a40a1d765cd9a4e17801a765b87bc6116b2263ba9665e07f8aa03d",
+    "test_strict_hessian.py": "967439a9676d9fe090215bd560a046d335dd0a1ea9afaa8fb28b9e0135c77236",
+    "test_tensor_wy.py": "6872a566229608b7fa2be4a491be3c1be3715f3f6005a269f84e562ead0e5107",
+    "test_transport.py": "90ac936fd478a01f8fde73cafd8970b48448344895e39bc094babe66304829b8",
+    "test_utility_sieve.py": "ede985344788c4592414a91e6e70944acb9466f46b378834e1c0e3f7d20ec283",
+    "three_gap_batch.py": "bdb463a7465bf6950534b2896c6240414f1a39593d2f1f344dfed725c8e98250",
+    "transport.py": "8b17035495449dce7f3f8e490a30eef92613da12fae1356bde1d0db5ff645738",
+    "utility_sieve.py": "4805a779e63447f048f131a36f4e7566948e77c61ba577e4c8f5e4365c9debf9",
+    "validate.py": "da6eec08abad4bbb3db2848c07cea7b7d85253ff5250f03dd72c971ae7c3f9dc"
+  },
+  "protocol_sha256": "c8a5c61d63f510ff5096203ab61fe2e0fa39cefbf7e118ad2831bb124c84b160"
+}

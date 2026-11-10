@@ -174,6 +174,11 @@ for original in ['hs_ux_rms_soft003','hs_ux_rms_l1','hs_b02_unique_edges_soft_t0
     'hs_b06_rank_degree1_edges_schatten05','hs_b07_nonlinear_axes_global_log0.3']:
     for field_scale in ['common','point','subject','stimulus']:
         CATALOG['hs_b09_'+original.removeprefix('hs_')+'_'+field_scale]=dict(CATALOG[original],field_scale=field_scale)
+for conditioning in ['pooled','subject','stimulus']:
+    for kind in ['hoyer','kurtosis']:
+        for threshold in [.003,.01,.03,.1]:
+            register(f'b10_activation_{conditioning}_{kind}_t{threshold:g}',family='activation',
+                conditioning=conditioning,kind=kind,threshold=threshold)
 
 
 def reference_sd(covariance,kind='marginal'):
@@ -286,6 +291,17 @@ class HessianLoss:
         self.subject_ux_moment=None;self.subject_uu_moment=None;self.subject_scale=None
         self.taylor_tensors=None;self.taylor_scale=None
         self.rank_tensors=None;self.rank_scale=None
+        self.activation_second=None;self.activation_fourth=None;self.activation_scale=None;self.activation_shape=None
+        if self.spec['family']=='activation':
+            groups=fields['strict_subject_groups'];blocks=np.stack([self.ux[groups==sid] for sid in np.unique(groups)])
+            ns,nx=blocks.shape[:2];self.activation_shape=(ns,nx)
+            vectors=blocks.transpose(0,1,3,2)
+            pairs=(vectors[:,:,:,:,None]*vectors[:,:,:,None,:]).reshape(ns,nx,self.ux.shape[2],d*d)
+            if self.spec['conditioning']=='pooled':pairs=pairs.reshape(1,ns*nx,self.ux.shape[2],d*d)
+            elif self.spec['conditioning']=='stimulus':pairs=pairs.transpose(1,0,2,3)
+            self.activation_second=pairs.mean(axis=1).reshape(len(pairs),self.ux.shape[2],d,d)
+            self.activation_fourth=(pairs.transpose(0,2,3,1)@pairs.transpose(0,2,1,3))/pairs.shape[1]
+            self.activation_scale=max(float(np.sqrt(self.ux_energy)),1e-12)
         if self.spec['family']=='rank':
             from functional_rank import project_hessian_functions,transformed_rank_matrices
             self.rank_tensors=project_hessian_functions(fields,d,self.spec['degree'])
@@ -411,6 +427,18 @@ class HessianLoss:
     def __call__(self,r):
         a=self._transform(r)
         s=self.spec;family=s['family']
+        if family=='activation':
+            second=np.maximum(np.einsum('ia,gpab,ib->gip',a,self.activation_second,a,optimize=True),0)/self.activation_scale**2
+            if s['kind']=='kurtosis':
+                squared=np.einsum('ia,ib->iab',a,a).reshape(self.d,-1)
+                fourth=np.maximum(np.einsum('iq,gpqr,ir->gip',squared,self.activation_fourth,squared,optimize=True),0)/self.activation_scale**4
+                return float(np.mean(second**2/(fourth+s['threshold']**4)))
+            value=abs(np.einsum('ia,nap->nip',a,self.ux,optimize=True))/self.activation_scale
+            if s['conditioning']=='pooled':mean=value.mean(axis=0,keepdims=True)
+            else:
+                blocks=value.reshape(*self.activation_shape,self.d,-1)
+                mean=blocks.mean(axis=1 if s['conditioning']=='subject' else 0)
+            return float(np.mean(mean**2/(second+s['threshold']**2)))
         if family=='nonlinear_axes':
             matrix=self._uu(a,'rms','all')*self.scale;own=np.diag(matrix)
             if s['normalization']=='global':denominator=max(np.sqrt(self.uu_energy),1e-12)

@@ -22,11 +22,12 @@ class MomentObjective:
     def __init__(self,loss):
         self.loss=loss;self.s=loss.spec;self.d=loss.d
         for name in ['cov','ux_moment','xm','common_uu_moment','common_uu_mean','functional_operators','operator_matrices',
-                     'subject_ux_moment','subject_uu_moment','subject_scale','uu_moment']:
+                     'subject_ux_moment','subject_uu_moment','subject_scale','uu_moment','activation_second','activation_fourth']:
             value=getattr(loss,name)
             setattr(self,name,None if value is None else torch.tensor(value,dtype=torch.float64))
         self.taylor_tensors=None if loss.taylor_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.taylor_tensors)
         self.rank_tensors=None if loss.rank_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.rank_tensors)
+        self.activation_raw=torch.tensor(loss.ux,dtype=torch.float64) if self.s['family']=='activation' and self.s['kind']=='hoyer' else None
 
     def root(self,square):
         stable=torch.sqrt(square+1e-24)
@@ -65,6 +66,18 @@ class MomentObjective:
             sd=conditional if kind=='conditional' else torch.sqrt(sd*conditional)
         a=sd[:,None]*r
         s=self.s;family=s['family']
+        if family=='activation':
+            second=torch.clamp(torch.einsum('ia,gpab,ib->gip',a,self.activation_second,a),min=0)/self.loss.activation_scale**2
+            if s['kind']=='kurtosis':
+                squared=torch.einsum('ia,ib->iab',a,a).reshape(self.d,-1)
+                fourth=torch.clamp(torch.einsum('iq,gpqr,ir->gip',squared,self.activation_fourth,squared),min=0)/self.loss.activation_scale**4
+                return (second**2/(fourth+s['threshold']**4)).mean()
+            value=torch.einsum('ia,nap->nip',a,self.activation_raw).abs()/self.loss.activation_scale
+            if s['conditioning']=='pooled':mean=value.mean(dim=0,keepdim=True)
+            else:
+                blocks=value.reshape(*self.loss.activation_shape,self.d,-1)
+                mean=blocks.mean(dim=1 if s['conditioning']=='subject' else 0)
+            return (mean**2/(second+s['threshold']**2)).mean()
         if family=='nonlinear_axes':
             transform=torch.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)
             square=torch.clamp((transform@self.uu_moment*transform).sum(dim=1),min=0).reshape(self.d,self.d)
