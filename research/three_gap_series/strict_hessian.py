@@ -128,6 +128,10 @@ for normalization in ['reference','ux','column']:
 for statistic in ['signed','rms']:
     for normalized in [False,True]:
         register(f'b01_ux_gram_{statistic}_corr{int(normalized)}',family='ux_gram',stat=statistic,normalized=normalized)
+# B02: an undirected Hessian graph counts H_ij and H_ji as one edge.
+for score in ['l1','lp05','lp@0.25','lp@0.75','log01','cap01','entropy','hoyer','gini','kurtosis']+[
+    f'soft@{t:g}' for t in [.001,.003,.01,.02,.03,.05,.07,.1,.2]]:
+    register('b02_unique_edges_'+score.replace('@','_t'),family='edge',stat='rms',axis='global',score=score)
 
 
 def is_combination(metric):
@@ -148,6 +152,7 @@ def penalty(values,score,axis=-1,k=1):
     if '@' in score:
         kind,number=score.split('@');number=float(number)
         if kind=='soft':return float(np.mean(v*v/(v*v+number**2)))
+        if kind=='lp':return float(np.mean((v+1e-16)**number))
         raise ValueError(score)
     if score in ['hoyer','gini','kurtosis']:
         count=v.shape[axis];total=v.sum(axis=axis);energy=np.sum(v*v,axis=axis)
@@ -302,6 +307,10 @@ class HessianLoss:
             values=self._full(a,s['stat']) if family=='full' else self._functional(a)
             if s['axis']=='global':values=values.reshape(-1)
             return penalty(values,s['score'],-2 if s['axis']=='column' else -1,s.get('k',1))
+        if family=='edge':
+            matrix=self._full(a,'rms');uu=matrix[:,:self.d]
+            values=np.r_[uu[np.triu_indices(self.d)],matrix[:,self.d:].reshape(-1)]
+            return penalty(values,s['score'])
         if family=='ux':
             v=self._ux(a,s['stat']);axis=-1 if s['axis']!='column' else -2
             normalization=s.get('normalization','reference')

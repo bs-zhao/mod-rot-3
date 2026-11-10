@@ -123,8 +123,9 @@ def main():
     p.add_argument('--inference',choices=['gaussian256','anova2','anova3'],default='gaussian256')
     p.add_argument('--starts',type=int,default=8);p.add_argument('--maxiter',type=int,default=160)
     p.add_argument('--label',default='b01_three_gap_batch');p.add_argument('--only',nargs='+')
+    p.add_argument('--prefix',help='Predeclared catalogue family prefix; default hs_b01_')
     args=p.parse_args();torch.set_num_threads(2);started=time.time();context=load(args)
-    names=sorted(n for n in CATALOG if n.startswith('hs_b01_'))+['hs_ux_rms_soft003']
+    names=sorted(n for n in CATALOG if n.startswith(args.prefix or 'hs_b01_'))+['hs_ux_rms_soft003']
     if args.only:
         if any(n not in names for n in args.only):raise ValueError('Unknown metric')
         names=args.only
@@ -141,7 +142,9 @@ def main():
         rule='All three stages measured; downstream passes of upstream failures are controls only',
         optimizer='L-BFGS-B with derivative of Hessian-only scalar loss with respect to rotation angles',
         source_hashes=context['hashes'],code_hashes={p.name:sha(p) for p in ROOT.glob('*.py')})
-    manifest['protocol_sha256']=hashlib.sha256(json.dumps(dict(args=vars(args),specs=manifest['catalogue'],fields=provenances),sort_keys=True).encode()).hexdigest()
+    protocol_args=dict(vars(args))
+    if args.prefix is None:protocol_args.pop('prefix')
+    manifest['protocol_sha256']=hashlib.sha256(json.dumps(dict(args=protocol_args,specs=manifest['catalogue'],fields=provenances),sort_keys=True).encode()).hexdigest()
     dump(out/'manifest.json',manifest)
     completed=[]
     for index,metric in enumerate(names):

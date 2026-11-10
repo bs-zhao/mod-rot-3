@@ -4,6 +4,13 @@ from strict_hessian import HessianLoss,CATALOG,penalty
 
 
 class StrictHessianTests(unittest.TestCase):
+    def test_unique_graph_counts_one_bilinear_edge_vs_two_self_curvatures(self):
+        n=10;h=np.zeros((n,3,3));h[:,0,1]=h[:,1,0]=1.
+        fields=dict(h=h,strict_x=np.linspace(-1,1,n)[:,None])
+        loss=HessianLoss(fields,np.eye(2),2,'hs_b02_unique_edges_l1')
+        r=np.array([[1.,1.],[-1.,1.]])/np.sqrt(2)
+        self.assertAlmostEqual(loss(r),2*loss(np.eye(2)),places=12)
+
     def test_batched_single_metrics_match_independent_losses_across_rotations(self):
         from single_metric_atlas import BatchLoss,canonical_singles
         rng=np.random.default_rng(21);n=12;d=4;p=3

@@ -33,6 +33,12 @@ class MomentObjective:
         v=values.abs()
         if kind=='l1':return v.mean()
         if kind=='lp05':return torch.sqrt(v+1e-16).mean()
+        if kind.startswith('lp@'):return ((v+1e-16)**float(kind.split('@')[1])).mean()
+        if kind=='log01':return torch.log1p(v/.1).mean()
+        if kind=='cap01':return torch.clamp(v/.1,max=1).mean()
+        if kind=='entropy':
+            prob=v/torch.clamp(v.sum(dim=axis,keepdim=True),min=1e-30)
+            return (-(prob*torch.log(torch.clamp(prob,min=1e-30))).sum(dim=axis)).mean()
         if kind in ['soft003','soft01'] or kind.startswith('soft@'):
             threshold=.03 if kind=='soft003' else .1 if kind=='soft01' else float(kind.split('@')[1])
             return (v*v/(v*v+threshold**2)).mean()
@@ -60,10 +66,13 @@ class MomentObjective:
             else:values=ux/(max(np.sqrt(self.loss.ux_energy),1e-12) if normalization=='ux' else self.loss.scale)
         elif family=='functional':
             values=self.root(torch.clamp(torch.einsum('ia,qab,ib->iq',a,self.functional_operators,a),min=0))/self.loss.functional_scale
-        elif family=='full':
+        elif family in ['full','edge']:
             transform=torch.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)
             square=torch.clamp((transform@self.common_uu_moment*transform).sum(dim=1),min=0).reshape(self.d,self.d)
             values=torch.cat((self.root(square),ux),dim=-1)/self.loss.common_scale
+            if family=='edge':
+                indices=torch.triu_indices(self.d,self.d)
+                values=torch.cat((values[indices[0],indices[1]],values[:,self.d:].reshape(-1)))
         elif family=='ux_gram':
             if s['stat']=='signed':vectors=a@self.xm;gram=vectors@vectors.T
             else:gram=torch.einsum('ia,pab,jb->ij',a,self.ux_moment,a)
