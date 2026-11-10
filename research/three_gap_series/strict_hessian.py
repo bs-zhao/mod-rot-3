@@ -138,6 +138,17 @@ for collection in ['xcolumns','functional1']:
             for score in ['l1','l2sq','relative']:
                 register(f'b03_operator_{collection}_center{int(centered)}_{normalization}_{score}',
                     family='operator',collection=collection,centered=centered,normalization=normalization,score=score)
+for fraction in [.25,.5,.75,.9]:
+    for threshold in [.01,.03,.05]:
+        register(f'b04_central{fraction:g}_ux_soft{threshold:g}',family='ux',stat='rms',axis='row',
+            score=f'soft@{threshold:g}',density_quantile=fraction)
+    register(f'b04_central{fraction:g}_edges_soft0.02',family='edge',stat='rms',axis='global',
+        score='soft@0.02',density_quantile=fraction)
+for family in ['subject_ux','subject_edges']:
+    for normalization in ['global','subject']:
+        for threshold in [.003,.01,.03,.1]:
+            register(f'b04_{family}_{normalization}_soft{threshold:g}',family=family,normalization=normalization,
+                stat='rms',axis='row',score=f'soft@{threshold:g}')
 
 
 def is_combination(metric):
@@ -196,6 +207,15 @@ class HessianLoss:
     def __init__(self,fields,covariance,d,metric):
         if 'h' not in fields:raise ValueError('Hessian required, missing F2 cannot be treated as zero')
         self.spec=CATALOG[metric];self.metric=metric;self.d=d;self.cov=covariance
+        if 'density_quantile' in self.spec:
+            if 'strict_rank' not in fields:raise ValueError('Density-restricted Hessian needs numerical TRAIN radius ranks')
+            fields=dict(fields);mask=fields['strict_rank']<=self.spec['density_quantile']
+            for key in ['h','strict_x','strict_subject_groups','strict_rank']:
+                if key in fields:fields[key]=fields[key][mask]
+            if 'uu_h' in fields:
+                if 'uu_rank' not in fields:raise ValueError('Missing original-row numerical radius ranks')
+                fields['uu_h']=fields['uu_h'][fields['uu_rank']<=self.spec['density_quantile']]
+            if not len(fields['h']):raise ValueError('Empty central Hessian domain')
         h=fields['h'];self.n=len(h);self.uu=fields.get('uu_h',h[:,:d,:d]);self.ux=h[:,:d,d:]
         self.common_uu=h[:,:d,:d]
         self.common_uu_mean=self.common_uu.mean(0)
@@ -225,6 +245,16 @@ class HessianLoss:
             self.profiles[degree]=coeff.reshape(-1,d,self.ux.shape[2]).transpose(1,0,2).reshape(d,-1)
         self.joint_operators=None
         self.functional_operators=None;self.operator_matrices=None
+        self.subject_ux_moment=None;self.subject_uu_moment=None;self.subject_scale=None
+        if self.spec['family'] in ['subject_ux','subject_edges']:
+            groups=fields['strict_subject_groups'];uxs=[];uus=[];scales=[]
+            for sid in np.unique(groups):
+                mask=groups==sid;hx=self.ux[mask];hu=self.common_uu[mask];flat=hu.reshape(mask.sum(),-1)
+                uxs.append(np.einsum('nap,nbp->pab',hx,hx,optimize=True)/mask.sum())
+                uus.append(flat.T@flat/mask.sum())
+                local_u=hu*sd[None,:,None]*sd[None,None,:];local_x=hx*sd[None,:,None]
+                scales.append(max(float(np.sqrt(np.mean(np.sum(local_u**2,axis=(1,2)))+np.mean(np.sum(local_x**2,axis=(1,2))))),1e-12))
+            self.subject_ux_moment=np.asarray(uxs);self.subject_uu_moment=np.asarray(uus);self.subject_scale=np.asarray(scales)
         if self.spec['family']=='functional' or self.spec['family']=='operator' and self.spec['collection']=='functional1':
             if 'strict_subject_groups' not in fields:raise ValueError('Functional Hessian needs product grid groups')
             groups=fields['strict_subject_groups'];ids=np.unique(groups);coefs=[]
@@ -324,6 +354,18 @@ class HessianLoss:
         sd=np.sqrt(np.diag(r@self.cov@r.T))
         a=sd[:,None]*np.linalg.inv(r).T
         s=self.spec;family=s['family']
+        if family in ['subject_ux','subject_edges']:
+            square=np.maximum(np.einsum('ia,spab,ib->sip',a,self.subject_ux_moment,a,optimize=True),0)
+            ux=np.sqrt(square)
+            if family=='subject_ux':values=ux
+            else:
+                transform=np.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)
+                square=np.maximum(np.einsum('ia,sab,ib->si',transform,self.subject_uu_moment,transform,optimize=True),0).reshape(-1,self.d,self.d)
+                indices=np.triu_indices(self.d)
+                values=np.concatenate((np.sqrt(square)[:,indices[0],indices[1]],ux.reshape(len(ux),-1)),axis=1)
+            if s['normalization']=='global':values=values/self.common_scale
+            else:values=values/self.subject_scale.reshape((-1,)+(1,)*(values.ndim-1))
+            return penalty(values,s['score'])
         if family=='operator':
             matrices=np.einsum('ia,kab,jb->kij',a,self.operator_matrices,a,optimize=True)
             off=matrices[:,~np.eye(self.d,dtype=bool)]

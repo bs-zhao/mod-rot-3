@@ -21,7 +21,8 @@ def rotation_torch(angles,d):
 class MomentObjective:
     def __init__(self,loss):
         self.loss=loss;self.s=loss.spec;self.d=loss.d
-        for name in ['cov','ux_moment','xm','common_uu_moment','common_uu_mean','functional_operators','operator_matrices']:
+        for name in ['cov','ux_moment','xm','common_uu_moment','common_uu_mean','functional_operators','operator_matrices',
+                     'subject_ux_moment','subject_uu_moment','subject_scale']:
             value=getattr(loss,name)
             setattr(self,name,None if value is None else torch.tensor(value,dtype=torch.float64))
 
@@ -56,6 +57,17 @@ class MomentObjective:
     def __call__(self,angles):
         r=rotation_torch(angles,self.d);a=torch.sqrt(torch.diag(r@self.cov@r.T))[:,None]*r
         s=self.s;family=s['family']
+        if family in ['subject_ux','subject_edges']:
+            ux=self.root(torch.clamp(torch.einsum('ia,spab,ib->sip',a,self.subject_ux_moment,a),min=0))
+            if family=='subject_ux':values=ux
+            else:
+                transform=torch.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)
+                square=torch.clamp(torch.einsum('ia,sab,ib->si',transform,self.subject_uu_moment,transform),min=0).reshape(-1,self.d,self.d)
+                indices=torch.triu_indices(self.d,self.d)
+                values=torch.cat((self.root(square)[:,indices[0],indices[1]],ux.reshape(len(ux),-1)),dim=1)
+            if s['normalization']=='global':values=values/self.loss.common_scale
+            else:values=values/self.subject_scale.reshape((-1,)+(1,)*(values.ndim-1))
+            return self.score(values,s['score'],-1)
         if family=='operator':
             matrices=torch.einsum('ia,kab,jb->kij',a,self.operator_matrices,a)
             off=matrices[:,~torch.eye(self.d,dtype=torch.bool)]

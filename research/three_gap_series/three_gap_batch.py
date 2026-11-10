@@ -59,18 +59,30 @@ def read_bundle(path,context,args):
     if not cache.is_relative_to(ROOT) or not cache.is_file():raise ValueError('Missing independent-folder numerical fields')
     with np.load(cache,allow_pickle=False) as f:
         if str(f['checkpoint_hash'])!=context['hashes']['checkpoint']:raise ValueError('Checkpoint mismatch')
-        fields={key:f[key] for key in ['h','uu_h'] if key in f.files}
+        fields={key:f[key] for key in ['h','uu_h','uu_row_ids'] if key in f.files}
     protocol=source['protocol'];grid=protocol['hessian_grid']
     x=(context['data']['x'][grid['stimulus_rows']]-protocol['x_mean'])/protocol['x_sd']
     fields['strict_x']=np.tile(x,(len(grid['subject_ids']),1))
     fields['strict_subject_groups']=np.repeat(np.arange(len(grid['subject_ids'])),len(x))
+    # Density is a property of numerical input coordinates, never of response
+    # gradients or labels. Formula T is accessed only for the analytic benchmark.
+    train=context['splits']['train'];cov=np.asarray(source['preprocessing']['covariance'])
+    if source['args']['source']=='formula':
+        parameters=context['data']['parameters'];mu=parameters[train].mean(0);sd=parameters[train].std(0)
+        coordinates=(parameters-mu)/sd
+    else:coordinates=context['v']
+    radii=np.einsum('na,ab,nb->n',coordinates,np.linalg.pinv(cov),coordinates)
+    train_radii=np.sort(radii[train]);ranks=np.searchsorted(train_radii,radii,side='right')/len(train)
+    fields['strict_rank']=np.repeat(ranks[grid['subject_ids']],len(x))
+    if 'uu_row_ids' in fields:
+        subjects=context['data']['subject_index'];fields['uu_rank']=ranks[subjects[fields['uu_row_ids']]]
     if len(fields['h'])!=len(fields['strict_x']):raise ValueError('Wrong numerical grid')
     provenance=dict(summary=str(path),summary_sha256=sha(path),field_sha256=sha(cache),
         source=source['args']['source'],estimator=source['args']['estimator'],hashes=source['hashes'],
         field_args={k:source['args'].get(k) for k in ['seed','degree','ridge','rbf_centers','rbf_length','utility_ridge','stimulus_kernel']},
         inference_diagnostics={k:(source.get('estimator_info') or {}).get(k) for k in ['validation_rmse','block_errors']})
     # No old rotation, labels, supervised metric or loss is returned.
-    return fields,np.asarray(source['preprocessing']['covariance']),provenance
+    return fields,cov,provenance
 
 
 def plane_grid(batch,d):

@@ -35,11 +35,15 @@ def canonical_singles():
 class BatchLoss:
     """Share numerical transforms across independent objectives, not their scores."""
     def __init__(self,fields,cov,d,names):
-        first=next(n for n in names if CATALOG[n]['family']!='jd')
+        first=next(n for n in names if CATALOG[n]['family']!='jd' and 'density_quantile' not in CATALOG[n])
         base=HessianLoss(fields,cov,d,first)
         self.losses={};special={}
         for name in names:
-            if CATALOG[name]['family']=='jd':obj=HessianLoss(fields,cov,d,name)
+            if 'density_quantile' in CATALOG[name] or CATALOG[name]['family'] in ['subject_ux','subject_edges']:
+                key=json.dumps({k:v for k,v in CATALOG[name].items() if k!='score'},sort_keys=True)
+                if key not in special:special[key]=HessianLoss(fields,cov,d,name)
+                obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
+            elif CATALOG[name]['family']=='jd':obj=HessianLoss(fields,cov,d,name)
             elif CATALOG[name]['family']=='functional':
                 key=CATALOG[name]['degree']
                 if key not in special:special[key]=HessianLoss(fields,cov,d,name)
@@ -62,7 +66,8 @@ class BatchLoss:
                 key=(_method,*args)
                 if key not in memo:memo[key]=_bound(a,*args)
                 return memo[key]
-            for obj in self.losses.values():setattr(obj,method,cached)
+            for obj in self.losses.values():
+                if 'density_quantile' not in obj.spec:setattr(obj,method,cached)
         values={name:obj(r) for name,obj in self.losses.items()}
         # Restore original class methods; otherwise the next R would capture a
         # closure holding an obsolete transform from the previous rotation.
@@ -98,12 +103,18 @@ def main():
     if not cache.is_relative_to(ROOT):raise ValueError('Field cache outside research folder')
     with np.load(cache,allow_pickle=False) as z:
         if str(z['checkpoint_hash'])!=context['hashes']['checkpoint']:raise ValueError('Wrong cache checkpoint')
-        fields={key:z[key] for key in ['h','uu_h','uu_t','third'] if key in z.files}
+        fields={key:z[key] for key in ['h','uu_h','uu_t','third','uu_row_ids'] if key in z.files}
     grid=source['protocol']['hessian_grid'];protocol=source['protocol']
     x=(context['data']['x'][grid['stimulus_rows']]-protocol['x_mean'])/protocol['x_sd']
     fields['strict_x']=np.tile(x,(len(grid['subject_ids']),1))
     fields['strict_subject_groups']=np.repeat(np.arange(len(grid['subject_ids'])),len(x))
     cov=np.asarray(source['preprocessing']['covariance']);d=args.zdim
+    train=context['splits']['train'];parameters=context['data']['parameters']
+    v=(parameters-parameters[train].mean(0))/parameters[train].std(0)
+    radii=np.einsum('na,ab,nb->n',v,np.linalg.pinv(cov),v)
+    ranks=np.searchsorted(np.sort(radii[train]),radii,side='right')/len(train)
+    fields['strict_rank']=np.repeat(ranks[grid['subject_ids']],len(x))
+    if 'uu_row_ids' in fields:fields['uu_rank']=ranks[context['data']['subject_index'][fields['uu_row_ids']]]
     names,aliases=canonical_singles();batch=BatchLoss(fields,cov,d,names)
     out=ROOT/'results'/args.label/args.model;out.mkdir(parents=True,exist_ok=True)
     identity=batch(np.eye(d));curves={n:[] for n in names};random_best={n:None for n in names}
