@@ -10,12 +10,15 @@ from pathlib import Path
 import numpy as np
 from basis import Basis
 
+ROTATION_MATRIX_TYPE = 'orthogonal_givens_v2'
+
 
 def givens(n,i,j,deg):
     if not 0<=i<n or not 0<=j<n or i==j:
         raise ValueError('Expected distinct valid latent axes')
     a=np.deg2rad(deg);r=np.eye(n)
     r[i,i]=r[j,j]=np.cos(a)
+    r[i,j]=np.sin(a)
     r[j,i]=-np.sin(a)
     return r
 
@@ -58,12 +61,15 @@ def scan(folder,output,axis_i=1,axis_j=2,step=5.):
     records=[]
     for deg in degrees:
         r=givens(zdim,axis_i,axis_j,deg)
+        if not np.allclose(r.T @ r,np.eye(zdim),rtol=0,atol=1e-12) or not np.isclose(np.linalg.det(r),1.,atol=1e-12):
+            raise AssertionError('Rotation matrix is not an element of SO(d)')
         rotated=np.einsum('ij,njk->nik',r,G,optimize=True)
         rms=np.sqrt(np.mean(rotated**2,axis=0))
         metrics=complexity(rms)
         records.append({'angle_deg':float(deg),**metrics})
     out.mkdir(parents=True,exist_ok=True)
-    result={'source':fit['source'],'model':fit['model'],'label':fit['label'],
+    result={'rotation_matrix_type':ROTATION_MATRIX_TYPE,
+            'source':fit['source'],'model':fit['model'],'label':fit['label'],
             'method':fit.get('method','oracle_polynomial_projection'),
             'axis_pair':[axis_i,axis_j], 'step':float(step),
             'z_degree':basis.z_degree,'x_degree':basis.x_degree,

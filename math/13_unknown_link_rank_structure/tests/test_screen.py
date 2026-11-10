@@ -8,7 +8,7 @@ from scipy.special import expit
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from basis import Basis
 from fit import rank_pairs, estimate, load_data
-from scan import givens,complexity,scan
+from scan import givens,complexity,scan,ROTATION_MATRIX_TYPE
 from compare import angle_error
 
 
@@ -33,6 +33,22 @@ def test_link_invariant_training_signs():
     ii,jj,ss=rank_pairs(b,1000,np.random.default_rng(1))
     assert np.array_equal(i,ii) and np.array_equal(j,jj)
     assert np.array_equal(s,ss)
+
+
+def test_givens_are_orthogonal_and_do_not_erase_any_coordinate():
+    rng=np.random.default_rng(2026)
+    G=rng.normal(size=(17,4,11))
+    energy=np.sum(G**2,axis=(1,2))
+    for angle in (-90.,-60.,-45.,-5.,0.,5.,45.,60.,90.):
+        R=givens(4,0,2,angle)
+        assert np.allclose(R.T@R,np.eye(4),atol=1e-12)
+        assert np.isclose(np.linalg.det(R),1.,atol=1e-12)
+        rotated=np.einsum('ij,njk->nik',R,G)
+        assert np.allclose(np.sum(rotated**2,axis=(1,2)),energy,atol=1e-11)
+    # 90-degree rotations may only permute/sign-flip rows, never annihilate them.
+    Q=givens(4,0,2,90.)
+    assert np.allclose(Q[0],np.array([0.,0.,1.,0.]))
+    assert np.allclose(Q[2],np.array([-1.,0.,0.,0.]))
 
 
 def test_c1_structural_axes_not_rotated():
@@ -67,6 +83,7 @@ def test_cr3_discrete_design_basis_without_perturbing_x(tmp_path):
     (out/'fit.json').write_text(json.dumps({'source':'wy_only','model':'CR3','label':'prob',
           'method':'rank_svm','basis':basis.serialize()}))
     result=scan(out,tmp_path/'curve',0,2,15)
+    assert result['rotation_matrix_type']==ROTATION_MATRIX_TYPE
     assert len(result['records'])==13
     assert all(np.isfinite(r['normalized_l1']) for r in result['records'])
     assert (tmp_path/'curve'/'summary.json').exists()
@@ -104,7 +121,16 @@ def test_gate2_cr3_refuses_bad_oracle_projection(tmp_path):
     (oracle/'fit.json').write_text(json.dumps({'source':'oracle','model':'CR3','test_r2':.51}))
     rec=[{'angle_deg':float(a),'normalized_l1':2.+abs(a)/90.,'effective_partner_sum':3.+abs(a)/90.}
          for a in np.arange(-90,91,5)]
-    (oracle/'scan'/'rotation_curve.json').write_text(json.dumps({'source':'oracle','records':rec}))
+    (oracle/'scan'/'rotation_curve.json').write_text(json.dumps({'source':'oracle','rotation_matrix_type':ROTATION_MATRIX_TYPE,'records':rec}))
     result=evaluate(oracle,tmp_path/'gate')
     assert all(r['gate2']=='FAIL' for r in result['scores'].values())
     assert (tmp_path/'gate'/'gate2.json').exists()
+
+
+def test_gate2_rejects_legacy_nonorthogonal_scan(tmp_path):
+    from gate2 import evaluate
+    oracle=tmp_path/'oracle';(oracle/'scan').mkdir(parents=True)
+    (oracle/'fit.json').write_text(json.dumps({'source':'oracle','model':'CR3','test_r2':.98}))
+    (oracle/'scan'/'rotation_curve.json').write_text(json.dumps({'source':'oracle','records':[]}))
+    with pytest.raises(ValueError,match='nonorthogonal'):
+        evaluate(oracle,tmp_path/'gate')

@@ -1,5 +1,8 @@
 # 13 · Unknown-link rank interaction structure — C1/C2/C3 **and CR3**
 
+**CORRECTNESS UPDATE (2026-11-10):** `scan.py` v1 accidentally omitted the upper off-diagonal `sin(angle)` term from its Givens rotation. The old matrices were not orthogonal, particularly at ±90°, and caused spurious structural minima. **All rotation curves/gates generated before the corrected v2 commit are invalid.** Models and polynomial fits do NOT need retraining: rerun `scan.py`, `gate2.py`, and `compare.py` only. The latter scripts now reject legacy scan JSON without `rotation_matrix_type=orthogonal_givens_v2`. CR3 original probability-condition results after re-evaluation: Oracle R²=.9827; Oracle gain normalized_l1=1.36%, effective_partner_sum=1.91%; both fail preset 3% Gate 2 threshold; Gate 3 fails as well. No hyperparameters were changed.
+
+
 **Research question:** From paired samples `W=[Z,X], Y`, can a **single-index model with an unknown common strictly increasing output link** recover a simple, coordinate-dependent `Z × X` interaction structure? Does the selected rotation agree with a separately calculated oracle? This is a **new, standalone, one-pass method screen**, not an attempt to repair the failed Hessian or direction-projector objectives.
 
 ## What is implemented (and what is NOT)

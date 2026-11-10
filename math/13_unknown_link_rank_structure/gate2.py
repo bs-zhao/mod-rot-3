@@ -4,12 +4,15 @@ import argparse,json
 from pathlib import Path
 import numpy as np
 from compare import angle_error
+from scan import ROTATION_MATRIX_TYPE
 
 
 def evaluate(fit_folder,output,min_gain=.03,min_r2=.90,max_angle_error=10.):
     d=Path(fit_folder)
     meta=json.loads((d/'fit.json').read_text(encoding='utf8'))
     curve=json.loads((d/'scan'/'rotation_curve.json').read_text(encoding='utf8'))
+    if curve.get('rotation_matrix_type')!=ROTATION_MATRIX_TYPE:
+        raise ValueError('Old/nonorthogonal rotation curve: rerun scan.py with corrected code')
     if meta['source']!='oracle' or curve['source']!='oracle':
         raise ValueError('Gate 2 must use independently projected true index')
     x=np.asarray([r['angle_deg'] for r in curve['records']])

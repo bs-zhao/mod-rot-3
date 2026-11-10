@@ -8,6 +8,7 @@ import argparse,json
 from pathlib import Path
 import numpy as np
 from scipy.stats import spearmanr
+from scan import ROTATION_MATRIX_TYPE
 
 
 def angle_error(a,b):
@@ -18,6 +19,8 @@ def compare(estimated,oracle,output,min_gain=.03,min_corr=.8,max_angle_error=10.
             min_oracle_r2=.90,min_test_rank_accuracy=.75):
     e=json.loads(Path(estimated).read_text(encoding='utf8'))
     o=json.loads(Path(oracle).read_text(encoding='utf8'))
+    if e.get('rotation_matrix_type')!=ROTATION_MATRIX_TYPE or o.get('rotation_matrix_type')!=ROTATION_MATRIX_TYPE:
+        raise ValueError('Old/nonorthogonal rotation curve: rerun scan.py and gate2.py with corrected code')
     if e['source']!='wy_only' or o['source']!='oracle':
         raise ValueError('First result must be WY; second must be Oracle')
     for key in ('model','label','axis_pair','step','z_degree','x_degree','x_basis_terms'):
