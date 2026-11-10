@@ -53,6 +53,9 @@ def ensure_reference(args,stage):
     command+=latent_args
     if args.inference=='nn_direct_diagnostic':
         command[command.index('--estimator')+1]='direct'
+    if args.inference=='neural':
+        command[command.index('--estimator')+1]='neural'
+        command+=['--train-rows','262144','--validation-rows','65536','--neural-width','128','--neural-epochs','200']
     logs=ROOT/'results'/'batch_logs';logs.mkdir(exist_ok=True)
     print(args.model,args.inference,'building',stage,'numeric fields',flush=True)
     with (logs/f'{label}_{args.model}.log').open('w',encoding='utf8') as f:
@@ -145,7 +148,7 @@ def main():
     p=argparse.ArgumentParser(description=__doc__)
     p.add_argument('--repo',default=str(ROOT.parents[1]));p.add_argument('--model',choices=['C1','C2','C3','CR3'],required=True)
     p.add_argument('--beta',type=float,required=True);p.add_argument('--zdim',type=int,required=True);p.add_argument('--pca',type=int,required=True,choices=[0,1])
-    p.add_argument('--inference',choices=['gaussian256','anova2','anova3','gaussian512d5','zrbf','nn_direct_diagnostic'],default='gaussian256')
+    p.add_argument('--inference',choices=['gaussian256','anova2','anova3','gaussian512d5','zrbf','neural','nn_direct_diagnostic'],default='gaussian256')
     p.add_argument('--starts',type=int,default=8);p.add_argument('--maxiter',type=int,default=160)
     p.add_argument('--label',default='b01_three_gap_batch');p.add_argument('--only',nargs='+')
     p.add_argument('--prefix',help='Predeclared catalogue family prefix; default hs_b01_')

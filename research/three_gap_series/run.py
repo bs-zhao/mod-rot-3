@@ -220,6 +220,41 @@ def structure_function(fn,args):
         return linked
     return fn
 
+
+def neural_fields(args,c,fn,w,v,protocol,third,extra_w,artifact_path):
+    from neural_wy import NeuralWY
+    if args.channel!='logit':raise ValueError('Neural WY branch currently benchmarks continuous logit only')
+    rng=np.random.default_rng(args.seed+317);data=c['data'];sub=data['subject_index'];xx=data['x'];tables=[];selected=[];d=c['d']
+    for split,count in [('train',args.train_rows),('validation',args.validation_rows)]:
+        pool=np.flatnonzero(np.isin(sub,c['splits'][split]));rows=rng.choice(pool,min(count,len(pool)),replace=False)
+        inputs=np.concatenate((v[sub[rows]],(xx[rows]-protocol['x_mean'])/protocol['x_sd']),axis=1)
+        with torch.no_grad():y=np.concatenate([torch.vmap(fn)(batch).numpy() for batch in torch.tensor(inputs).split(2048)])
+        tables.append((inputs,y));selected.append(rows)
+    hidden=rotation(rng.uniform(-np.pi,np.pi,d*(d-1)//2),d)
+    transform=np.eye(w.shape[1]);transform[:d,:d]=hidden
+    train,y=tables[0];validation,vy=tables[1]
+    fit=NeuralWY(d,args.neural_width,args.neural_epochs,args.seed).fit(train@transform.T,y,validation@transform.T,vy)
+    fit.save(artifact_path);matrix=torch.tensor(transform)
+    def estimated(q):return fit.value(q@matrix.T)
+    fields=hessian_study_fields(estimated,w,d,third and extra_w is None)
+    if extra_w is not None:
+        fields['uu_h']=derivatives(estimated,extra_w,d,False,True)['h']
+        if third:
+            def fixed(z,x):return estimated(torch.cat((z,x)))
+            op=torch.func.jacfwd(torch.func.jacfwd(torch.func.jacrev(fixed,argnums=0),argnums=0),argnums=0)
+            fields['uu_t']=np.concatenate([torch.vmap(op)(batch[:,:d],batch[:,d:]).detach().numpy() for batch in torch.tensor(extra_w).split(32)])
+    reference=hessian_study_fields(fn,w,d,False)
+    errors={}
+    for name,sl in [('UU',(slice(None),slice(None,d),slice(None,d))),('UX',(slice(None),slice(None,d),slice(d,None))),('XX',(slice(None),slice(d,None),slice(d,None)))]:
+        diff=fields['h'][sl]-reference['h'][sl]
+        errors[name]=dict(relative=float(np.linalg.norm(diff)/max(np.linalg.norm(reference['h'][sl]),1e-20)),absolute_rmse=float(np.sqrt(np.mean(diff*diff))))
+    if extra_w is not None:
+        truth=derivatives(fn,extra_w,d,False,True)['h'];diff=fields['uu_h']-truth
+        errors['UU_full_domain']=dict(relative=float(np.linalg.norm(diff)/max(np.linalg.norm(truth),1e-20)),absolute_rmse=float(np.sqrt(np.mean(diff*diff))))
+    return fields,dict(**fit.info,block_errors=errors,hidden_rotation=hidden,surrogate_path=str(artifact_path),
+        surrogate_sha256=sha(artifact_path),train_row_hash=__import__('hashlib').sha256(selected[0].tobytes()).hexdigest(),
+        validation_row_hash=__import__('hashlib').sha256(selected[1].tobytes()).hexdigest())
+
 def bank_fields(args,c,fn,w,v,protocol,rows):
     from estimators import BankSieve
     if args.model!='CR3' or not args.metric.startswith('conditional_'):
@@ -421,7 +456,7 @@ def main():
     p.add_argument('--beta',type=float,required=True); p.add_argument('--zdim',type=int,required=True)
     p.add_argument('--pca',type=int,choices=[0,1],required=True)
     p.add_argument('--source',choices=['formula','decoder'],default='formula')
-    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','local','tensor','stimulus','utility','profile'],default='direct')
+    p.add_argument('--estimator',choices=['direct','finite_difference','polynomial','local','tensor','neural','stimulus','utility','profile'],default='direct')
     p.add_argument('--channel',choices=['logit','probability','binary'],default='logit')
     p.add_argument('--metric',choices=METRICS+tuple(HESSIAN_CATALOG),required=True)
     p.add_argument('--samples',type=int,default=384); p.add_argument('--starts',type=int,default=8)
@@ -458,6 +493,8 @@ def main():
     p.add_argument('--latent-kernel',choices=['polynomial','gaussian'],default='polynomial')
     p.add_argument('--latent-centers',type=int,default=256)
     p.add_argument('--latent-length',type=float,default=1.)
+    p.add_argument('--neural-width',type=int,default=128)
+    p.add_argument('--neural-epochs',type=int,default=200)
     p.add_argument('--field-reference',help='Reuse fixed numerical fields from a compatible Hessian-only summary; no old R or T evaluation is consumed')
     args=p.parse_args(); torch.set_num_threads(2); started=time.time()
     if args.metric in HESSIAN_CATALOG and is_combination(args.metric):
@@ -520,7 +557,7 @@ def main():
             evaluation_points=len(w),access='TRAIN product evaluation Q; G2/G3 must fit original WY rows, not query teacher at this grid for fitting')
     full_w=None;full_rows=None
     if args.uu_full_domain:
-        if args.metric not in HESSIAN_CATALOG or args.estimator not in ['direct','tensor']:
+        if args.metric not in HESSIAN_CATALOG or args.estimator not in ['direct','tensor','neural']:
             raise ValueError('Separate all-row UU supports direct fields and generic TensorWY inference')
         all_sub=c['data']['subject_index'];all_x=c['data']['x']
         pool=np.flatnonzero(np.isin(all_sub,c['splits']['train']))
@@ -590,6 +627,10 @@ def main():
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.estimator=='tensor':
             fields,estimator_info=tensor_fields(args,c,fn,w,v,protocol,third,full_w)
+            if full_rows is not None:fields['uu_row_ids']=full_rows
+            dump(cache.with_suffix('.json'),estimator_info)
+        elif args.estimator=='neural':
+            fields,estimator_info=neural_fields(args,c,fn,w,v,protocol,third,full_w,cache.with_suffix('.pt'))
             if full_rows is not None:fields['uu_row_ids']=full_rows
             dump(cache.with_suffix('.json'),estimator_info)
         elif args.estimator=='local':

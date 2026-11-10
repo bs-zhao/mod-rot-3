@@ -1,3 +1,4 @@
 __pycache__/
 results/**/fields_*.npz
+results/**/fields_*.pt
 results/**/rotation.npy

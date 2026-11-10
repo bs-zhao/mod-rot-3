@@ -11,7 +11,7 @@ FIELD_ARGUMENTS=('model','beta','zdim','pca','source','estimator','channel','str
     'samples','seed','degree','ridge','train_rows','validation_rows','train_subjects','validation_subjects',
     'utility_ridge','rbf_centers','rbf_length','neighbors','bandwidth','step','hessian_grid','grid_stimuli',
     'uu_full_domain','subject_mean','field_mean','center_point','q_weight','fisher_power','stimulus_kernel',
-    'latent_kernel','latent_centers','latent_length')
+    'latent_kernel','latent_centers','latent_length','neural_width','neural_epochs')
 
 
 def validate_reference(args,context,protocol,w_shape,full_rows,third,root=None):
@@ -22,7 +22,8 @@ def validate_reference(args,context,protocol,w_shape,full_rows,third,root=None):
     if source.get('scope')!='hessian_only':raise ValueError('Only Hessian-only fields may be reused')
     if source['hashes']!=context['hashes']:raise ValueError('Field source checkpoint/latent/dataset mismatch')
     for key in FIELD_ARGUMENTS:
-        default={'stimulus_kernel':'gaussian','latent_kernel':'polynomial','latent_centers':256,'latent_length':1.}.get(key)
+        default={'stimulus_kernel':'gaussian','latent_kernel':'polynomial','latent_centers':256,'latent_length':1.,
+            'neural_width':128,'neural_epochs':200}.get(key)
         if source['args'].get(key,default)!=getattr(args,key,default):raise ValueError(f'Incompatible field protocol: {key}')
     for key in ['x_mean','x_sd']:
         if not np.array_equal(np.asarray(source['protocol'][key]),np.asarray(protocol[key])):raise ValueError(f'Field standardization mismatch: {key}')
