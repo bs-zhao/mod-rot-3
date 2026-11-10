@@ -3,6 +3,8 @@ from __future__ import annotations
 import argparse
 import json
 import pickle
+import csv
+import time
 from pathlib import Path
 import sys
 import numpy as np
@@ -80,16 +82,24 @@ class SmoothMLP:
         opt=torch.optim.AdamW(self.net.parameters(),lr=lr,weight_decay=1e-5)
         fn=torch.nn.functional.binary_cross_entropy_with_logits if self.binary else torch.nn.functional.mse_loss
         best=float('inf'); stale=0; best_state=None
+        self.training_history=[]; self.optimizer_steps=0; self.best_epoch=None
+        training_started=time.perf_counter()
         rng=np.random.default_rng(seed)
         for epoch in range(epochs):
             self.net.train()
             for idx in np.array_split(rng.permutation(len(tx)),max(1,int(np.ceil(len(tx)/batch)))):
                 opt.zero_grad(set_to_none=True)
                 loss=fn(self.net(tx[idx]),ty[idx]);loss.backward();opt.step()
+                self.optimizer_steps+=1
             self.net.eval()
             with torch.no_grad():
                 value=float(fn(self.net(vx),vy).item())
+                train_loss=float(fn(self.net(tx),ty).item())
+            self.training_history.append({'epoch':epoch+1,'train_loss':train_loss,'val_loss':value})
+            if epoch==0 or (epoch+1)%20==0 or epoch+1==epochs:
+                print(f'[MLP] epoch={epoch+1}/{epochs} train_loss={train_loss:.8f} val_loss={value:.8f}',flush=True)
             if value<best-1e-5:
+                self.best_epoch=epoch+1
                 best=value;stale=0
                 best_state={k:v.detach().cpu().clone() for k,v in self.net.state_dict().items()}
             else:
@@ -98,6 +108,10 @@ class SmoothMLP:
         self.net.load_state_dict(best_state)
         self.net.eval()
         self.epochs_used=epoch+1
+        self.train_seconds=float(time.perf_counter()-training_started)
+        self.early_stopped=bool(self.epochs_used<epochs)
+        print(f'[MLP] FINISHED epochs={self.epochs_used} best_epoch={self.best_epoch} '
+              f'optimizer_steps={self.optimizer_steps} elapsed={self.train_seconds:.2f}s',flush=True)
         return self
     def tensor_forward(self, w):
         import torch
@@ -150,6 +164,14 @@ def fit(data_dir,method,output,seed=31,max_train=12000,epochs=200,hidden=96):
             'mean':m.mean.tolist(),'std':m.std.tolist(),
             'ymean':m.ymean,'ystd':m.ystd}
         torch.save(ck,out/'model.pt')
+        with (out/'training_history.csv').open('w',newline='',encoding='utf8') as f:
+            writer=csv.DictWriter(f,fieldnames=['epoch','train_loss','val_loss'])
+            writer.writeheader();writer.writerows(m.training_history)
+        training_info={'epochs_requested':int(epochs),'epochs_used':int(m.epochs_used),
+                       'best_epoch':int(m.best_epoch),'optimizer_steps':int(m.optimizer_steps),
+                       'training_seconds':float(m.train_seconds),'early_stopped':bool(m.early_stopped),
+                       'device':device,'parameter_count':int(sum(q.numel() for q in m.net.parameters())),
+                       'checkpoint_bytes':int((out/'model.pt').stat().st_size)}
     elif method in {'spline_add','spline_pair'}:
         m=SplineANOVA(order=1 if method=='spline_add' else 2).fit(xt,yt,binary=binary)
         with (out/'model.pkl').open('wb') as fp:pickle.dump(m,fp)
@@ -169,6 +191,7 @@ def fit(data_dir,method,output,seed=31,max_train=12000,epochs=200,hidden=96):
     result={'method':method,'seed':seed,'n_train':len(xt),'max_train':max_train,
             'validation':metrics(yv,predict(xv),binary),'test':metrics(yy,predict(xx),binary),
             'data_dir':str(data.resolve()), 'label':meta['label'], 'model':meta['model']}
+    if method=='mlp':result['training']=training_info
     (out/'fit.json').write_text(json.dumps(result,indent=2),encoding='utf8')
     print(json.dumps(result,indent=2)); return result
 
