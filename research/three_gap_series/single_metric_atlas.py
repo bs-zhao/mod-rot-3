@@ -37,9 +37,13 @@ class BatchLoss:
     def __init__(self,fields,cov,d,names):
         first=next(n for n in names if CATALOG[n]['family']!='jd')
         base=HessianLoss(fields,cov,d,first)
-        self.losses={}
+        self.losses={};special={}
         for name in names:
             if CATALOG[name]['family']=='jd':obj=HessianLoss(fields,cov,d,name)
+            elif CATALOG[name]['family']=='functional':
+                key=CATALOG[name]['degree']
+                if key not in special:special[key]=HessianLoss(fields,cov,d,name)
+                obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
             else:obj=copy.copy(base);obj.metric=name;obj.spec=CATALOG[name]
             self.losses[name]=obj
         self.base=base

@@ -109,6 +109,26 @@ for stat in ['meanabs','median','q90','q99']:
         for part in ['self','off']:
             register(f'uu_{part}_{stat}_{score}',family='uu',part=part,stat=stat,score=score)
 
+# B01: single-objective breadth, declared before examining this batch.
+for family in ['ux','full']:
+    for axis in ['global','row','column']:
+        for score in ['hoyer','gini','kurtosis']:
+            register(f'b01_{family}_rms_{axis}_{score}',family=family,stat='rms',axis=axis,score=score)
+for threshold in [.003,.01,.02,.05,.07]:
+    for normalization in ['reference','ux','column']:
+        register(f'b01_ux_rms_soft_t{threshold:g}_{normalization}',family='ux',stat='rms',axis='row',
+            score=f'soft@{threshold:g}',normalization=normalization)
+for degree in [1,2]:
+    for axis in ['global','row','column']:
+        for score in ['l1','lp05','soft003','hoyer','gini','kurtosis']:
+            register(f'b01_functional{degree}_{axis}_{score}',family='functional',degree=degree,axis=axis,score=score)
+for normalization in ['reference','ux','column']:
+    register(f'b01_ux_rms_soft_t0.03_{normalization}',family='ux',stat='rms',axis='row',
+        score='soft003',normalization=normalization)
+for statistic in ['signed','rms']:
+    for normalized in [False,True]:
+        register(f'b01_ux_gram_{statistic}_corr{int(normalized)}',family='ux_gram',stat=statistic,normalized=normalized)
+
 
 def is_combination(metric):
     spec=CATALOG[metric]
@@ -125,6 +145,21 @@ def summarize_absolute(values,stat):
 
 def penalty(values,score,axis=-1,k=1):
     v=np.abs(values)
+    if '@' in score:
+        kind,number=score.split('@');number=float(number)
+        if kind=='soft':return float(np.mean(v*v/(v*v+number**2)))
+        raise ValueError(score)
+    if score in ['hoyer','gini','kurtosis']:
+        count=v.shape[axis];total=v.sum(axis=axis);energy=np.sum(v*v,axis=axis)
+        if score=='hoyer':result=total/np.sqrt(np.maximum(count*energy,1e-30))
+        elif score=='kurtosis':result=-np.sum(v**4,axis=axis)/np.maximum(energy**2,1e-30)
+        else:
+            sorted_v=np.sort(v,axis=axis)
+            shape=[1]*v.ndim;shape[axis]=count
+            weights=np.arange(count,0,-1).reshape(shape)
+            result=2*np.sum(weights*sorted_v,axis=axis)/np.maximum(count*total,1e-30)-1/count
+            result=np.where(total>1e-15,result,0.)
+        return float(np.mean(result))
     if score=='l1':return float(v.mean())
     if score=='l2sq':return float(np.mean(v*v))
     if score=='lp05':return float(np.sqrt(v+1e-16).mean())
@@ -178,6 +213,21 @@ class HessianLoss:
             coeff=np.linalg.solve(phi.T@phi/self.n+ridge,phi.T@self.ux.reshape(self.n,-1)/self.n)
             self.profiles[degree]=coeff.reshape(-1,d,self.ux.shape[2]).transpose(1,0,2).reshape(d,-1)
         self.joint_operators=None
+        self.functional_operators=None
+        if self.spec['family']=='functional':
+            if 'strict_subject_groups' not in fields:raise ValueError('Functional Hessian needs product grid groups')
+            groups=fields['strict_subject_groups'];ids=np.unique(groups);coefs=[]
+            phi_all=PolynomialFeatures(self.spec['degree']).fit_transform(fields['strict_x'])
+            phi_scale=np.maximum(np.sqrt(np.mean(phi_all**2,axis=0)),1e-12)
+            phi_all=phi_all/phi_scale
+            for sid in ids:
+                mask=groups==sid;phi=phi_all[mask]
+                projection=np.linalg.solve(phi.T@phi/mask.sum()+1e-5*np.eye(phi.shape[1]),phi.T/mask.sum())
+                cp=projection@self.ux[mask].reshape(mask.sum(),-1)
+                coefs.append(cp.reshape(-1,d,self.ux.shape[2]).transpose(1,0,2).reshape(d,-1))
+            coefficients=np.asarray(coefs)
+            self.functional_operators=np.einsum('saq,sbq->qab',coefficients,coefficients)/len(ids)
+            self.functional_scale=max(float(np.sqrt(np.einsum('i,qii,i->',sd,self.functional_operators,sd))),1e-12)
         if self.spec['family']=='jd':
             if 'strict_subject_groups' not in fields:raise ValueError('Hessian profile JD requires a grouped subject x stimulus grid')
             groups=fields['strict_subject_groups'];ids=np.unique(groups);coefs=[]
@@ -241,14 +291,34 @@ class HessianLoss:
         ux=self._ux(a,stat)*self.scale
         return np.concatenate((uu,ux),axis=-1)/self.common_scale
 
+    def _functional(self,a):
+        return np.sqrt(np.maximum(np.einsum('ia,qab,ib->iq',a,self.functional_operators,a,optimize=True),0))/self.functional_scale
+
     def __call__(self,r):
         sd=np.sqrt(np.diag(r@self.cov@r.T))
         a=sd[:,None]*np.linalg.inv(r).T
         s=self.spec;family=s['family']
-        if family=='full':return penalty(self._full(a,s['stat']),s['score'],-2 if s['axis']=='column' else -1,s.get('k',1))
+        if family in ['full','functional']:
+            values=self._full(a,s['stat']) if family=='full' else self._functional(a)
+            if s['axis']=='global':values=values.reshape(-1)
+            return penalty(values,s['score'],-2 if s['axis']=='column' else -1,s.get('k',1))
         if family=='ux':
             v=self._ux(a,s['stat']);axis=-1 if s['axis']!='column' else -2
+            normalization=s.get('normalization','reference')
+            if normalization=='ux':v=v*self.scale/max(np.sqrt(self.ux_energy),1e-12)
+            if normalization=='column':
+                original_sd=np.sqrt(np.diag(self.cov))
+                norm=np.sqrt(np.maximum(np.einsum('a,paa,a->p',original_sd,self.ux_moment,original_sd),0))
+                v=v*self.scale/np.maximum(norm,1e-12)
+            if s['axis']=='global':v=v.reshape(-1)
             return penalty(v,s['score'],axis,s.get('k',1))
+        if family=='ux_gram':
+            if s['stat']=='signed':vectors=a@self.xm;gram=vectors@vectors.T
+            else:gram=np.einsum('ia,pab,jb->ij',a,self.ux_moment,a,optimize=True)
+            if s['normalized']:
+                norms=np.sqrt(np.maximum(np.diag(gram),0));gram=gram/np.maximum(norms[:,None]*norms[None,:],1e-20)
+            else:gram=gram/self.scale**2
+            return float(np.mean(gram[~np.eye(self.d,dtype=bool)]**2))
         if family=='profile':return penalty(self._ux(a,f'profile{s["degree"]}'),s['score'],-2,s.get('k',1))
         if family=='uu':return penalty(self._uu(a,s['stat'],s['part']),s['score'])
         if family=='uu_fraction':

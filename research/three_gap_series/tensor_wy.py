@@ -12,14 +12,22 @@ from sklearn.preprocessing import PolynomialFeatures
 
 
 class TensorWY:
-    def __init__(self,degree=3,ridge=1e-6,stimulus_ridge=1e-5,centers=64,length=1.,seed=20261127):
+    def __init__(self,degree=3,ridge=1e-6,stimulus_ridge=1e-5,centers=64,length=1.,seed=20261127,kernel='gaussian'):
         self.degree=degree;self.ridge=ridge;self.stimulus_ridge=stimulus_ridge
-        self.ncenters=centers;self.length=length;self.seed=seed
+        self.ncenters=centers;self.length=length;self.seed=seed;self.kernel=kernel
+        if kernel not in ['gaussian','anova2','anova3']:raise ValueError(kernel)
 
     def xfeatures(self,x):
         poly=self.xbasis.transform(x/np.sqrt(x.shape[1]))*self.xweights
-        sq=np.maximum(np.sum(x*x,1)[:,None]+np.sum(self.centers*self.centers,1)[None]-2*x@self.centers.T,0)
-        rbf=np.exp(-sq/(2*self.sigma**2))
+        if self.kernel=='gaussian':
+            sq=np.maximum(np.sum(x*x,1)[:,None]+np.sum(self.centers*self.centers,1)[None]-2*x@self.centers.T,0)
+            rbf=np.exp(-sq/(2*self.sigma**2))
+        else:
+            radial=np.exp(-(x[:,None,:]-self.centers[None,:,:])**2/(2*self.sigma**2))
+            terms=[]
+            for order in range(1,min(int(self.kernel[-1]),x.shape[1])+1):
+                terms.append(sum(np.prod(radial[:,:,list(ix)],axis=2) for ix in itertools.combinations(range(x.shape[1]),order))/math.comb(x.shape[1],order))
+            rbf=sum(terms)/len(terms)
         return np.column_stack((poly,rbf))
 
     def fit(self,z,x_tables,y_tables):
@@ -29,7 +37,7 @@ class TensorWY:
         pick=rng.choice(len(pool),min(8192,len(pool)),replace=False);pool=pool[pick]
         unique_pool=np.unique(pool,axis=0)
         self.centers=unique_pool[rng.choice(len(unique_pool),min(self.ncenters,len(unique_pool)),replace=False)].copy()
-        self.sigma=self.length*np.sqrt(pool.shape[1])
+        self.sigma=self.length*(np.sqrt(pool.shape[1]) if self.kernel=='gaussian' else 1.)
         self.xbasis=PolynomialFeatures(2).fit(pool[:1]);xp=self.xbasis.powers_
         self.xweights=np.array([math.sqrt(math.factorial(int(a.sum()))/math.prod(math.factorial(int(j)) for j in a)) for a in xp])
         self.xscale=np.maximum(np.sqrt(np.mean(self.xfeatures(pool)**2,axis=0)),1e-8)
@@ -60,6 +68,8 @@ class TensorWY:
             center_rule='Uniform sample without replacement from distinct TRAIN X rows; no model condition groups',
             shared_stimulus_design_detected=shared,train_subjects=len(z),train_rows=sum(len(y) for y in y_tables),
             capabilities=['F0','F1','F2','F3'],warning='Prediction accuracy does not imply Hessian accuracy; fixed X designs require interpolation assumptions')
+        self.info['stimulus_kernel']=self.kernel
+        self.info['kernel_interaction_rule']='All coordinate subsets up to order k, equal averaged weights; no named X groups' if self.kernel!='gaussian' else 'Isotropic Gaussian'
         self._tensors=tuple(torch.tensor(a) for a in [self.powers,self.zweights,self.xbasis.powers_,self.xweights,self.centers,self.xscale,self.coefficient])
         return self
 
@@ -103,6 +113,11 @@ class TensorWY:
         for j in range(len(x)):
             pp=torch.stack((torch.ones_like(scaled[j]),scaled[j],scaled[j]*scaled[j]))
             xf=xf*pp[xpowers[:,j].long()]
-        radial=torch.exp(-torch.sum((x[None]-centers)**2,dim=1)/(2*self.sigma**2))
+        if self.kernel=='gaussian':radial=torch.exp(-torch.sum((x[None]-centers)**2,dim=1)/(2*self.sigma**2))
+        else:
+            one=torch.exp(-(x[None]-centers)**2/(2*self.sigma**2));terms=[]
+            for order in range(1,min(int(self.kernel[-1]),len(x))+1):
+                terms.append(sum(torch.prod(one[:,list(ix)],dim=1) for ix in itertools.combinations(range(len(x)),order))/math.comb(len(x),order))
+            radial=sum(terms)/len(terms)
         features=torch.cat((xf*xw,radial))/xscale
         return ((zf*zw)@coef)@features

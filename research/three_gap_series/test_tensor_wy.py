@@ -5,6 +5,21 @@ from tensor_wy import TensorWY
 
 
 class TensorWYTests(unittest.TestCase):
+    def test_anova_kernel_value_and_derivatives_use_same_generic_dictionary(self):
+        rng=np.random.default_rng(202);z=rng.normal(size=(50,2));x=rng.normal(size=(70,3))
+        tables=[x for _ in z]
+        ys=[zz[0]*np.sin(x[:,0])*np.cos(x[:,2])+zz[1]**2*x[:,1] for zz in z]
+        for kernel in ['anova2','anova3']:
+            fit=TensorWY(2,1e-8,1e-5,24,.8,3,kernel).fit(z,tables,ys)
+            q=torch.tensor([.2,-.1,.3,.4,-.2],dtype=torch.float64)
+            self.assertAlmostEqual(float(fit.value(q)),fit.predict_subject(q.numpy()[:2],q.numpy()[None,2:])[0],places=10)
+            h=torch.func.hessian(fit.value)(q).numpy();step=1e-4
+            approximate=np.empty_like(h)
+            for j in range(len(q)):
+                delta=torch.eye(len(q),dtype=q.dtype)[j]*step
+                approximate[:,j]=((torch.func.jacrev(fit.value)(q+delta)-torch.func.jacrev(fit.value)(q-delta))/(2*step)).numpy()
+            np.testing.assert_allclose(h,approximate,atol=1e-6,rtol=1e-5)
+            np.testing.assert_allclose(fit.latent_fields(q.numpy()[None,:2],q.numpy()[None,2:])['h'][0],h[:2,:2],atol=1e-10)
     def test_generic_dictionary_recovers_polynomial_interactions(self):
         rng=np.random.default_rng(99);z=rng.normal(size=(90,2));bank=rng.uniform(-1,1,(150,2))
         x=[bank.copy() for _ in z]

@@ -10,7 +10,7 @@ import numpy as np
 FIELD_ARGUMENTS=('model','beta','zdim','pca','source','estimator','channel','structure_link',
     'samples','seed','degree','ridge','train_rows','validation_rows','train_subjects','validation_subjects',
     'utility_ridge','rbf_centers','rbf_length','neighbors','bandwidth','step','hessian_grid','grid_stimuli',
-    'uu_full_domain','subject_mean','field_mean','center_point','q_weight','fisher_power')
+    'uu_full_domain','subject_mean','field_mean','center_point','q_weight','fisher_power','stimulus_kernel')
 
 
 def validate_reference(args,context,protocol,w_shape,full_rows,third,root=None):
@@ -21,7 +21,8 @@ def validate_reference(args,context,protocol,w_shape,full_rows,third,root=None):
     if source.get('scope')!='hessian_only':raise ValueError('Only Hessian-only fields may be reused')
     if source['hashes']!=context['hashes']:raise ValueError('Field source checkpoint/latent/dataset mismatch')
     for key in FIELD_ARGUMENTS:
-        if source['args'].get(key)!=getattr(args,key,None):raise ValueError(f'Incompatible field protocol: {key}')
+        default='gaussian' if key=='stimulus_kernel' else None
+        if source['args'].get(key,default)!=getattr(args,key,default):raise ValueError(f'Incompatible field protocol: {key}')
     for key in ['x_mean','x_sd']:
         if not np.array_equal(np.asarray(source['protocol'][key]),np.asarray(protocol[key])):raise ValueError(f'Field standardization mismatch: {key}')
     if source['protocol'].get('hessian_grid')!=json.loads(json.dumps(protocol.get('hessian_grid'),default=lambda a:a.tolist())):
