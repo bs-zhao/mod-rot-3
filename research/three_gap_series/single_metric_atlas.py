@@ -52,6 +52,10 @@ class BatchLoss:
                 spec=CATALOG[name];key=('operator',spec['collection'],spec['centered'],spec['normalization'])
                 if key not in special:special[key]=HessianLoss(fields,cov,d,name)
                 obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
+            elif CATALOG[name]['family']=='taylor':
+                spec=CATALOG[name];key=('taylor',spec['fit_degree'],spec['response_order'])
+                if key not in special:special[key]=HessianLoss(fields,cov,d,name)
+                obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
             else:obj=copy.copy(base);obj.metric=name;obj.spec=CATALOG[name]
             self.losses[name]=obj
         self.base=base
@@ -68,11 +72,18 @@ class BatchLoss:
                 return memo[key]
             for obj in self.losses.values():
                 if 'density_quantile' not in obj.spec:setattr(obj,method,cached)
+        for obj in self.losses.values():
+            if obj.spec['family']=='taylor':
+                key=('taylor',obj.spec['fit_degree'],obj.spec['response_order']);bound=obj._taylor
+                def cached_taylor(a,_key=key,_bound=bound):
+                    if _key not in memo:memo[_key]=_bound(a)
+                    return memo[_key]
+                obj._taylor=cached_taylor
         values={name:obj(r) for name,obj in self.losses.items()}
         # Restore original class methods; otherwise the next R would capture a
         # closure holding an obsolete transform from the previous rotation.
         for obj in self.losses.values():
-            for method in ['_ux','_uu','_full','_third_values','_support_value']:
+            for method in ['_ux','_uu','_full','_third_values','_support_value','_taylor']:
                 obj.__dict__.pop(method,None)
         return values
 
@@ -114,6 +125,7 @@ def main():
     radii=np.einsum('na,ab,nb->n',v,np.linalg.pinv(cov),v)
     ranks=np.searchsorted(np.sort(radii[train]),radii,side='right')/len(train)
     fields['strict_rank']=np.repeat(ranks[grid['subject_ids']],len(x))
+    fields['strict_z']=np.repeat(v[grid['subject_ids']],len(x),axis=0)
     if 'uu_row_ids' in fields:fields['uu_rank']=ranks[context['data']['subject_index'][fields['uu_row_ids']]]
     names,aliases=canonical_singles();batch=BatchLoss(fields,cov,d,names)
     out=ROOT/'results'/args.label/args.model;out.mkdir(parents=True,exist_ok=True)

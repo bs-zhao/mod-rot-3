@@ -18,6 +18,7 @@ class StrictHessianTests(unittest.TestCase):
         fields=dict(h=h,uu_h=h[:7,:d,:d],uu_t=rng.normal(size=(7,d,d,d)),
             strict_x=rng.normal(size=(n,p)),strict_subject_groups=np.repeat([0,1],6))
         fields.update(strict_rank=np.repeat([.1,.8],6),uu_rank=np.linspace(.05,.95,7))
+        fields['strict_z']=np.repeat(rng.normal(size=(2,d)),6,axis=0)
         names,aliases=canonical_singles();cov=np.eye(d);batch=BatchLoss(fields,cov,d,names)
         for _ in range(2):
             r,_=np.linalg.qr(rng.normal(size=(d,d)))
@@ -47,6 +48,7 @@ class StrictHessianTests(unittest.TestCase):
         h=rng.normal(size=(n,d+p,d+p));h=(h+h.transpose(0,2,1))/2
         fields=dict(h=h,strict_x=rng.normal(size=(n,p)),third=rng.normal(size=(n,d+p,d+p,d+p)),strict_subject_groups=np.zeros(n,dtype=int))
         fields['strict_rank']=np.full(n,.1)
+        fields['strict_z']=np.zeros((n,d))
         q,_=np.linalg.qr(rng.normal(size=(d,d)));base=rng.normal(size=(d,d));cov=base@base.T+np.eye(d)
         changed=(np.array([.001,-20.,.3,-100.])[:,None]*q)[[3,1,0,2]]
         for name in CATALOG:

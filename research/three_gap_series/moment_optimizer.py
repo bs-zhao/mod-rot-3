@@ -25,6 +25,7 @@ class MomentObjective:
                      'subject_ux_moment','subject_uu_moment','subject_scale']:
             value=getattr(loss,name)
             setattr(self,name,None if value is None else torch.tensor(value,dtype=torch.float64))
+        self.taylor_tensors=None if loss.taylor_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.taylor_tensors)
 
     def root(self,square):
         stable=torch.sqrt(square+1e-24)
@@ -57,6 +58,18 @@ class MomentObjective:
     def __call__(self,angles):
         r=rotation_torch(angles,self.d);a=torch.sqrt(torch.diag(r@self.cov@r.T))[:,None]*r
         s=self.s;family=s['family']
+        if family=='taylor':
+            from taylor_hessian import unique_indices
+            first,second,third=self.taylor_tensors
+            linear=torch.einsum('ia,xap->xip',a,first)
+            quadratic=torch.einsum('ia,xab,jb->xij',a,second,a)
+            indices,factors=unique_indices(self.d,2);ix=torch.tensor(indices);factors=torch.tensor(factors)
+            values=[self.root((linear*linear).mean(dim=0)).reshape(-1),self.root((quadratic[:,ix[0],ix[1]]**2).mean(dim=0))/factors]
+            if s['response_order']==3:
+                cubic=torch.einsum('ia,jb,kc,xabc->xijk',a,a,a,third)
+                indices,factors=unique_indices(self.d,3);ix=torch.tensor(indices);factors=torch.tensor(factors)
+                values.append(self.root((cubic[:,ix[0],ix[1],ix[2]]**2).mean(dim=0))/factors)
+            return self.score(torch.cat(values)/self.loss.taylor_scale,s['score'],-1)
         if family in ['subject_ux','subject_edges']:
             ux=self.root(torch.clamp(torch.einsum('ia,spab,ib->sip',a,self.subject_ux_moment,a),min=0))
             if family=='subject_ux':values=ux

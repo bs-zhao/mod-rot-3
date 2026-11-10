@@ -79,6 +79,7 @@ def read_bundle(path,context,args):
     radii=np.einsum('na,ab,nb->n',coordinates,np.linalg.pinv(cov),coordinates)
     train_radii=np.sort(radii[train]);ranks=np.searchsorted(train_radii,radii,side='right')/len(train)
     fields['strict_rank']=np.repeat(ranks[grid['subject_ids']],len(x))
+    fields['strict_z']=np.repeat(coordinates[grid['subject_ids']],len(x),axis=0)
     if 'uu_row_ids' in fields:
         subjects=context['data']['subject_index'];fields['uu_rank']=ranks[subjects[fields['uu_row_ids']]]
     if len(fields['h'])!=len(fields['strict_x']):raise ValueError('Wrong numerical grid')

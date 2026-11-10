@@ -149,6 +149,11 @@ for family in ['subject_ux','subject_edges']:
         for threshold in [.003,.01,.03,.1]:
             register(f'b04_{family}_{normalization}_soft{threshold:g}',family=family,normalization=normalization,
                 stat='rms',axis='row',score=f'soft@{threshold:g}')
+for degree in [1,2]:
+    for response_order in [2,3]:
+        for score in ['lp05','gini','soft@0.01','soft@0.03','soft@0.1']:
+            register(f'b05_taylor_fit{degree}_order{response_order}_'+score.replace('@','_t'),
+                family='taylor',fit_degree=degree,response_order=response_order,axis='global',score=score)
 
 
 def is_combination(metric):
@@ -246,6 +251,12 @@ class HessianLoss:
         self.joint_operators=None
         self.functional_operators=None;self.operator_matrices=None
         self.subject_ux_moment=None;self.subject_uu_moment=None;self.subject_scale=None
+        self.taylor_tensors=None;self.taylor_scale=None
+        if self.spec['family']=='taylor':
+            from taylor_hessian import fit_hessian_taylor,taylor_features
+            self.taylor_tensors=fit_hessian_taylor(fields,self.cov,d,self.spec['fit_degree'])
+            reference=taylor_features(self.taylor_tensors,np.diag(sd),self.spec['response_order'])
+            self.taylor_scale=max(float(np.linalg.norm(reference)),1e-12)
         if self.spec['family'] in ['subject_ux','subject_edges']:
             groups=fields['strict_subject_groups'];uxs=[];uus=[];scales=[]
             for sid in np.unique(groups):
@@ -350,10 +361,16 @@ class HessianLoss:
     def _functional(self,a):
         return np.sqrt(np.maximum(np.einsum('ia,qab,ib->iq',a,self.functional_operators,a,optimize=True),0))/self.functional_scale
 
+    def _taylor(self,a):
+        from taylor_hessian import taylor_features
+        return taylor_features(self.taylor_tensors,a,self.spec['response_order'])/self.taylor_scale
+
     def __call__(self,r):
         sd=np.sqrt(np.diag(r@self.cov@r.T))
         a=sd[:,None]*np.linalg.inv(r).T
         s=self.spec;family=s['family']
+        if family=='taylor':
+            return penalty(self._taylor(a),s['score'])
         if family in ['subject_ux','subject_edges']:
             square=np.maximum(np.einsum('ia,spab,ib->sip',a,self.subject_ux_moment,a,optimize=True),0)
             ux=np.sqrt(square)
