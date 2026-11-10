@@ -26,6 +26,7 @@ class MomentObjective:
             value=getattr(loss,name)
             setattr(self,name,None if value is None else torch.tensor(value,dtype=torch.float64))
         self.taylor_tensors=None if loss.taylor_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.taylor_tensors)
+        self.rank_tensors=None if loss.rank_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.rank_tensors)
 
     def root(self,square):
         stable=torch.sqrt(square+1e-24)
@@ -58,6 +59,22 @@ class MomentObjective:
     def __call__(self,angles):
         r=rotation_torch(angles,self.d);a=torch.sqrt(torch.diag(r@self.cov@r.T))[:,None]*r
         s=self.s;family=s['family']
+        if family=='rank':
+            hx,hu=self.rank_tensors;ux=torch.einsum('ia,apuv->ipuv',a,hx)
+            matrices=ux.reshape(-1,*ux.shape[-2:])
+            if s['part']=='edges':
+                uu=torch.einsum('ia,abuv,jb->ijuv',a,hu,a);ix=torch.triu_indices(self.d,self.d)
+                matrices=torch.cat((uu[ix[0],ix[1]],matrices),dim=0)
+            matrices=matrices/self.loss.rank_scale
+            gram=matrices.transpose(-2,-1)@matrices if matrices.shape[-1]<=matrices.shape[-2] else matrices@matrices.transpose(-2,-1)
+            values=torch.clamp(torch.linalg.eigvalsh(gram),min=0)
+            if s['score'].startswith('soft@'):
+                threshold=float(s['score'].split('@')[1]);values=values/(values+threshold**2)
+            elif s['score']=='log01':values=torch.log1p(values/.1**2)
+            else:
+                power=1. if s['score']=='schatten1' else .5;eps=1e-4
+                values=(values+eps**2)**(power/2)-eps**power
+            return values.sum(dim=-1).mean()
         if family=='taylor':
             from taylor_hessian import unique_indices
             first,second,third=self.taylor_tensors

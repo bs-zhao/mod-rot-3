@@ -154,6 +154,10 @@ for degree in [1,2]:
         for score in ['lp05','gini','soft@0.01','soft@0.03','soft@0.1']:
             register(f'b05_taylor_fit{degree}_order{response_order}_'+score.replace('@','_t'),
                 family='taylor',fit_degree=degree,response_order=response_order,axis='global',score=score)
+for degree in [1,2]:
+    for part in ['ux','edges']:
+        for score in ['schatten1','schatten05','log01','soft@0.003','soft@0.01','soft@0.03','soft@0.1']:
+            register(f'b06_rank_degree{degree}_{part}_'+score.replace('@','_t'),family='rank',degree=degree,part=part,score=score)
 
 
 def is_combination(metric):
@@ -252,6 +256,12 @@ class HessianLoss:
         self.functional_operators=None;self.operator_matrices=None
         self.subject_ux_moment=None;self.subject_uu_moment=None;self.subject_scale=None
         self.taylor_tensors=None;self.taylor_scale=None
+        self.rank_tensors=None;self.rank_scale=None
+        if self.spec['family']=='rank':
+            from functional_rank import project_hessian_functions,transformed_rank_matrices
+            self.rank_tensors=project_hessian_functions(fields,d,self.spec['degree'])
+            reference=transformed_rank_matrices(self.rank_tensors,np.diag(sd),self.spec['part'])
+            self.rank_scale=max(float(np.linalg.norm(reference)),1e-12)
         if self.spec['family']=='taylor':
             from taylor_hessian import fit_hessian_taylor,taylor_features
             self.taylor_tensors=fit_hessian_taylor(fields,self.cov,d,self.spec['fit_degree'])
@@ -365,10 +375,17 @@ class HessianLoss:
         from taylor_hessian import taylor_features
         return taylor_features(self.taylor_tensors,a,self.spec['response_order'])/self.taylor_scale
 
+    def _rank(self,a):
+        from functional_rank import rank_spectrum
+        return rank_spectrum(self.rank_tensors,a,self.spec['part'],self.rank_scale)
+
     def __call__(self,r):
         sd=np.sqrt(np.diag(r@self.cov@r.T))
         a=sd[:,None]*np.linalg.inv(r).T
         s=self.spec;family=s['family']
+        if family=='rank':
+            from functional_rank import rank_score
+            return rank_score(self._rank(a),s['score'])
         if family=='taylor':
             return penalty(self._taylor(a),s['score'])
         if family in ['subject_ux','subject_edges']:

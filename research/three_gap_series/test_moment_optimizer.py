@@ -13,7 +13,7 @@ class MomentOptimizerTests(unittest.TestCase):
         fields=dict(h=h,strict_x=np.tile(rng.normal(size=(12,p)),(2,1)),strict_subject_groups=np.repeat([0,1],12))
         fields['strict_rank']=np.repeat([.1,.8],12)
         fields['strict_z']=np.repeat(rng.normal(size=(2,d)),12,axis=0)
-        names=[n for n in CATALOG if n.startswith(('hs_b01_','hs_b02_','hs_b03_','hs_b04_','hs_b05_'))]+['hs_ux_rms_soft003']
+        names=[n for n in CATALOG if n.startswith(('hs_b01_','hs_b02_','hs_b03_','hs_b04_','hs_b05_','hs_b06_'))]+['hs_ux_rms_soft003']
         base=rng.normal(size=(d,d));cov=base@base.T+np.eye(d)
         batch=BatchLoss(fields,cov,d,names);angles=rng.normal(size=d*(d-1)//2)
         r=rotation_torch(torch.tensor(angles),d).numpy()
@@ -34,7 +34,7 @@ class MomentOptimizerTests(unittest.TestCase):
         fields=dict(h=h,strict_x=np.tile(rng.normal(size=(6,p)),(2,1)),strict_subject_groups=np.repeat([0,1],6))
         fields['strict_rank']=np.repeat([.1,.8],6)
         fields['strict_z']=np.repeat(rng.normal(size=(2,d)),6,axis=0)
-        names=[n for n in CATALOG if n.startswith(('hs_b01_','hs_b02_','hs_b03_','hs_b04_','hs_b05_'))]+['hs_ux_rms_soft003']
+        names=[n for n in CATALOG if n.startswith(('hs_b01_','hs_b02_','hs_b03_','hs_b04_','hs_b05_','hs_b06_'))]+['hs_ux_rms_soft003']
         batch=BatchLoss(fields,np.eye(d),d,names)
         for name,loss in batch.losses.items():
             value,gradient=MomentObjective(loss).scipy(np.zeros(6))

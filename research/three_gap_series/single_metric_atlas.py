@@ -56,6 +56,10 @@ class BatchLoss:
                 spec=CATALOG[name];key=('taylor',spec['fit_degree'],spec['response_order'])
                 if key not in special:special[key]=HessianLoss(fields,cov,d,name)
                 obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
+            elif CATALOG[name]['family']=='rank':
+                spec=CATALOG[name];key=('rank',spec['degree'],spec['part'])
+                if key not in special:special[key]=HessianLoss(fields,cov,d,name)
+                obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
             else:obj=copy.copy(base);obj.metric=name;obj.spec=CATALOG[name]
             self.losses[name]=obj
         self.base=base
@@ -79,11 +83,17 @@ class BatchLoss:
                     if _key not in memo:memo[_key]=_bound(a)
                     return memo[_key]
                 obj._taylor=cached_taylor
+            if obj.spec['family']=='rank':
+                key=('rank',obj.spec['degree'],obj.spec['part']);bound=obj._rank
+                def cached_rank(a,_key=key,_bound=bound):
+                    if _key not in memo:memo[_key]=_bound(a)
+                    return memo[_key]
+                obj._rank=cached_rank
         values={name:obj(r) for name,obj in self.losses.items()}
         # Restore original class methods; otherwise the next R would capture a
         # closure holding an obsolete transform from the previous rotation.
         for obj in self.losses.values():
-            for method in ['_ux','_uu','_full','_third_values','_support_value','_taylor']:
+            for method in ['_ux','_uu','_full','_third_values','_support_value','_taylor','_rank']:
                 obj.__dict__.pop(method,None)
         return values
 
