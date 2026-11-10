@@ -4,6 +4,15 @@ from strict_hessian import HessianLoss,CATALOG,penalty
 
 
 class StrictHessianTests(unittest.TestCase):
+    def test_isotropic_total_energy_control_is_rotation_invariant(self):
+        rng=np.random.default_rng(800);n=20;d=4;p=3
+        h=rng.normal(size=(n,d+p,d+p));h=(h+h.transpose(0,2,1))/2
+        fields=dict(h=h,strict_x=rng.normal(size=(n,p)));b=rng.normal(size=(d,d));cov=b@b.T+np.eye(d)
+        loss=HessianLoss(fields,cov,d,'hs_b08_ux_rms_l2sq_isotropic')
+        for _ in range(5):
+            q,_=np.linalg.qr(rng.normal(size=(d,d)))
+            self.assertAlmostEqual(loss(q),loss(np.eye(d)),places=12)
+
     def test_unique_graph_counts_one_bilinear_edge_vs_two_self_curvatures(self):
         n=10;h=np.zeros((n,3,3));h[:,0,1]=h[:,1,0]=1.
         fields=dict(h=h,strict_x=np.linspace(-1,1,n)[:,None])

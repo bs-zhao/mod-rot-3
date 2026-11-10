@@ -31,6 +31,7 @@ def main():
         if key not in canonical:canonical[key]=j['metric']
         elif canonical[key]!=j['metric']:aliases[j['metric']]=canonical[key]
         row=dict(metric=j['metric'],model=j['model'],inference=j['inference'],starts=j['starts'],
+            is_control=j['specification'].get('control',False),
             family=j['specification']['family'],g1=j['gaps']['G1']['pass_gate'],g2=j['gaps']['G2']['pass_gate'],g3=j['gaps']['G3']['pass_gate'],
             g1_mode=j['gaps']['G1']['mode'],g1_angle=(j['gaps']['G1'].get('best') or {}).get('axis_error'),
             g2_mode=j['gaps']['G2']['mode'],g2_angle=(j['gaps']['G2'].get('best') or {}).get('axis_error'),
@@ -48,6 +49,7 @@ def main():
         complete=all(m in models for m in MODELS)
         gates={stage:complete and all(models[m][stage] for m in MODELS) for stage in ['g1','g2','g3']}
         first='PENDING' if not complete else 'FAILED_G1' if not gates['g1'] else 'FAILED_G2' if not gates['g2'] else 'FAILED_G3' if not gates['g3'] else 'ALL_GATES_PROVISIONAL_CONFIRM64'
+        if any(r['is_control'] for r in models.values()):first='ENERGY_CONTROL'
         candidates.append(dict(metric=metric,inference=inference,starts=starts,state=first,complete=complete,
             gates=gates,models=models,max_mean_gap=max(r['test_mean_gap'] for r in models.values()),
             max_excess_offmax=max(r['test_offmax']-r['oracle_offmax'] for r in models.values())))

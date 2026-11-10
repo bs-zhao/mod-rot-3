@@ -193,7 +193,7 @@ def main():
             eligible=bool(row['gaps']['G1']['pass_gate'] and row['gaps']['G2']['pass_gate']),
             best={k:v for k,v in best.items() if k!='axis_error'},solutions=[{k:v for k,v in s.items() if k!='axis_error'} for s in solutions],
             rotation_lock_file=str(locked))
-        row['all_local_gates']=all(g['pass_gate'] for g in row['gaps'].values())
+        row['all_local_gates']=all(g['pass_gate'] for g in row['gaps'].values()) and not CATALOG[metric].get('control',False)
         dump(destination,row);completed.append(metric)
         dump(out/'progress.json',dict(completed=completed,total=len(names),seconds=time.time()-started))
         print(args.model,args.inference,index+1,'/',len(names),metric,

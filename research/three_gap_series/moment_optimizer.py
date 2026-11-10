@@ -57,7 +57,13 @@ class MomentObjective:
         raise ValueError(kind)
 
     def __call__(self,angles):
-        r=rotation_torch(angles,self.d);a=torch.sqrt(torch.diag(r@self.cov@r.T))[:,None]*r
+        r=rotation_torch(angles,self.d);cov=r@self.cov@r.T
+        kind=self.s.get('axis_scale','marginal');sd=torch.sqrt(torch.diag(cov))
+        if kind=='isotropic':sd=torch.ones(self.d,dtype=r.dtype)*torch.sqrt(torch.trace(self.cov)/self.d)
+        elif kind in ['conditional','geometric']:
+            conditional=torch.rsqrt(torch.diag(torch.linalg.inv(cov)))
+            sd=conditional if kind=='conditional' else torch.sqrt(sd*conditional)
+        a=sd[:,None]*r
         s=self.s;family=s['family']
         if family=='nonlinear_axes':
             transform=torch.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)

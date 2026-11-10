@@ -35,11 +35,10 @@ def canonical_singles():
 class BatchLoss:
     """Share numerical transforms across independent objectives, not their scores."""
     def __init__(self,fields,cov,d,names):
-        first=next(n for n in names if CATALOG[n]['family']!='jd' and 'density_quantile' not in CATALOG[n])
-        base=HessianLoss(fields,cov,d,first)
+        base=HessianLoss(fields,cov,d,'hs_ux_rms_soft003')
         self.losses={};special={}
         for name in names:
-            if 'density_quantile' in CATALOG[name] or CATALOG[name]['family'] in ['subject_ux','subject_edges']:
+            if 'density_quantile' in CATALOG[name] or 'axis_scale' in CATALOG[name] or CATALOG[name]['family'] in ['subject_ux','subject_edges']:
                 key=json.dumps({k:v for k,v in CATALOG[name].items() if k!='score'},sort_keys=True)
                 if key not in special:special[key]=HessianLoss(fields,cov,d,name)
                 obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
@@ -75,16 +74,16 @@ class BatchLoss:
                 if key not in memo:memo[key]=_bound(a,*args)
                 return memo[key]
             for obj in self.losses.values():
-                if 'density_quantile' not in obj.spec:setattr(obj,method,cached)
+                if 'density_quantile' not in obj.spec and 'axis_scale' not in obj.spec:setattr(obj,method,cached)
         for obj in self.losses.values():
             if obj.spec['family']=='taylor':
-                key=('taylor',obj.spec['fit_degree'],obj.spec['response_order']);bound=obj._taylor
+                key=('taylor',obj.spec['fit_degree'],obj.spec['response_order'],obj.spec.get('axis_scale','marginal'));bound=obj._taylor
                 def cached_taylor(a,_key=key,_bound=bound):
                     if _key not in memo:memo[_key]=_bound(a)
                     return memo[_key]
                 obj._taylor=cached_taylor
             if obj.spec['family']=='rank':
-                key=('rank',obj.spec['degree'],obj.spec['part']);bound=obj._rank
+                key=('rank',obj.spec['degree'],obj.spec['part'],obj.spec.get('axis_scale','marginal'));bound=obj._rank
                 def cached_rank(a,_key=key,_bound=bound):
                     if _key not in memo:memo[_key]=_bound(a)
                     return memo[_key]

@@ -163,6 +163,23 @@ for normalization in ['global','row','ux']:
         for score in ['soft','log']:
             register(f'b07_nonlinear_axes_{normalization}_{score}{threshold:g}',family='nonlinear_axes',
                 normalization=normalization,threshold=threshold,score=score)
+for original in ['hs_ux_rms_soft003','hs_b01_ux_rms_soft_t0.05_reference','hs_b01_ux_rms_soft_t0.07_reference',
+    'hs_b02_unique_edges_soft_t0.02','hs_b02_unique_edges_soft_t0.03','hs_b02_unique_edges_lp05',
+    'hs_b06_rank_degree1_edges_schatten05','hs_b06_rank_degree2_edges_soft_t0.03',
+    'hs_b01_functional1_column_hoyer','hs_b07_nonlinear_axes_global_log0.3',
+    'hs_b05_taylor_fit2_order3_lp05','hs_ux_rms_l2sq']:
+    for axis_scale in ['conditional','geometric','isotropic']:
+        CATALOG['hs_b08_'+original.removeprefix('hs_')+'_'+axis_scale]=dict(CATALOG[original],axis_scale=axis_scale)
+
+
+def reference_sd(covariance,kind='marginal'):
+    marginal=np.sqrt(np.diag(covariance))
+    if kind=='marginal':return marginal
+    if kind=='isotropic':return np.full(len(covariance),np.sqrt(np.trace(covariance)/len(covariance)))
+    conditional=1/np.sqrt(np.diag(np.linalg.inv(covariance)))
+    if kind=='conditional':return conditional
+    if kind=='geometric':return np.sqrt(marginal*conditional)
+    raise ValueError(kind)
 
 
 def is_combination(metric):
@@ -238,7 +255,7 @@ class HessianLoss:
         self.um=self.uu.mean(0);self.xm=self.ux.mean(0)
         flat=self.uu.reshape(len(self.uu),-1);self.uu_moment=flat.T@flat/len(self.uu)
         self.ux_moment=np.einsum('nap,nbp->pab',self.ux,self.ux,optimize=True)/self.n
-        sd=np.sqrt(np.diag(covariance))
+        sd=reference_sd(covariance,self.spec.get('axis_scale','marginal'))
         u=self.uu*sd[None,:,None]*sd[None,None,:];x=self.ux*sd[None,:,None]
         self.uu_energy=float(np.mean(np.sum(u*u,axis=(1,2))));self.ux_energy=float(np.mean(np.sum(x*x,axis=(1,2))))
         self.scale=max(float(np.sqrt(self.uu_energy+self.ux_energy)),1e-12)
@@ -385,8 +402,7 @@ class HessianLoss:
         return rank_spectrum(self.rank_tensors,a,self.spec['part'],self.rank_scale)
 
     def __call__(self,r):
-        sd=np.sqrt(np.diag(r@self.cov@r.T))
-        a=sd[:,None]*np.linalg.inv(r).T
+        a=self._transform(r)
         s=self.spec;family=s['family']
         if family=='nonlinear_axes':
             matrix=self._uu(a,'rms','all')*self.scale;own=np.diag(matrix)
@@ -430,7 +446,7 @@ class HessianLoss:
             normalization=s.get('normalization','reference')
             if normalization=='ux':v=v*self.scale/max(np.sqrt(self.ux_energy),1e-12)
             if normalization=='column':
-                original_sd=np.sqrt(np.diag(self.cov))
+                original_sd=reference_sd(self.cov,s.get('axis_scale','marginal'))
                 norm=np.sqrt(np.maximum(np.einsum('a,paa,a->p',original_sd,self.ux_moment,original_sd),0))
                 v=v*self.scale/np.maximum(norm,1e-12)
             if s['axis']=='global':v=v.reshape(-1)
@@ -484,6 +500,12 @@ class HessianLoss:
             return ux+s['weight']*penalty(v,'l1')
         raise ValueError(family)
 
+    def _transform(self,r):
+        kind=self.spec.get('axis_scale','marginal')
+        if kind=='isotropic':sd=np.sqrt(np.trace(self.cov)/self.d)*np.linalg.norm(r,axis=1)
+        else:sd=reference_sd(r@self.cov@r.T,kind)
+        return sd[:,None]*np.linalg.inv(r).T
+
     def _support_value(self,a,component,score,threshold):
         if component=='self':
             energy=self.uu_energy;curvature=self._uu(a,'rms','self')*self.scale
@@ -513,7 +535,7 @@ class HessianLoss:
         return transformed[:,mask]
 
     def describe(self,r):
-        sd=np.sqrt(np.diag(r@self.cov@r.T));a=sd[:,None]*np.linalg.inv(r).T
+        a=self._transform(r)
         parts=None
         if self.spec['family']=='jd':
             transformed=np.einsum('ia,kab,jb->kij',a,self.joint_operators,a,optimize=True)
