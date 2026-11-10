@@ -183,6 +183,13 @@ for original in ['hs_ux_rms_soft003','hs_ux_rms_l1','hs_b02_unique_edges_soft_t0
     'hs_b06_rank_degree1_edges_schatten05','hs_b07_nonlinear_axes_global_log0.3']:
     for bandwidth in [0.,.25,.5,1.,2.,'mean']:
         CATALOG['hs_b13_'+original.removeprefix('hs_')+'_s'+str(bandwidth)]=dict(CATALOG[original],latent_smoothing=bandwidth)
+for block,aggregation in [('ux','rms'),('ux','local'),('full','rms'),('functional1','rms'),('functional2','rms')]:
+    for gamma in [0.,.5,1.,2.]:
+        for kaiser in [False,True]:
+            for axis_scale in ['marginal','isotropic']:
+                spec=dict(family='orthomax',block=block,aggregation=aggregation,gamma=gamma,kaiser=kaiser,axis_scale=axis_scale)
+                if block.startswith('functional'):spec['degree']=int(block[-1])
+                register(f'b14_orthomax_{block}_{aggregation}_g{gamma:g}_kaiser{int(kaiser)}_{axis_scale}',**spec)
 
 
 def reference_sd(covariance,kind='marginal'):
@@ -328,7 +335,7 @@ class HessianLoss:
                 local_u=hu*sd[None,:,None]*sd[None,None,:];local_x=hx*sd[None,:,None]
                 scales.append(max(float(np.sqrt(np.mean(np.sum(local_u**2,axis=(1,2)))+np.mean(np.sum(local_x**2,axis=(1,2))))),1e-12))
             self.subject_ux_moment=np.asarray(uxs);self.subject_uu_moment=np.asarray(uus);self.subject_scale=np.asarray(scales)
-        if self.spec['family']=='functional' or self.spec['family']=='operator' and self.spec['collection']=='functional1':
+        if self.spec['family']=='functional' or self.spec['family']=='operator' and self.spec['collection']=='functional1' or self.spec['family']=='orthomax' and self.spec['block'].startswith('functional'):
             if 'strict_subject_groups' not in fields:raise ValueError('Functional Hessian needs product grid groups')
             groups=fields['strict_subject_groups'];ids=np.unique(groups);coefs=[]
             phi_all=PolynomialFeatures(self.spec.get('degree',1)).fit_transform(fields['strict_x'])
@@ -431,9 +438,19 @@ class HessianLoss:
         from functional_rank import rank_spectrum
         return rank_spectrum(self.rank_tensors,a,self.spec['part'],self.rank_scale)
 
+    def _orthomax_square(self,a):
+        if self.spec['block']=='ux':return self._ux(a,self.spec['aggregation'])**2
+        if self.spec['block']=='full':return self._full(a,'rms')**2
+        return self._functional(a)**2
+
     def __call__(self,r):
         a=self._transform(r)
         s=self.spec;family=s['family']
+        if family=='orthomax':
+            square=self._orthomax_square(a)
+            if s['kaiser']:square=square/np.maximum(square.sum(axis=-2,keepdims=True),1e-8)
+            criterion=np.sum(square*square,axis=-1)-s['gamma']/square.shape[-1]*np.sum(square,axis=-1)**2
+            return -float(np.mean(np.sum(criterion,axis=-1)))
         if family=='activation':
             second=np.maximum(np.einsum('ia,gpab,ib->gip',a,self.activation_second,a,optimize=True),0)/self.activation_scale**2
             if s['kind']=='kurtosis':

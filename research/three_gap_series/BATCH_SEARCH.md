@@ -167,3 +167,11 @@ TRAIN 262144 行、VALIDATION 65536 行、统一宽度128、最多200轮；验�
 但某个平面连续最低点约6.69°，因此仍未达到当前保守 G2 全部判据。
 无向边 soft0.02 的 CR3 64 起点结果在连续复核后仍过 G1/G2，
 全空间误差约3.25°/2.39°，最差平面约3.36°/2.50°。
+
+## B14：Hessian 载荷的 Orthomax 简单结构
+
+以 UX 的 RMS/局部矩阵、完整 U 相关 Hessian RMS、通用一次/二次函数系数 RMS 为载荷，
+最大化平方载荷的集中度 `sum(L^4)-gamma/m*sum_i(sum_j L_ij^2)^2`，取负作为 loss。
+比较 gamma=0/.5/1/2、是否按变量做 Kaiser 归一化、边际/共同尺度；均在四模型一致。
+这是已知简单结构准则在 Hessian 表示上的实验，不是按模型调不同指标，也不继承统计因子恢复保证。
+依据：[Kaiser 1958 原文](https://cda.psych.uiuc.edu/psychometrika_highly_cited_articles/kaiser_1958.pdf)。

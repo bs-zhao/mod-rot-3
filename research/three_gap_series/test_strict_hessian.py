@@ -4,6 +4,14 @@ from strict_hessian import HessianLoss,CATALOG,penalty
 
 
 class StrictHessianTests(unittest.TestCase):
+    def test_hessian_varimax_prefers_separate_effects_to_mixed_effects(self):
+        n=12;d=3;h=np.zeros((n,6,6))
+        for i in range(d):h[:,i,d+i]=h[:,d+i,i]=1.
+        fields=dict(h=h,strict_x=np.zeros((n,3)))
+        loss=HessianLoss(fields,np.eye(d),d,'hs_b14_orthomax_ux_rms_g1_kaiser0_isotropic')
+        r=np.eye(d);r[:2,:2]=np.array([[1.,1.],[-1.,1.]])/np.sqrt(2)
+        self.assertLess(loss(np.eye(d)),loss(r))
+
     def test_isotropic_total_energy_control_is_rotation_invariant(self):
         rng=np.random.default_rng(800);n=20;d=4;p=3
         h=rng.normal(size=(n,d+p,d+p));h=(h+h.transpose(0,2,1))/2

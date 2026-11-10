@@ -28,6 +28,7 @@ class MomentObjective:
         self.taylor_tensors=None if loss.taylor_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.taylor_tensors)
         self.rank_tensors=None if loss.rank_tensors is None else tuple(torch.tensor(t,dtype=torch.float64) for t in loss.rank_tensors)
         self.activation_raw=torch.tensor(loss.ux,dtype=torch.float64) if self.s['family']=='activation' and self.s['kind']=='hoyer' else None
+        self.orthomax_raw=torch.tensor(loss.ux,dtype=torch.float64) if self.s['family']=='orthomax' and self.s['aggregation']=='local' else None
 
     def root(self,square):
         stable=torch.sqrt(square+1e-24)
@@ -66,6 +67,18 @@ class MomentObjective:
             sd=conditional if kind=='conditional' else torch.sqrt(sd*conditional)
         a=sd[:,None]*r
         s=self.s;family=s['family']
+        if family=='orthomax':
+            if s['block']=='ux' and s['aggregation']=='local':square=torch.einsum('ia,nap->nip',a,self.orthomax_raw)**2/self.loss.scale**2
+            elif s['block']=='ux':square=torch.clamp(torch.einsum('ia,pab,ib->ip',a,self.ux_moment,a),min=0)/self.loss.scale**2
+            elif s['block']=='full':
+                ux=torch.clamp(torch.einsum('ia,pab,ib->ip',a,self.ux_moment,a),min=0)
+                transform=torch.einsum('ia,jb->ijab',a,a).reshape(self.d*self.d,-1)
+                uu=torch.clamp((transform@self.common_uu_moment*transform).sum(dim=1),min=0).reshape(self.d,self.d)
+                square=torch.cat((uu,ux),dim=-1)/self.loss.common_scale**2
+            else:square=torch.clamp(torch.einsum('ia,qab,ib->iq',a,self.functional_operators,a),min=0)/self.loss.functional_scale**2
+            if s['kaiser']:square=square/torch.clamp(square.sum(dim=-2,keepdim=True),min=1e-8)
+            criterion=(square*square).sum(dim=-1)-s['gamma']/square.shape[-1]*square.sum(dim=-1)**2
+            return -criterion.sum(dim=-1).mean()
         if family=='activation':
             second=torch.clamp(torch.einsum('ia,gpab,ib->gip',a,self.activation_second,a),min=0)/self.loss.activation_scale**2
             if s['kind']=='kurtosis':

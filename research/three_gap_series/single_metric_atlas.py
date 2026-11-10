@@ -38,7 +38,11 @@ class BatchLoss:
         base=HessianLoss(fields,cov,d,'hs_ux_rms_soft003')
         self.losses={};special={};prepared_fields={}
         for name in names:
-            if 'latent_smoothing' in CATALOG[name]:
+            if CATALOG[name]['family']=='orthomax':
+                spec=CATALOG[name];key=('orthomax',spec['block'],spec['aggregation'],spec['axis_scale'])
+                if key not in special:special[key]=HessianLoss(fields,cov,d,name)
+                obj=copy.copy(special[key]);obj.metric=name;obj.spec=CATALOG[name]
+            elif 'latent_smoothing' in CATALOG[name]:
                 from latent_smoothing import integrate_latent_hessian
                 kind=CATALOG[name]['latent_smoothing'];field_key=('latent',kind)
                 if field_key not in prepared_fields:prepared_fields[field_key]=integrate_latent_hessian(fields,cov,d,kind)
@@ -106,11 +110,17 @@ class BatchLoss:
                     if _key not in memo:memo[_key]=_bound(a)
                     return memo[_key]
                 obj._rank=cached_rank
+            if obj.spec['family']=='orthomax':
+                key=('orthomax',obj.spec['block'],obj.spec['aggregation'],obj.spec['axis_scale']);bound=obj._orthomax_square
+                def cached_orthomax(a,_key=key,_bound=bound):
+                    if _key not in memo:memo[_key]=_bound(a)
+                    return memo[_key]
+                obj._orthomax_square=cached_orthomax
         values={name:obj(r) for name,obj in self.losses.items()}
         # Restore original class methods; otherwise the next R would capture a
         # closure holding an obsolete transform from the previous rotation.
         for obj in self.losses.values():
-            for method in ['_ux','_uu','_full','_third_values','_support_value','_taylor','_rank']:
+            for method in ['_ux','_uu','_full','_third_values','_support_value','_taylor','_rank','_orthomax_square']:
                 obj.__dict__.pop(method,None)
         return values
 
