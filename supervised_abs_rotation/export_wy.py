@@ -128,6 +128,8 @@ def export_stage1_data(*, output, dataset_path, checkpoint_path,
     m, dx = x.shape
     model, device_obj = load_frozen_decoder(
         checkpoint_path, dataset_path, dz, dx, device)
+    print(f"[Stage1 export] {model_name}: {n} subjects, {m} original trials; "
+          f"W=[Zstd({dz}),X({dx})]; frozen NN on {device_obj}", flush=True)
 
     out = Path(output)
     out.mkdir(parents=True, exist_ok=True)
@@ -153,6 +155,8 @@ def export_stage1_data(*, output, dataset_path, checkpoint_path,
         choice_decoder = np.empty(m, dtype=np.uint8)
         two_logits = np.empty((m, 2), dtype=np.float32)
 
+        report_every = max(250_000, batch_size)
+        last_reported = 0
         with torch.inference_mode():
             for start in range(0, m, batch_size):
                 end = min(start + batch_size, m)
@@ -173,6 +177,10 @@ def export_stage1_data(*, output, dataset_path, checkpoint_path,
                 logit[start:end] = scores[:, 1] - scores[:, 0]
                 p1[start:end] = torch.softmax(logits, dim=-1)[:, 1].cpu().numpy()
                 choice_decoder[start:end] = np.argmax(scores, axis=1).astype(np.uint8)
+                if end - last_reported >= report_every or end == m:
+                    print(f"[Stage1 export] {model_name}: decoded {end:,}/{m:,} trials",
+                          flush=True)
+                    last_reported = end
         w.flush()
         del w
 
