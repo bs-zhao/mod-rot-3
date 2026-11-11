@@ -79,6 +79,31 @@ class TestFullSampleOracle(unittest.TestCase):
                 module.analyze(self.z, self.t, model="C1", output=out,
                                plots=False, restarts=0, maxiter=20)
 
+    def test_zca_whitening_full_rank_and_correlations(self):
+        result = module.fit(self.zc, self.ts, "abs_mse",
+                            seed=31, restarts=0, maxiter=60)
+        u = result["U"]
+        w = module.zca_whiten_all(u)
+        uw = w["U_whitened"]
+        self.assertEqual(w["effective_rank"], 4)
+        np.testing.assert_allclose(uw.mean(axis=0), np.zeros(4), atol=1e-10)
+        np.testing.assert_allclose(uw.T @ uw / len(uw), np.eye(4), atol=1e-8)
+        np.testing.assert_allclose(
+            uw, (u - w["U_mean_all"]) @ w["whitening_matrix"], atol=1e-10)
+        np.testing.assert_allclose(
+            w["whitening_matrix"] @ w["U_cov_all"] @ w["whitening_matrix"],
+            np.eye(4), atol=1e-8)
+        self.assertEqual(module.corr(uw, self.ts).shape, (4, 4))
+
+    def test_zca_rank_deficient_graceful(self):
+        u = self.zc.copy()
+        u[:, 3] = u[:, 0] + u[:, 1]  # rank <= 3
+        result = module.zca_whiten_all(u)
+        self.assertEqual(result["effective_rank"], 3)
+        covariance = result["U_whitened_cov_all"]
+        np.testing.assert_allclose(covariance @ covariance, covariance, atol=1e-7)
+        self.assertTrue(np.isfinite(result["U_whitened"]).all())
+
     def test_bad_geometry_rejected(self):
         with self.assertRaises(ValueError):
             module.prepare_all(self.z, self.t[:, :3])
