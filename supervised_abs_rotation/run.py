@@ -204,6 +204,36 @@ def fit(zc, tstd, objective="abs_mse", *, seed=31, restarts=6, maxiter=350):
     return best
 
 
+def zca_whiten_all(u, relative_cutoff=1e-10):
+    """ZCA-whiten final unscaled U using ALL subjects (no true T involved).
+
+    For a rank-deficient covariance use truncated pseudoinverse whitening:
+    the whitened covariance is a projection, not identity.
+    Row-vector convention: U_white=(U-mean(U))@W.
+    """
+    u = np.asarray(u, dtype=np.float64)
+    if u.ndim != 2 or len(u) < u.shape[1] + 2 or not np.isfinite(u).all():
+        raise ValueError("Expected finite U with shape (N,d), N>d+1")
+    mean = u.mean(axis=0)
+    centered = u - mean
+    covariance = centered.T @ centered / len(u)  # ddof=0, all subjects
+    eigvals, eigvecs = np.linalg.eigh(covariance)
+    maxeig = float(eigvals[-1])
+    if maxeig <= 1e-14:
+        raise ValueError("Cannot whiten zero-variance U")
+    cutoff = max(1e-14, relative_cutoff * maxeig)
+    keep = eigvals > cutoff
+    inverse_root = np.zeros_like(eigvals)
+    inverse_root[keep] = 1.0 / np.sqrt(eigvals[keep])
+    W = (eigvecs * inverse_root) @ eigvecs.T
+    u_white = centered @ W
+    covariance_white = u_white.T @ u_white / len(u_white)
+    return dict(U_whitened=u_white, whitening_matrix=W, U_mean_all=mean,
+                U_cov_all=covariance, U_whitened_cov_all=covariance_white,
+                eigenvalues=eigvals, effective_rank=int(keep.sum()),
+                eigenvalue_cutoff=cutoff)
+
+
 def save_matrix(path, matrix, row_names, col_names):
     with Path(path).open("w", newline="", encoding="utf-8") as f:
         w = csv.writer(f)
@@ -249,6 +279,8 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
     zc, tstd, zm, tm, ts = prepare_all(z, theta)
     result = fit(zc, tstd, objective, seed=seed, restarts=restarts, maxiter=maxiter)
     u = result["U"]
+    whitened = zca_whiten_all(u)  # post-processing; R and D remain fixed
+    uw = whitened["U_whitened"]
     pred = result["prediction"]
     n, d = zc.shape
     labels = PARAMETERS[model]
@@ -268,6 +300,7 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
         "Z_Tstd": (corr(z, tstd), znames, labels),
         "U_U": (corr(u, u), axes, axes),
         "U_Tstd": (corr(u, tstd), axes, labels),
+        "U_whitened_Tstd": (corr(uw, tstd), axes, labels),
         "prediction_Tstd_signed": (cross_signed, axes, labels),
         "prediction_Tstd_magnitude": (cross_abs, axes, labels),
         "prediction_prediction_signed": (corr(pred, pred), axes, axes),
@@ -277,6 +310,12 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
     if (out / "summary.json").exists() and not overwrite:
         raise FileExistsError(f"Results exist; use --overwrite to replace: {out}")
     out.mkdir(parents=True, exist_ok=True)
+    save_matrix(out / "U_zca_whitening_matrix.csv",
+                whitened["whitening_matrix"], axes, axes)
+    save_matrix(out / "U_whitened_covariance.csv",
+                whitened["U_whitened_cov_all"], axes, axes)
+    save_matrix(out / "corr__U_whitened_U_whitened.csv",
+                corr(uw, uw), axes, axes)
     for key, (matrix, rows, columns) in corr_matrices.items():
         save_matrix(out / f"corr__{key}.csv", matrix, rows, columns)
         if plots:
@@ -316,6 +355,12 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
     np.savez_compressed(out / "oracle_full_sample.npz",
                         Z_centered=zc, theta_true=np.asarray(theta),
                         T_std=tstd, U_unscaled=u,
+                        U_whitened=uw,
+                        U_zca_whitening_matrix=whitened["whitening_matrix"],
+                        U_mean_all=whitened["U_mean_all"],
+                        U_cov_all=whitened["U_cov_all"],
+                        U_whitened_cov_all=whitened["U_whitened_cov_all"],
+                        U_cov_eigenvalues=whitened["eigenvalues"],
                         prediction_Tstd=pred, abs_prediction=np.abs(pred),
                         abs_Tstd=np.abs(tstd),
                         R=result["R"], D=result["D"], DR=result["DR"],
@@ -333,6 +378,24 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
         "best_start": result["best_start"], "attempts": result["attempts"],
         "R": result["R"].tolist(), "D": result["D"].tolist(), "DR": result["DR"].tolist(),
         "b_rawZ_to_Tstd": intercept.tolist(),
+        "post_rotation_whitening": {
+            "method": "full-sample ZCA symmetric inverse covariance square root",
+            "input": "U=Zc @ R.T (before D)",
+            "uses_true_T": False,
+            "purpose": "diagnostic; whitening never participates in fitting R or D",
+            "whitening_matrix": whitened["whitening_matrix"].tolist(),
+            "U_mean_all": whitened["U_mean_all"].tolist(),
+            "U_cov_all": whitened["U_cov_all"].tolist(),
+            "U_whitened_cov_all": whitened["U_whitened_cov_all"].tolist(),
+            "U_cov_eigenvalues": whitened["eigenvalues"].tolist(),
+            "effective_rank": whitened["effective_rank"],
+            "eigenvalue_cutoff": whitened["eigenvalue_cutoff"],
+            "rank_deficient_note": (
+                "Truncated pseudoinverse whitening: covariance not identity"
+                if whitened["effective_rank"] < d else
+                "Full-rank whitening: covariance approximately identity"),
+            "U_whitened_Tstd_corr": corr_matrices["U_whitened_Tstd"][0].tolist(),
+        },
         "z_mean_all": zm.tolist(), "theta_mean_all": tm.tolist(),
         "theta_std_all": ts.tolist(), "axis_scales": result["scales"].tolist(),
         "magnitude_MSE_mean": float(loss_abs.mean()),
