@@ -79,6 +79,41 @@ class TestFullSampleOracle(unittest.TestCase):
                 module.analyze(self.z, self.t, model="C1", output=out,
                                plots=False, restarts=0, maxiter=20)
 
+    def test_png_save_in_memory_and_short_name_fallback(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            output = Path(temp) / "simulated_bad_name.png"
+            original = Path.write_bytes
+
+            def simulated_write(path, payload):
+                if path.name == "simulated_bad_name.png":
+                    raise OSError(22, "Simulated Windows Invalid argument")
+                return original(path, payload)
+
+            with patch.object(Path, "write_bytes", simulated_write):
+                actual, message = module.plot_heatmap(
+                    output, np.eye(4), ["u1", "u2", "u3", "u4"],
+                    ["t1", "t2", "t3", "t4"], "Fallback test")
+            self.assertTrue(actual.is_file())
+            self.assertNotEqual(actual, output)
+            self.assertTrue(actual.name.startswith("fig_"))
+            self.assertIn("Invalid argument", message)
+
+    def test_plot_io_failure_keeps_numerical_results(self):
+        from unittest.mock import patch
+        with tempfile.TemporaryDirectory() as temp:
+            out = Path(temp) / "failed_plots"
+            with patch.object(module, "plot_heatmap",
+                              side_effect=OSError(22, "Simulated PNG disk error")):
+                summary = module.analyze(
+                    self.z, self.t, model="C1", output=out,
+                    plots=True, restarts=0, maxiter=50)
+            self.assertTrue((out / "summary.json").is_file())
+            self.assertTrue((out / "oracle_full_sample.npz").is_file())
+            self.assertTrue((out / "R.csv").is_file())
+            self.assertTrue((out / "corr__U_whitened_Tstd.csv").is_file())
+            self.assertIn("corr__U_whitened_Tstd.png", summary["plot_errors"])
+
     def test_zca_whitening_full_rank_and_correlations(self):
         result = module.fit(self.zc, self.ts, "abs_mse",
                             seed=31, restarts=0, maxiter=60)
