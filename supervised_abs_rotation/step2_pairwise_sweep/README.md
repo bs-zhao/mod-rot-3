@@ -63,11 +63,13 @@ outputs/supervised_abs_rotation/<MODEL>/<CONDITION>/repeat01/abs_mse/step2_pairw
     trial_counts.npy
     cases/
         baseline/
+            G_relative.npy   # I (0-degree relative rotation)
             R.npy            # exactly R_best
             U_subject.npy    # (N,dz) = Zstd @ R_best.T
             W.npy            # (M,dz+dx) = [U[subject_index], X_original]
             case.json
         u1_u2_015/
+            G_relative.npy   # G_12(15°), acts on U axes
             R.npy            # G_12(15°) @ R_best
             U_subject.npy
             W.npy
