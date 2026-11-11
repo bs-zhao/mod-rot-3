@@ -64,6 +64,68 @@ s_j=\frac{\sum_s v_{sj}T_{{\rm std},sj}}{\sum_s v_{sj}^2}.
 
 This is a separate comparison; it does **not** minimize the absolute-value loss. Unlike whitening or unconstrained OLS, the fitted rows of `DR` remain orthogonal (up to scaling). For columnwise-standardized Z and Tstd, minimizing this profiled signed MSE is equivalent to maximizing the **sum of squared signed Pearson correlations** between matching U/T axes (and hence their squared absolute correlations); it is **not** the same objective as fitting the absolute magnitudes.
 
+## Step-1 standalone full-trial data export: Zstd, R, W, Y
+
+Every successful run now writes an independent subfolder at
+
+    outputs/supervised_abs_rotation/<MODEL>/<CONDITION>/repeat01/<OBJECTIVE>/stage1_data/
+
+containing:
+
+| File | Shape | Meaning |
+|---|---|---|
+| Zstd.npy | N × latent_dim | Original S5 posterior mean, each dimension z-scored over ALL subjects (ddof=0) |
+| R.npy | latent_dim × latent_dim | Best orthogonal R found in this very same supervised optimization |
+| W.npy | M × (latent_dim + x_dim) | Each original S1 trial: [Zstd[subject_index], X_original] |
+| Y.npz | Five arrays below | Observed and frozen-decoder-generated response variables |
+| Zraw.npy | N × latent_dim | Raw S5 posterior means actually passed to the frozen decoder |
+| subject_index.npy | M | Original 0-based S1 subject IDs, mapping trial rows to Zstd rows |
+| trial_index.npy | M | Original 0-based within-subject trial index |
+| trial_counts.npy | N | Number of trials per subject, variable for C1/C2/C3 |
+| manifest.json | one JSON object | Shape, column order, definitions, SHA256 and provenance |
+
+N is the **entire subject sample**; M is **all original trials** (sum of
+individual trial_counts), with no subsampling, padding or reordering.
+Row ordering is checked against the original S1 dataset.
+
+Y.npz keys:
+
+| Key | Shape | Definition |
+|---|---|---|
+| choice_observed | (M,) | Actual binary choice 0/1 from S1 |
+| logit_nn | (M,) | Binary logit = raw NN class1 logit − class0 logit |
+| p_nn | (M,) | Probability of choice=1, softmax over two logits |
+| choice_nn | (M,) | Deterministic predicted class: argmax (ties go to 0), not random Bernoulli draws |
+| logits_nn_2class | (M, 2) | Original pair of class scores from frozen NN decoder |
+
+**Important distinction:** Although W uses [Zstd, X_original], the original
+NP decoder was trained on **[X_original, Zraw]** (different ordering and
+unstandardized original latent). Prediction therefore uses *original frozen
+S5 Z* and raw X, **not** W or U directly. This preserves the exact trained
+function and avoids accidentally changing the decoder by standardizing its
+input. The checkpoint is loaded for inference only: no retraining or
+re-encoding occurs. Batch size defaults to 8192 trial rows, with
+automatic CUDA selection when available.
+
+The new data folder is staged in a temporary directory and committed only
+after all M rows are successfully written. Existing data are preserved
+unless --overwrite is specified. New CLI options:
+
+- --decoder-batch-size 8192 (number of trial rows per forward batch)
+- --decoder-device auto (or cpu / cuda)
+- --skip-stage1-export (opt out of the default full-trial export)
+
+The main summary.json now links to the stage1_data folder and its dimensions.
+
+**Leakage warning:** S5 estimates the subject posterior using *all original
+choices*, including the same trials exported here. Consequently these
+outputs are **in-sample reconstructions**, not independent held-out
+predictions. R itself is also supervised using real parameter T.
+
+Example after pulling latest main:
+
+    python supervised_abs_rotation/run.py --model CR3 --overwrite
+
 ## Windows CMD, from repository root
 
 ```cmd
