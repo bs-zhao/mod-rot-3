@@ -1,6 +1,6 @@
 # All-observed-point support and unrestricted X-profile compression
 
-AK is running CR3 first. AL completed CR3 without a full-plane criterion.
+AK and AL completed CR3 without a full-plane criterion.
 Source fitting and scoring use all 5000 subjects. No task equation, saved
 rotation, original neural weights or true theta is used.
 
