@@ -29,7 +29,7 @@ Z_{\rm std}=(Z-\mathbf1\bar Z^\top)\,\mathrm{diag}(\sigma_Z)^{-1},
 T_{\rm std}=(T-\mathbf1\bar T^\top)\,\mathrm{diag}(\sigma_T)^{-1}.
 \]
 
-**Every original Z dimension is z-scored first** using the mean and population standard deviation (\`ddof=0\`) of **all subjects**; T is z-scored the same way. These preprocessing statistics are fixed before R optimization. Z-scoring is axis scaling, not whitening: the correlations among Z dimensions remain unchanged. R is orthogonal **in Z-score coordinates**, not in the original raw-Z coordinate system. For column-vector notation:
+**Every original Z dimension is z-scored first** using the mean and population standard deviation (`ddof=0`) of **all subjects**; T is z-scored the same way. These preprocessing statistics are fixed before R optimization. Z-scoring is axis scaling, not whitening: the correlations among Z dimensions remain unchanged. R is orthogonal **in Z-score coordinates**, not in the original raw-Z coordinate system. For column-vector notation:
 
 \[
 R^\top R=I,\quad D=\mathrm{diag}(s_1,\ldots,s_d),\quad
