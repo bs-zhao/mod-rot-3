@@ -154,7 +154,7 @@ def global_fingerprint(u, f, train, ridge_fraction=.025):
     scl=max(float(np.trace(gram))/d,1e-10)
     reg=gram+ridge_fraction*scl*np.eye(d)
     b=np.linalg.solve(reg,xc.T@yc/len(train))
-    pred=(u[test_dummy:=train]-x.mean(0))@b+y.mean(0)
+    pred=(u[train]-x.mean(0))@b+y.mean(0)
     return b,float(np.mean((pred-y)**2))
 
 
@@ -230,12 +230,21 @@ def scores(b, *, include_variation=True):
             spread/max(float(np.sum(b*b)),EPS))
         # The nonlinear part of the derivative field: variation of each
         # stimulus's gradient across the subjects, after removing the mean.
-        extras=scores(variation,include_variation=False)
-        for k in ("local_point_entropy","local_point_tail1","local_point_tail2",
-                  "local_rms_entropy","local_rms_tail1",
-                  "local_meanabs_entropy","local_meanabs_tail1",
-                  "local_gram_offdiag_fraction"):
-            result[f"nonlinear_{k}"]=extras[k]
+        if float(spread)<1e-18:
+            # An exactly constant gradient field has no nonlinear signal:
+            # flat zero complexity, not a spurious "best" orientation.
+            for k in ("local_point_entropy","local_point_tail1","local_point_tail2",
+                      "local_rms_entropy","local_rms_tail1",
+                      "local_meanabs_entropy","local_meanabs_tail1",
+                      "local_gram_offdiag_fraction"):
+                result[f"nonlinear_{k}"]=0.
+        else:
+            extras=scores(variation,include_variation=False)
+            for k in ("local_point_entropy","local_point_tail1","local_point_tail2",
+                      "local_rms_entropy","local_rms_tail1",
+                      "local_meanabs_entropy","local_meanabs_tail1",
+                      "local_gram_offdiag_fraction"):
+                result[f"nonlinear_{k}"]=extras[k]
     if not all(np.isfinite(x) for x in result.values()):
         raise ArithmeticError("Nonfinite structural loss")
     return result
