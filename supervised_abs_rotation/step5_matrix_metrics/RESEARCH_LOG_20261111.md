@@ -106,6 +106,69 @@ observed Gram transport, and finite-support empirical marginal bases.
 
 ## Previous verification checkpoint
 
+## P/Q: diagnostic and local-support failures
+
+The input-only kNN entropy diagnostic P failed CR3: best neighbor setting
+10 ranked 3/37 and passed 4/6 planes. It uses no response information and
+is kept separate from response-simplicity evidence.
+
+`waveQ_local_support_seed396` completed all polynomial3/5, RBF1/2 and
+both channels on all subjects. It scored support before averaging, instead
+of only pooling energy. No full-plane candidate remained; best count 3/6.
+Its observed-X gradient contrasts are not actual UX partial derivatives.
+
+83 tests passed after O/P/Q and actual joint derivative additions. Wave R
+is running genuine mixed UX derivatives using all-data joint projections.
+Its first three datasets leave exactly one common poly4/logit candidate:
+UX-column subject-median fractional support at 10% relative L2 tail.
+C3 and subsequent stability checks were pending at that checkpoint.
+
+## R: one common grid candidate completed
+
+C3 subsequently passed 15/15 for that same poly4/logit/UX-column
+subject-median fractional-support rule (10% relative L2 tail). CR3/C1/C2
+each pass 6/6, baseline rank 1 in all four. The exact common intersection
+contains one row. `compare_prepared_runs.py` validates all score hashes,
+source manifests, source/scoring code settings and actual numeric backends.
+
+Response validation NMSE for the selected joint projection is CR3 .00892709,
+C1 .0000809827, C2 .00146661, C3 .00294670. All 5,000 subjects and all original
+rows were fitted. The initial derivative descriptor uses eight observed
+contexts per person. S now evaluates 32, paired subject bootstrap, 128
+random multi-plane rotations and 16 blind rotation-optimization starts.
+Numerical convergence failures are retained explicitly, not hidden.
+
+89 tests passed after exact derivative lowering, covariance-score
+equivalence, piecewise rotation gradients and paired-bootstrap checks.
+The full objective remained open pending those scientific validations.
+
+## S rejects R's small-context candidate
+
+`waveS_ux_validation_seed398` completed CR3. With 32 contexts the fixed
+lead ranked 6/37 and passed only 2/6. Subject-bootstrap simultaneous
+minimum-margin 5th percentile was -0.0550581, and zero bootstrap replicates
+kept all interior margins positive. The baseline score 3.64068044 exceeded
+the random-rotation minimum 3.40093147, an explicit global-recovery
+counterexample. BFGS attained 3.33153902 but all starts reported precision
+loss; no convergence or global minimum is claimed. Later models were skipped.
+
+Next compute exact per-person derivative covariance over **every original
+trial**, streaming actual W rows. Do not select a favorable small stimulus
+subset, omit failed planes, or call the four-grid lead a validated success.
+
+## Wave O: degree-resolved and pure-coupling structure
+
+`waveO_resolved_seed394` completed CR3 with no full-plane candidate.
+It explicitly removed U-only and X-only product-reference components
+before mixed-block spectra, and separately scored homogeneous U orders
+and equal-weighted X profiles. Settings remained prospective and shared.
+
+Several degree-resolved supports reached 5/6 and rank 2/37; for example
+poly3 probability, cubic U-axis-subset fractional support at 1%/3% tail.
+The failing sixth plane was retained, so C1/C2/C3 were skipped.
+Pure-coupling norm controls remained invariant. None of these exploratory
+near-passes establishes the requested common criterion.
+
 65 tests passed before the next statistics-bank extension, including
 actual CUDA-vs-NumPy double-precision checks, exact joint polynomial
 coordinate changes, the user's sparsity example, extreme rescaling,

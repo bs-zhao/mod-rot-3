@@ -9,6 +9,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import joint_bank as jb
 import run_predictive_compression as rm
 import run_joint_separation as rn
+import run_local_joint as rr
 from test_matrix_metrics import make_cases
 
 
@@ -29,3 +30,17 @@ def test_both_empirical_compression_and_mixed_spectra_complete_from_wy_only(tmp_
             assert audit['all_trial_rows'] == 160
             assert audit['forbidden_files_read'] == []
             assert not any('R_best' in f or 'Zstd' in f for f in audit['files'])
+
+
+def test_actual_ux_derivative_pipeline_uses_every_subject(tmp_path):
+    source = tmp_path/'source'; make_cases(source)
+    bank = tmp_path/'bank'; output = tmp_path/'local_joint'
+    with threadpool_limits(limits=2):
+        jb.prepare(source, bank, degrees=(2,), device='numpy')
+        rows = rr.analyze(source, output, bank, per_subject=2)
+    assert any(row['metric'].startswith('UX_entries_') for row in rows)
+    assert json.loads((output/'protocol.json').read_text())['status'] == 'COMPLETE'
+    audit = json.loads((output/'read_audit.json').read_text())
+    assert audit['all_subjects'] == 32
+    assert audit['evaluated_rows'] == 64
+    assert audit['forbidden_files_read'] == []

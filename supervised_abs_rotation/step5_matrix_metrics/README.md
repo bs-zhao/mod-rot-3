@@ -1,4 +1,12 @@
-# Step 5 — WY-only matrix metrics, wave A
+# Step 5 — WY-only matrix rotation metrics
+
+**2026-11-11 update:** Wave R has the first identical candidate passing
+all four real-data rotation grids: poly4/logit UX-column subject-median
+fractional support at a 10% relative L2 tail. CR3/C1/C2 pass 6/6 planes;
+C3 passes 15/15. However, Wave S rejected it on CR3: with 32 contexts
+instead of eight it passed only 2/6, and random multi-plane rotations
+scored lower than baseline. It is not a validated universal criterion.
+See WAVE_R_S.md, WAVE_O_P_Q.md and the continuation research log.
 
 **Status (2026-11-10, America/New_York): Wave A has now run on the real
 Windows C1/C2/C3/CR3 matrices, using 5,000 subjects in each model. It found

@@ -72,7 +72,22 @@ def plot(curves, path, model, channel="logit_nn"):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     available = {r["metric"] for r in curves}
-    if "prediction_tail2_l2" in available:
+    if "UX_entries_point_mean_effective_support_p0p5" in available:
+        metrics = ["UX_entries_subject_mean_soft_count_eps003",
+                   "UX_columns_subject_mean_fractional_count_eps003",
+                   "UU_edges_point_mean_effective_support_p0p5",
+                   "UU_UX_total_point_median_fractional_count_eps001"]
+    elif "UX_observed_contrast_point_mean_effective_support_p0p5" in available:
+        metrics = ["UU_edges_point_mean_effective_support_p0p5",
+                   "UU_all_subject_mean_fractional_count_eps003",
+                   "UX_observed_contrast_point_mean_soft_count_eps003",
+                   "U_gradient_context_mean_fractional_count_eps010"]
+    elif "s0.5_Uorder3_U_U_axis_subsets_fractional_count_eps001" in available:
+        metrics = ["s0.5_Uorder3_U_U_axis_subsets_fractional_count_eps001",
+                   "s0.5_equal_orders_U_U_axis_subsets_soft_count_eps001",
+                   "s1_UX_coupling_UX_block_full_mean_effective_support_p0p5",
+                   "s1_U_dependent_UX_block_full_mean_effective_support_p0p5"]
+    elif "prediction_tail2_l2" in available:
         metrics = ["prediction_tail2_l2", "prediction_tail8_l2",
                    "prediction_count_eps010", "prediction_count_eps100"]
     elif "s0.5_UX_block_full_mean_effective_support_p0p5" in available:
