@@ -465,12 +465,12 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
                  f"{model} FULL SAMPLE | {key}", True)
                 for key, (matrix, rows, columns) in corr_matrices.items()]
         work.extend([
-            ("R.png", result["R"], axes, znames,
-             f"{model} supervised orthogonal R", False),
+            ("R.png", result["R"], axes, zstd_names,
+             f"{model} supervised orthogonal R on Z scores", False),
             ("D.png", result["D"], axes, axes,
              f"{model} fitted diagonal D", False),
-            ("DR.png", result["DR"], axes, znames,
-             f"{model} complete DR map", False),
+            ("DR.png", result["DR"], axes, zstd_names,
+             f"{model} complete DR map on Z scores", False),
         ])
         for filename, matrix, rows, cols, title, correlation in work:
             try:
