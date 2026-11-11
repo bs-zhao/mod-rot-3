@@ -507,6 +507,12 @@ def main(argv=None):
     p.add_argument("--output", type=Path)
     p.add_argument("--no-plots", action="store_true")
     p.add_argument("--overwrite", action="store_true")
+    p.add_argument("--skip-stage1-export", action="store_true",
+                   help="Skip default standalone stage1_data export of W and decoder Y")
+    p.add_argument("--decoder-batch-size", type=int, default=8192,
+                   help="Number of original trials per frozen-decoder inference batch")
+    p.add_argument("--decoder-device", default="auto",
+                   help="Frozen-decoder inference device: auto, cpu, or cuda")
     args = p.parse_args(argv)
     dim = DIMS[args.model]
     if args.latent_dim is None:
@@ -517,8 +523,8 @@ def main(argv=None):
         p.error("Invalid NP configuration")
     if not (0 < args.context_min <= args.context_max <= 1):
         p.error("Invalid context fractions")
-    if args.restarts < 0 or args.maxiter < 1:
-        p.error("Invalid optimizer settings")
+    if args.restarts < 0 or args.maxiter < 1 or args.decoder_batch_size < 1:
+        p.error("Invalid optimizer or frozen decoder batch settings")
     z, t, provenance = load_existing_np(args.model, args.beta, dim, args.lambda_sparse,
                                         args.context_min, args.context_max, args.repeat)
     output = args.output or (ROOT / "outputs" / "supervised_abs_rotation" / args.model /
@@ -529,6 +535,26 @@ def main(argv=None):
                       seed=args.seed, restarts=args.restarts, maxiter=args.maxiter,
                       plots=not args.no_plots, overwrite=args.overwrite,
                       provenance=provenance)
+    if not args.skip_stage1_export:
+        from export_wy import export_stage1_data
+        z_std = (z - np.asarray(summary["z_mean_all"])) / np.asarray(summary["z_std_all"])
+        dataset = ROOT / "outputs" / "choice" / args.model / "s1_generate" / "s1_generate__dataset.npz"
+        checkpoint = (ROOT / "outputs" / "choice" / args.model / "s3_train" /
+                      condition(args.beta, args.lambda_sparse, args.context_min,
+                                args.context_max, dim) /
+                      f"repeat{args.repeat:02d}" / "s3_train__checkpoint.pt")
+        stage1 = export_stage1_data(
+            output=output, dataset_path=dataset, checkpoint_path=checkpoint,
+            z_raw=z, z_std=z_std, r=np.asarray(summary["R"]),
+            model_name=args.model, batch_size=args.decoder_batch_size,
+            device=args.decoder_device, overwrite=args.overwrite,
+            source_provenance=provenance)
+        summary["stage1_data"] = stage1
+        (output / "summary.json").write_text(
+            json.dumps(summary, indent=2, ensure_ascii=False, allow_nan=False) + "\n",
+            encoding="utf-8")
+        print(f"  Stage-1 all-trials W/Y export: {stage1['directory']} "
+              f"({stage1['n_trials_total']} rows)", flush=True)
     print(f"[{args.model}] ALL N={len(z)} | {args.objective}={summary['objective_value']:.6f}")
     print(f"  magnitude mean r2 = {summary['magnitude_R2_mean']:.4f}"
           f" | signed mean r2 = {summary['signed_R2_mean']:.4f}")
