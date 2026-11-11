@@ -15,7 +15,12 @@ if str(HERE) not in sys.path:
     sys.path.insert(0,str(HERE))
 from local import (orthogonal_map, build_local_operators, scores,
                    global_fingerprint, select_anchors)
-from run import analyze
+import importlib.util
+spec = importlib.util.spec_from_file_location("step4_local_structure_runner", HERE/"run.py")
+module = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = module
+spec.loader.exec_module(module)
+analyze = module.analyze
 
 
 def givens(dim,pair,angle):
