@@ -10,6 +10,7 @@ import joint_bank as jb
 import run_predictive_compression as rm
 import run_joint_separation as rn
 import run_local_joint as rr
+import run_all_trial_support as rt
 from test_matrix_metrics import make_cases
 
 
@@ -43,4 +44,19 @@ def test_actual_ux_derivative_pipeline_uses_every_subject(tmp_path):
     audit = json.loads((output/'read_audit.json').read_text())
     assert audit['all_subjects'] == 32
     assert audit['evaluated_rows'] == 64
+    assert audit['forbidden_files_read'] == []
+
+
+def test_complete_all_trial_covariance_pipeline_from_original_matrices(tmp_path):
+    source = tmp_path/'source'; make_cases(source)
+    bank = tmp_path/'bank'; output = tmp_path/'all_trials'
+    with threadpool_limits(limits=2):
+        jb.prepare(source, bank, degrees=(2,), device='numpy')
+        rows = rt.analyze(source, output, bank)
+    assert rows
+    protocol = json.loads((output/'protocol.json').read_text())
+    assert protocol['status'] == 'COMPLETE'
+    assert protocol['all_original_rows_used_in_metric'] is True
+    audit = json.loads((output/'read_audit.json').read_text())
+    assert audit['all_original_rows_in_fit_and_metric'] == 160
     assert audit['forbidden_files_read'] == []

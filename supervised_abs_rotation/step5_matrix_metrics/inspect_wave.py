@@ -82,6 +82,11 @@ def plot(curves, path, model, channel="logit_nn"):
                    "UU_all_subject_mean_fractional_count_eps003",
                    "UX_observed_contrast_point_mean_soft_count_eps003",
                    "U_gradient_context_mean_fractional_count_eps010"]
+    elif "UX_entries_subject_mean_effective_support_p0p5" in available:
+        metrics = ["UX_columns_subject_median_fractional_count_eps010",
+                   "UX_entries_subject_mean_soft_count_eps003",
+                   "UU_all_subject_mean_fractional_count_eps003",
+                   "UU_edges_subject_mean_soft_count_eps001"]
     elif "s0.5_Uorder3_U_U_axis_subsets_fractional_count_eps001" in available:
         metrics = ["s0.5_Uorder3_U_U_axis_subsets_fractional_count_eps001",
                    "s0.5_equal_orders_U_U_axis_subsets_soft_count_eps001",

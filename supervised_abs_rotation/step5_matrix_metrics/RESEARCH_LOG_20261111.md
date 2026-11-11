@@ -156,6 +156,14 @@ Next compute exact per-person derivative covariance over **every original
 trial**, streaming actual W rows. Do not select a favorable small stimulus
 subset, omit failed planes, or call the four-grid lead a validated success.
 
+## T: exact all-trial moments also fail CR3
+
+`waveT_all_trials_seed399` completed all 2.5 million rows for each of
+degrees 2/3/4, with per-person UU/UX/gradient moments. It found no full-plane
+candidate; the best count was 5/6, rank at least 4/37. Other datasets were
+skipped. Exact covariance transport matches brute-force local derivatives
+and supports unequal trial counts. See WAVE_T.md.
+
 ## Wave O: degree-resolved and pure-coupling structure
 
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.
