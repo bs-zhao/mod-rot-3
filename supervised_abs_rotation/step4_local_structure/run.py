@@ -315,9 +315,11 @@ def analyze(*,step2,output,model,channels=CHANNELS,
                 median_local_condition_number=float(np.median(op.condition_numbers)),
                 max_local_condition_number=float(np.max(op.condition_numbers))))
 
+    output.parent.mkdir(parents=True,exist_ok=True)
+    # Stage on the same filesystem as the final destination so atomic rename
+    # works for custom --output paths and Windows drives too.
     with tempfile.TemporaryDirectory(
-            prefix=".step4_blind_build_",dir=output.parent if output.parent.exists()
-            else ROOT) as temp:
+            prefix=".step4_blind_build_",dir=output.parent) as temp:
         pending=Path(temp)/"step4_local_structure"
         pending.mkdir()
         (pending/"plots").mkdir()
@@ -472,9 +474,11 @@ def analyze(*,step2,output,model,channels=CHANNELS,
                 "independent behavioral response prediction.",
             "plot_errors":plot_errors,
         })
+        train_set=set(train.tolist())
+        anchor_set=set(anchor_ids.tolist())
         save_csv(pending/"subject_split.csv",[
-            {"subject_id":int(i),"partition":"train" if i in set(train) else "test",
-             "is_local_anchor":int(i in set(anchor_ids))}
+            {"subject_id":int(i),"partition":"train" if i in train_set else "test",
+             "is_local_anchor":int(i in anchor_set)}
             for i in range(n)],
             ["subject_id","partition","is_local_anchor"])
         # Only successful complete outputs are published.
