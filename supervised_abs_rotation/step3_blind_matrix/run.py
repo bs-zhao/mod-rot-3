@@ -21,6 +21,7 @@ import io
 import json
 import os
 import shutil
+import sys
 import tempfile
 from collections import defaultdict
 from pathlib import Path
@@ -29,6 +30,9 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[1]
+# Explicit local import path for both direct Windows runs and pytest importlib.
+if str(HERE) not in sys.path:
+    sys.path.insert(0,str(HERE))
 from profiles import CHANNELS, load_profiles, profile_views
 from metrics import (MATRIX_METRICS, CONTROL_METRICS, FUNCTION_METRICS,
                      normalize_response, linear_fingerprint, functional_scores)
@@ -437,9 +441,10 @@ def analyze(*, model, step2, output, channels=CHANNELS,
             ),
             "plot_errors":plot_errors,
         })
+        train_set = set(train.tolist())
         save_csv(folder/"subject_splits.csv",
                  [{"subject_index":int(i),
-                   "split":"train" if i in set(train.tolist()) else "test"}
+                   "split":"train" if i in train_set else "test"}
                   for i in range(n)],["subject_index","split"])
         # Publish completed directory without leaving half-written results.
         backup=None
