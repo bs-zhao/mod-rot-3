@@ -26,3 +26,10 @@ def test_unknown_link_pipeline_freezes_scores_before_labels(tmp_path):
     assert audit["all_subjects"] == 32
     assert audit["all_rows"] == 160
     assert not any("R_best" in f or "Zstd" in f for f in audit["files"])
+    cached_output = tmp_path / "cached"
+    run_unknown_link.analyze(source, cached_output, families=("poly3",), iterations=1,
+                             patience=1, cache_source=out)
+    reuse = json.loads((cached_output / "runtime_reuse_audit.json").read_text())
+    assert reuse["reused_fits"] == 74
+    cached = json.loads((cached_output / "protocol.json").read_text())
+    assert cached["scores_sha256"] == protocol["scores_sha256"]

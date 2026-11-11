@@ -63,3 +63,23 @@ of a robust universal result.
 ```cmd
 python supervised_abs_rotation/step5_matrix_metrics/run_unknown_link.py --batch
 ```
+
+## Explicit adaptive runtime protocol
+
+The original full-12-iteration partial run and a numerically equivalent
+cached-interpolation restart were retained as stopped runtime experiments,
+not marked complete or failed scientific screens. Their completed fits
+selected iteration 0 or 1 using validation raw-Y error. The first 370
+anonymous scores matched the original implementation to 6.94e-18.
+
+The new `waveD_adaptive_seed384` protocol caps at 12 iterations and stops
+after three consecutive validation non-improvements. The same rule applies
+to every dataset, family and case. Test error and baseline rankings are
+not used to stop or choose iterations. Old fit checkpoints are reused only
+if replaying this validation rule selects exactly their original best
+iteration; otherwise they are recomputed. Reuse provenance and hashes are
+saved. A pipeline test confirms identical frozen scores when reuse is valid.
+
+```cmd
+python supervised_abs_rotation/step5_matrix_metrics/run_unknown_link.py --batch --run-name waveD_adaptive_seed384 --patience 3 --reuse-run-name waveD_unknown_link_fast_seed384
+```

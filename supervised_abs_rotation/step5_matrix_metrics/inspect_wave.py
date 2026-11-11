@@ -72,7 +72,25 @@ def plot(curves, path, model, channel="logit_nn"):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     available = {r["metric"] for r in curves}
-    if "fixed_X_direction_inconsistency" in available:
+    if "s0.2_axis_mean_effective_support_p0p5" in available:
+        metrics = ["s0.2_axis_mean_effective_support_p0p5", "s0.5_axis_mean_effective_support_p0p5",
+                   "s0.2_axis_mean_soft_count_eps003", "s0.5_axis_worst_fractional_count_eps010"]
+    elif "s0.2_interaction_components_effective_support_p0p5" in available:
+        metrics = ["s0.2_interaction_components_effective_support_p0p5", "s0.5_interaction_components_effective_support_p0p5",
+                   "s0.2_interaction_components_soft_count_eps003", "s0.5_pair_components_fractional_count_eps010"]
+    elif "global_UU_all_effective_support_p0p5" in available:
+        metrics = ["global_UU_all_effective_support_p0p5", "context_UU_edges_effective_support_p0p5",
+                   "point_UX_entries_soft_count_eps003", "context_UX_columns_fractional_count_eps010"]
+    elif "s0.2_interaction_components_tail1_l2" in available:
+        metrics = ["s0.2_interaction_components_tail1_l2", "s0.5_interaction_components_tail1_l2",
+                   "s0.5_interaction_fraction", "s0.5_higher_order_fraction"]
+    elif "l2_profiled_edge_fraction" in available:
+        metrics = ["l2_profiled_edge_fraction", "l1_profiled_edge_fraction",
+                   "l1_pooled_all_tail1_l2", "l2_point_edges_tail1_l2"]
+    elif "unknown_link_test_nmse" in available:
+        metrics = ["unknown_link_test_nmse", "identity_link_test_nmse",
+                   "link_component_tail1_l2", "component_direction_variation"]
+    elif "fixed_X_direction_inconsistency" in available:
         metrics = ["fixed_X_direction_inconsistency", "conditional_direction_k32",
                    "finite0.5_conditional_direction_k32", "UX_contrast_tail1_l2"]
     elif "additive_test_nmse" in available:

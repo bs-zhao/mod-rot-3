@@ -4,9 +4,17 @@
 Windows C1/C2/C3/CR3 matrices, using 5,000 subjects in each model. It found
 zero four-model candidates. Wave B's additive/pairwise projection screen
 and Wave C's conditional direction/finite-effect screen also failed on
-CR3 and stopped before the other datasets. Wave D/E investigate unknown
-response links; their results must be checked before any claim. See
+CR3 and stopped before the other datasets. Waves E/F/H/I also failed the
+CR3 screen. Wave J has one poly3-only CR3 pass that fails higher-degree
+and RBF stability; it is not accepted. Wave D's adaptive unknown-link
+experiment is still running. See
 `RESEARCH_LOG_20261110.md` and the individual `WAVE_*.md` protocols.**
+
+**Primary sparsity clarification:** effective support and small relative
+L2 tails take priority over Shannon entropy or top-1 concentration.
+`[2,2,.01,.01]` must score sparser than `[1,.5,.1,.1]`. This example and
+overall rescaling invariance are tested. Strength fractions and direction
+consistency remain auxiliary diagnostics. See WAVE_H_I.md.
 
 This is the next experimental batch, not a successful universal rotation
 method. Earlier global/local first-gradient concentration experiments failed

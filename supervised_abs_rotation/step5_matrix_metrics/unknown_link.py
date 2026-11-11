@@ -20,7 +20,18 @@ def orders(y, train):
     return out
 
 
-def calibrate(y, predicted, ordered, identity_mix=.1):
+def interpolation_map(y, ordered):
+    mapping = []
+    for j, (_, unique, _, _) in enumerate(ordered):
+        high = np.minimum(np.searchsorted(unique, y[:, j]), len(unique)-1)
+        low = np.maximum(high-1, 0)
+        span = unique[high]-unique[low]
+        weight = np.divide(y[:, j]-unique[low], span, out=np.zeros(len(y)), where=span > 0)
+        mapping.append((low, high, np.clip(weight, 0., 1.)))
+    return mapping
+
+
+def calibrate(y, predicted, ordered, identity_mix=.1, interpolation=None):
     transformed = np.empty_like(y)
     links = []
     for j, (ids, unique, starts, counts) in enumerate(ordered):
@@ -35,7 +46,11 @@ def calibrate(y, predicted, ordered, identity_mix=.1):
         center = np.average(values, weights=counts)
         scale = max(np.sqrt(np.average((values-center)**2, weights=counts)), 1e-12)
         values = (values-center)/scale
-        transformed[:, j] = np.interp(y[:, j], unique, values)
+        if interpolation is None:
+            transformed[:, j] = np.interp(y[:, j], unique, values)
+        else:
+            low, high, weight = interpolation[j]
+            transformed[:, j] = values[low]+weight*(values[high]-values[low])
         links.append((unique, values))
     return transformed, links
 
@@ -47,8 +62,21 @@ def inverse_link(predicted, links):
     return out
 
 
-def chain(design, y, train, valid, test, *, identity_mix=.1, iterations=12, ridge=1e-3):
+def validation_checkpoint(history, patience):
+    best = float("inf"); chosen = 0; stale = 0
+    for position, item in enumerate(history):
+        if item["validation_nmse"] < best:
+            best = item["validation_nmse"]; chosen = item["iteration"]; stale = 0
+        else:
+            stale += 1
+        if patience is not None and stale >= patience:
+            return position, chosen
+    return len(history)-1, chosen
+
+
+def chain(design, y, train, valid, test, *, identity_mix=.1, iterations=12, ridge=1e-3, use_cache=True, patience=None):
     ordered = orders(y, train)
+    interpolation = interpolation_map(y, ordered) if use_cache else None
     mean = y[train].mean(0)
     std = np.maximum(y[train].std(0), 1e-12)
     transformed = (y-mean)/std
@@ -56,41 +84,51 @@ def chain(design, y, train, valid, test, *, identity_mix=.1, iterations=12, ridg
     inverse_gram = ap.estimate(design[train].T @ design[train], design[train].T, ridge)
     history = []
     best = None
+    stale = 0
     for iteration in range(iterations+1):
         coef = inverse_gram @ transformed[train]
         predicted = design @ coef
-        restored = inverse_link(predicted, links)
-        validation_by_output = np.mean(((restored[valid]-y[valid])/std)**2, axis=0)
-        test_by_output = np.mean(((restored[test]-y[test])/std)**2, axis=0)
+        # Only held-out rows need inverse-link evaluation. Training rows
+        # already enter the next calibration through the forward scores.
+        validation_restored = inverse_link(predicted[valid], links)
+        test_restored = inverse_link(predicted[test], links)
+        validation_by_output = np.mean(((validation_restored-y[valid])/std)**2, axis=0)
+        test_by_output = np.mean(((test_restored-y[test])/std)**2, axis=0)
         validation = float(validation_by_output.mean())
         history.append(dict(iteration=iteration, validation_nmse=validation,
                             test_nmse=float(test_by_output.mean())))
         if best is None or validation < best[0]:
             best = (validation, iteration, test_by_output.copy(), coef.copy())
+            stale = 0
+        else:
+            stale += 1
+        if patience is not None and stale >= patience:
+            break
         if iteration < iterations:
-            transformed, links = calibrate(y, predicted, ordered, identity_mix)
+            transformed, links = calibrate(y, predicted, ordered, identity_mix, interpolation)
     return dict(best_iteration=best[1], validation_nmse=best[0],
                 test_nmse_by_output=best[2], coef=best[3], history=history)
 
 
-def fit_case(u, y, split, family, identity_mix=.1, iterations=12):
+def fit_case(u, y, split, family, identity_mix=.1, iterations=12, patience=None):
     train, valid, test = split
     bases = ap.axis_bases(u, train, family)
     design = np.column_stack([np.ones(len(u)), *bases])
-    fit = chain(design, y, train, valid, test, identity_mix=identity_mix, iterations=iterations)
+    fit = chain(design, y, train, valid, test, identity_mix=identity_mix, iterations=iterations, patience=patience)
     # Refit chosen iteration count on ALL subjects for structural scores.
     all_rows = np.arange(len(u))
     full_bases = ap.axis_bases(u, all_rows, family)
     full_design = np.column_stack([np.ones(len(u)), *full_bases])
     # Use precisely the iteration count chosen on validation subjects.
     ordered = orders(y, all_rows)
+    interpolation = interpolation_map(y, ordered)
     mean, std = y.mean(0), np.maximum(y.std(0), 1e-12)
     transformed = (y-mean)/std
     inv = ap.estimate(full_design.T @ full_design, full_design.T, 1e-3)
     for k in range(fit["best_iteration"]+1):
         coef = inv @ transformed
         if k < fit["best_iteration"]:
-            transformed, _ = calibrate(y, full_design @ coef, ordered, identity_mix)
+            transformed, _ = calibrate(y, full_design @ coef, ordered, identity_mix, interpolation)
     group_energy = []
     component_variation = []
     total_variation = 0.

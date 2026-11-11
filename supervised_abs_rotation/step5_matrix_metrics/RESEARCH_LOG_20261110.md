@@ -91,17 +91,62 @@ under every estimator. For poly5 logit they were approximately
 but does not support explaining the failure as a completely inactive U
 direction. Prediction accuracy alone still does not certify derivatives.
 
-## Further branches (running; no success claim)
+## Wave E: local output-link curvature profiling
 
-Wave D, `waveD_unknown_link_seed384`, learns monotone response
+Completed on CR3 as `waveE_profiled_seed385`, with no adequate full-plane
+candidate. Best plane count was 3/6, rank 8/37 for L1-profiled pooled
+all-entry tail-1 under poly5 and rbf2. The source functions remained
+adequate. A locally fitted nuisance scalar was never asserted to define
+a globally integrable response link. See WAVE_E.md.
+
+## Waves F/H/I: reference ANOVA and effective support
+
+Wave F completed with zero adequate full-plane candidates. It computes
+actual function variance components under declared local product Gaussian
+references, not empirical independent-input Sobol indices. The best plane
+count was 2/6, rank 11/37 (rbf1 logit interaction tail-4 at scale 0.2).
+
+The user clarified that `[2,2,.01,.01]` is sparser than
+`[1,.5,.1,.1]`. Shannon entropy/top-1 can reverse this ordering. Primary
+support measures now include relative-tail support counts and effective
+L0.5/L1 support, with exact example and rescaling tests. Strength and
+direction consistency remain supplementary. Protocols are WAVE_H_I.md.
+
+Wave H applies these definitions to UU/observed-stimulus contrast fields
+under global, equal-context and equal-point pooling. It completed on CR3
+with zero full-plane candidates; best count 3/6, rank 7/37.
+
+Wave I re-scores Wave F's frozen component energies without refitting.
+It also had zero full-plane candidates; best count 3/6, rank 8/37.
+No later datasets were launched for these failed CR3 screens.
+
+## Wave J: functional separation spectra
+
+Completed as `waveJ_separation_seed389`. This measures the support of
+singular spectra of each U axis versus all remaining coordinates and
+stimulus responses. A dense product interaction can still have rank one;
+this is distinct from sparse interaction edges. See WAVE_J.md.
+
+One single-estimator setting passed CR3: poly3 logit worst-axis effective
+L0.5 support, scale 0.2, rank 1/37 and 6/6 planes. The same definition
+failed poly5 (rank 8, 0/6), rbf1 (rank 6, 1/6), and rbf2 (rank 7, 0/6).
+It is not accepted as an estimator-stable candidate. Scale 0.5 failed the
+90% support-coverage screen; scale 0.2 coverage was 0.9921875. The best
+other adequate setting reached 5/6, rank 4/37. No signs, scales or failed
+planes were changed to turn the single-estimator pass into a success.
+
+## Unknown-link branch (running; no success claim)
+
+Wave D learns monotone response
 transformations without a supplied link formula, then tests additive
-compression in held-out original-Y units. See WAVE_D.md.
-
-Wave E, `waveE_profiled_seed385`, profiles local chain-rule curvature
-from the saved numerical fields. It explicitly distinguishes local
-compression from a globally integrable response link. See WAVE_E.md.
-
-Both start on CR3 and stop before C1/C2/C3 if no candidate survives.
+compression in held-out original-Y units. Two slow partial executions were
+retained, with explicit stopped runtime statuses. A cached-interpolation
+implementation reproduced 370 anonymous scores to 6.94e-18.
+`waveD_adaptive_seed384` uses a validation-only patience of 3, capped at
+12 iterations, and verifies any reused fit against that exact stopping
+decision. Its scoring and all-subject structural fit remain unchanged for
+the reused checkpoints. This is a new explicit exploratory protocol, not
+a completed result. See WAVE_D.md.
 
 ## Research direction
 
@@ -133,3 +178,7 @@ and successfully regenerated the zero-candidate comparison.
 The later Wave C/D/E revision adds mathematical output-link invariance,
 finite support/context controls, monotone calibration and full-pipeline
 checks; its test result is recorded with the corresponding commit.
+Later tests cover exact Gaussian kernel/Hermite ANOVA moments, spectral
+separation against direct quadrature, the user-specified sparsity example,
+scale invariance, efficient covariance transformations and safe runtime
+checkpoint reuse. All real failures remain in ignored local outputs.
