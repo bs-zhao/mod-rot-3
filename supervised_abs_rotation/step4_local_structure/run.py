@@ -50,8 +50,8 @@ CONTROL_NAMES={
     "control_local_gradient_fro",
     "control_local_gradient_gram_spectrum",
     "control_local_variation_fraction",
-    "control_global_gradient_fro",
-    "control_global_gradient_gram_spectrum",
+    "global_control_local_gradient_fro",
+    "global_control_local_gradient_gram_spectrum",
 }
 
 
