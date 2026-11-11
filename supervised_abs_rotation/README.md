@@ -125,4 +125,29 @@ python supervised_abs_rotation/run.py --model C1 --overwrite
 
 A correlation matrix for magnitudes is `corr(|prediction_i|,|Tstd_j|)`, **not** `|corr(prediction_i,Tstd_j)|`; both versions are saved separately to avoid mixing these distinct questions.
 
+## Windows PNG-writing failures
+
+If Windows raises `OSError: [Errno 22] Invalid argument` in Pillow while
+saving `corr__*.png`, this is an **image-file I/O failure**, not necessarily
+a failure of the fitted R/D or numerical matrices. The script now renders
+PNG images into an in-memory buffer before writing the file. If the intended
+filename fails to open, it retries a deterministic short `fig_<hash>.png`
+in the **same output folder**. `summary.json -> plot_files` maps the
+original name to the actual filename; `plot_errors` lists any image
+that still failed. Numerical CSV/NPZ/JSON files are fully saved **before**
+any plot rendering, so one PNG error does not abort the experiment.
+
+On a filesystem which refuses all PNG writes, every CSV/NPZ/JSON result
+is still available. If it persists, diagnose writable space/permissions/
+antivirus or run `--no-plots` to explicitly skip figures.
+
+Example rerun after updating:
+
+```cmd
+git pull origin main
+python -m unittest discover -s supervised_abs_rotation/tests -p "test_*.py" -v
+python supervised_abs_rotation/run.py --model C3 --overwrite
+python supervised_abs_rotation/run.py --model CR3 --overwrite
+```
+
 Outputs cannot be silently replaced; use `--overwrite` to redo an existing configuration deliberately. No result values are asserted in this README before execution on the actual locally frozen Z data.
