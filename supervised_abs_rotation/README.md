@@ -61,7 +61,7 @@ This allows a search **over R alone**: a multistart manifold parameterization `R
 s_j=\frac{\sum_s v_{sj}T_{{\rm std},sj}}{\sum_s v_{sj}^2}.
 \]
 
-This is a separate comparison; it does **not** minimize the absolute-value loss. Unlike whitening or unconstrained OLS, the fitted rows of `DR` remain orthogonal (up to scaling).
+This is a separate comparison; it does **not** minimize the absolute-value loss. Unlike whitening or unconstrained OLS, the fitted rows of `DR` remain orthogonal (up to scaling). For centered Z and unit-variance centered Tstd, minimizing this profiled signed MSE is equivalent to maximizing the **sum of squared signed Pearson correlations** between matching U/T axes (and hence their squared absolute correlations); it is **not** the same objective as fitting the absolute magnitudes.
 
 ## Windows CMD, from repository root
 
@@ -96,7 +96,7 @@ python np/s5_extract_z.py --model CR3 --beta 0.00005 --latent-dim 4
 `outputs/supervised_abs_rotation/<MODEL>/<CONDITION>/repeat01/<OBJECTIVE>/`
 
 - `summary.json`: full R, D, DR, objective, each start's optimizer trace, sample count, normalizers, parameter-wise and aggregate diagnostics, entire correlation matrices, provenance SHA256.
-- `R.csv`, `D.csv`, `DR.csv`, `A_rawZ_to_Tstd.csv`: matrices. The full raw-Z affine map uses coefficient `A=DR` **and intercept** `b=-DR @ mean_all(Z)`.
+- `R.csv`, `D.csv`, `DR.csv`, `A_rawZ_to_Tstd.csv`: fitted matrices; `R.png`, `D.png`, `DR.png`: annotated coefficient heatmaps. `b_rawZ_to_Tstd.csv` saves the intercept. The full raw-Z affine map is `prediction = (Z @ A.T) + b`, where `A=DR` and `b=-DR @ mean_all(Z)`.
 - `per_parameter.csv`: each true-parameter axis' fitted D, signed and magnitude Pearson r, signed and magnitude R², MSE and worst incorrect-parameter signed correlation.
 - `corr__*.csv`: all dimensions × all dimensions Pearson matrices for raw Z–Z, Tstd–Tstd, raw Z–Tstd, unscaled U–U, U–Tstd, calibrated prediction–Tstd, absolute prediction–absolute Tstd, and calibrated prediction internal correlations (signed/magnitude).
 - Matching `corr__*.png` annotated correlation heatmaps.
