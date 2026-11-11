@@ -3,8 +3,10 @@
 **Status (2026-11-10, America/New_York): Wave A has now run on the real
 Windows C1/C2/C3/CR3 matrices, using 5,000 subjects in each model. It found
 zero four-model candidates. Wave B's additive/pairwise projection screen
-also failed on CR3 and stopped before the other datasets. See
-`RESEARCH_LOG_20261110.md` and `WAVE_B.md`.**
+and Wave C's conditional direction/finite-effect screen also failed on
+CR3 and stopped before the other datasets. Wave D/E investigate unknown
+response links; their results must be checked before any claim. See
+`RESEARCH_LOG_20261110.md` and the individual `WAVE_*.md` protocols.**
 
 This is the next experimental batch, not a successful universal rotation
 method. Earlier global/local first-gradient concentration experiments failed

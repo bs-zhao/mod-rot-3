@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import hashlib
 import json
 from collections import defaultdict
 from pathlib import Path
@@ -18,7 +19,11 @@ def inspect(folder, destination):
     if protocol["status"] != "COMPLETE":
         raise ValueError("Only inspect completed, frozen scores")
     destination.mkdir(parents=True, exist_ok=True)
-    reveal = json.loads((folder / "reveal.json").read_text())["mapping"]
+    frozen = json.loads((folder / "reveal.json").read_text())
+    digest = hashlib.sha256((folder / "blind_scores.csv").read_bytes()).hexdigest()
+    if digest != protocol["scores_sha256"] or digest != frozen["scores_sha256"]:
+        raise ValueError("Frozen numerical scores changed")
+    reveal = frozen["mapping"]
     index = json.loads((Path(protocol["source"]) / "index.json").read_text())
     groups = defaultdict(dict)
     with (folder / "blind_scores.csv").open(newline="") as stream:
@@ -66,7 +71,14 @@ def plot(curves, path, model, channel="logit_nn"):
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
-    metrics = ["UX_column_tail1_l2", "UU_edges_tail1_l2", "UU_interaction_fraction", "U_global_sign_inconsistency"]
+    available = {r["metric"] for r in curves}
+    if "fixed_X_direction_inconsistency" in available:
+        metrics = ["fixed_X_direction_inconsistency", "conditional_direction_k32",
+                   "finite0.5_conditional_direction_k32", "UX_contrast_tail1_l2"]
+    elif "additive_test_nmse" in available:
+        metrics = ["additive_test_nmse", "pairwise_test_nmse", "pair_projection_tail1_l2", "component_tail1_l2"]
+    else:
+        metrics = ["UX_column_tail1_l2", "UU_edges_tail1_l2", "UU_interaction_fraction", "U_global_sign_inconsistency"]
     estimators = sorted({r["estimator"] for r in curves})
     fig, axes = plt.subplots(len(metrics), len(estimators), figsize=(18, 11), squeeze=False)
     for i, metric in enumerate(metrics):

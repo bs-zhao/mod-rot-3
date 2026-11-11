@@ -18,7 +18,7 @@ def estimate(g, cross, ridge):
     return solve(g + ridge * scale * penalty, cross, assume_a="pos")
 
 
-def x_profiles(data, *, centers=64, seed=382, ridges=(1e-6, 1e-3, 1e-1)):
+def x_profiles(data, *, centers=64, seed=382, ridges=(1e-6, 1e-3, 1e-1), probe_count=0):
     """Fit identical generic X bases per subject, with within-subject validation.
 
     All subjects and all their rows contribute to final profiles. A common
@@ -67,11 +67,16 @@ def x_profiles(data, *, centers=64, seed=382, ridges=(1e-6, 1e-3, 1e-1)):
     transform = vectors * np.sqrt(np.maximum(values, 0.))[None, :]
     # ||beta @ transform||^2 = beta @ G_X @ beta.T.
     profiles = np.einsum("spc,pq->scq", coefficients[best], transform)
-    return profiles, dict(feature_count=p, ridge=ridges[best],
+    quality = dict(feature_count=p, ridge=ridges[best],
                           validation_nmse=nmse[best].tolist(),
                           ridge_trials=nmse.tolist(), all_subjects=data.n,
                           all_rows=data.m, profile_measure="pooled empirical X",
                           sobol_independence_assumed=False)
+    if probe_count:
+        probe_ids = rng.choice(train_rows, min(probe_count, len(train_rows)), replace=False)
+        values = np.einsum("spc,kp->sck", coefficients[best], features(x[probe_ids]))
+        return values, np.asarray(x[probe_ids]), quality
+    return profiles, quality
 
 
 def axis_bases(u, train, family):

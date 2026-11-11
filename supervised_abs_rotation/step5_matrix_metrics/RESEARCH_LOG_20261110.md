@@ -64,7 +64,46 @@ an inadequate function estimator. Empirical pair projections remove the
 additive span but do not produce mutually orthogonal variance shares.
 No result is described as an independent-input Sobol index.
 
-## Next branch
+## Wave C: conditional direction and finite-scale effects
+
+Completed on CR3 as `waveC_finite_seed383`. Its numeric X bank was verified
+identical across all 5,000 subjects, so all 500 recorded stimulus responses
+per channel entered fitting directly. No X interpolation was needed. The
+common support intersection retained all 5,000 subjects at both steps.
+
+| U-to-response estimator | Logit / probability held-out NMSE |
+| --- | --- |
+| poly3 | 0.0178723 / 0.0186057 |
+| poly5 | 0.00714793 / 0.00747493 |
+| rbf1, 512 centers | 0.0101238 / 0.00988693 |
+| rbf2, 512 centers | 0.00109705 / 0.00107670 |
+
+There were zero adequate full-plane candidates. For the most accurate
+rbf2 logit fit, fixed-X direction inconsistency ranked baseline 26/37,
+conditional k=8 ranked 21/37, and conditional k=32 ranked 18/37. All
+passed 0/6 planes. Both 0.2 and 0.5 finite steps gave those same ranks and
+plane counts. The best adequate plane count over the entire wave was
+rbf1 logit UU_edges_tail2_l2, rank 11/37 and 3/6 planes.
+
+The response-gradient Gram eigenvalue shares were consistently nonzero
+under every estimator. For poly5 logit they were approximately
+0.0678, 0.2003, 0.2602 and 0.4717. This does not establish identifiability,
+but does not support explaining the failure as a completely inactive U
+direction. Prediction accuracy alone still does not certify derivatives.
+
+## Further branches (running; no success claim)
+
+Wave D, `waveD_unknown_link_seed384`, learns monotone response
+transformations without a supplied link formula, then tests additive
+compression in held-out original-Y units. See WAVE_D.md.
+
+Wave E, `waveE_profiled_seed385`, profiles local chain-rule curvature
+from the saved numerical fields. It explicitly distinguishes local
+compression from a globally integrable response link. See WAVE_E.md.
+
+Both start on CR3 and stop before C1/C2/C3 if no candidate survives.
+
+## Research direction
 
 Investigate conditional monotonicity and support-screened finite-scale
 effects from generic U-to-response kernel fits. In CR3, a shared X bank can
@@ -85,9 +124,12 @@ exact algorithms or theoretical guarantees.
 
 ## Verification
 
-22 numerical/pipeline tests passed in py11, covering finite-difference
+The original Wave A/B revision passed 22 numerical/pipeline tests in py11, covering finite-difference
 derivatives, all-subject fitting, orthogonal controls, signed permutations,
 strict endpoint screening, dependent-input additive projections, and
 within-subject response-profile validation. Re-running the CR3-first
 wrapper with `--all-models` verified and reused all four frozen outputs
 and successfully regenerated the zero-candidate comparison.
+The later Wave C/D/E revision adds mathematical output-link invariance,
+finite support/context controls, monotone calibration and full-pipeline
+checks; its test result is recorded with the corresponding commit.
