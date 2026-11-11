@@ -187,6 +187,30 @@ class EndToEndTests(unittest.TestCase):
                     channels=("logit_nn",),k_grid=(12,),anchors=9,
                     plots=False)
 
+    def test_c1_variable_X_uses_generic_subject_response_profiles(self):
+        rng=np.random.default_rng(821)
+        # C1's subjects have different stimulus arrays, so the response
+        # profile is a generic per-subject quadratic X regression, not a
+        # simulator equation or a 500-stimulus shared-bank lookup.
+        x=rng.uniform(-1,1,size=(self.n*self.t,3)).astype("float32")
+        for case_dir in (self.src/"cases").iterdir():
+            path=case_dir/"W.npy"
+            existing=np.load(path)
+            np.save(path,np.column_stack([existing[:,:self.d],x]).astype("float32"))
+        idx=json.loads((self.src/"index.json").read_text())
+        idx["model"]="C1"
+        idx["X_dim"]=3
+        (self.src/"index.json").write_text(json.dumps(idx))
+        result=analyze(step2=self.src,output=self.out,model="C1",
+                       channels=("logit_nn",),k_grid=(12,25),anchors=10,
+                       train_fraction=.7,plots=False)
+        self.assertEqual(result["n_cases"],37)
+        report=json.loads((self.out/"summary.json").read_text())
+        self.assertEqual(report["subject_profile"]["profile_kind"],
+                         "per_subject_degree2_X_response_coefficients")
+        self.assertEqual(report["subject_profile"]["n_profile_features"],10)
+        self.assertTrue((self.out/"metric_summary.csv").is_file())
+
     def test_incomplete_step2_rejected(self):
         index=json.loads((self.src/"index.json").read_text())
         index["complete"]=False
