@@ -20,4 +20,4 @@ where = ["np/src"]
 
 [tool.pytest.ini_options]
 pythonpath = ["np/src", "."]
-testpaths = ["np/tests", "rotations"]
+testpaths = ["np/tests", "rotations", "supervised_abs_rotation"]
