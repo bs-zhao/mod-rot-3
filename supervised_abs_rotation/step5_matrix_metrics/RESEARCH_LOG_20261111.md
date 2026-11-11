@@ -164,6 +164,18 @@ candidate; the best count was 5/6, rank at least 4/37. Other datasets were
 skipped. Exact covariance transport matches brute-force local derivatives
 and supports unequal trial counts. See WAVE_T.md.
 
+## U: link-invariant all-trial UX geometry fails CR3
+
+`waveU_link_ux_seed400` completed eight raw/profiled/tangent, point/column
+normalization variants for degrees 2/3/4 and both channels. Every original
+row contributed. No full-plane candidate survived; best count 5/6, rank
+2/37 for some variants. Other datasets were skipped. Local chain-rule
+invariance, rotation equivariance and extreme-scale controls passed, as did
+the complete WY-only pipeline. See WAVE_U.md.
+
+Next move actual UX derivative evaluation to a nonparametric U-kernel
+times a generic X dictionary, with raw held-out-subject prediction audit.
+
 ## Wave O: degree-resolved and pure-coupling structure
 
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.
