@@ -249,6 +249,33 @@ def save_rows(path, rows):
         w.writerows(rows)
 
 
+def write_png(path, figure, dpi=170):
+    """Render PNG in memory before filesystem I/O (avoids Pillow opening the path).
+
+    Retry using a shorter deterministic name if the original Windows pathname
+    triggers OSError. Returns (actual_file, fallback_reason_or_None).
+    """
+    from io import BytesIO
+    path = Path(path)
+    buffer = BytesIO()
+    figure.savefig(buffer, format="png", dpi=dpi)
+    payload = buffer.getvalue()
+    try:
+        path.write_bytes(payload)
+        return path, None
+    except OSError as original_error:
+        short = path.with_name("fig_" + hashlib.sha256(
+            path.name.encode("utf-8")).hexdigest()[:12] + ".png")
+        try:
+            short.write_bytes(payload)
+        except OSError as second_error:
+            raise OSError(
+                f"Cannot save plot as {path} or shorter alternative {short}. "
+                f"First error: {original_error}; fallback error: {second_error}"
+            ) from second_error
+        return short, str(original_error)
+
+
 def plot_heatmap(path, matrix, row_names, col_names, title, *, correlation=True):
     import matplotlib
     matplotlib.use("Agg")
@@ -267,8 +294,10 @@ def plot_heatmap(path, matrix, row_names, col_names, title, *, correlation=True)
                     color="white" if abs(x) > .65 * bound else "black")
     fig.colorbar(im, ax=ax, shrink=.8)
     fig.tight_layout()
-    fig.savefig(path, dpi=170)
-    plt.close(fig)
+    try:
+        return write_png(path, fig, dpi=170)
+    finally:
+        plt.close(fig)
 
 
 def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
@@ -318,9 +347,6 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
                 corr(uw, uw), axes, axes)
     for key, (matrix, rows, columns) in corr_matrices.items():
         save_matrix(out / f"corr__{key}.csv", matrix, rows, columns)
-        if plots:
-            plot_heatmap(out / f"corr__{key}.png", matrix, rows, columns,
-                         f"{model} FULL SAMPLE | {key}")
     save_matrix(out / "R.csv", result["R"], axes, znames)
     save_matrix(out / "D.csv", result["D"], axes, axes)
     save_matrix(out / "DR.csv", result["DR"], axes, znames)
@@ -330,13 +356,6 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
         {"parameter": label, "intercept": float(value)}
         for label, value in zip(labels, intercept)
     ])
-    if plots:
-        plot_heatmap(out / "R.png", result["R"], axes, znames,
-                     f"{model} supervised orthogonal R", correlation=False)
-        plot_heatmap(out / "D.png", result["D"], axes, axes,
-                     f"{model} fitted diagonal D", correlation=False)
-        plot_heatmap(out / "DR.png", result["DR"], axes, znames,
-                     f"{model} complete DR map", correlation=False)
     rows = []
     for j, name in enumerate(labels):
         wrong = np.delete(cross_signed[j], j)
@@ -415,9 +434,44 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
             "High magnitude correlation alone does not prove signed parameter recovery."
         ),
     }
-    (out / "summary.json").write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False, allow_nan=False) + "\n",
-        encoding="utf-8")
+    # Numerical outputs are complete before attempting any PNG writes.
+    # A single Windows/Pillow filesystem error must not discard model results.
+    def write_summary():
+        (out / "summary.json").write_text(
+            json.dumps(summary, indent=2, ensure_ascii=False, allow_nan=False) + "\n",
+            encoding="utf-8")
+
+    summary["plot_files"] = {}
+    summary["plot_errors"] = {}
+    write_summary()
+    if plots:
+        work = [(f"corr__{key}.png", matrix, rows, columns,
+                 f"{model} FULL SAMPLE | {key}", True)
+                for key, (matrix, rows, columns) in corr_matrices.items()]
+        work.extend([
+            ("R.png", result["R"], axes, znames,
+             f"{model} supervised orthogonal R", False),
+            ("D.png", result["D"], axes, axes,
+             f"{model} fitted diagonal D", False),
+            ("DR.png", result["DR"], axes, znames,
+             f"{model} complete DR map", False),
+        ])
+        for filename, matrix, rows, cols, title, correlation in work:
+            try:
+                actual_path, fallback_reason = plot_heatmap(
+                    out / filename, matrix, rows, cols, title,
+                    correlation=correlation)
+                summary["plot_files"][filename] = actual_path.name
+                if fallback_reason:
+                    print(f"[PLOT FALLBACK] {filename} -> {actual_path.name}: "
+                          f"{fallback_reason}", flush=True)
+            except OSError as exc:
+                summary["plot_errors"][filename] = str(exc)
+                print(f"[PLOT WARNING] {filename}: {exc}", flush=True)
+        write_summary()
+        if summary["plot_errors"]:
+            print("Numerical output saved; some PNG plots could not be written. "
+                  "See summary.json -> plot_errors.", flush=True)
     return summary
 
 
