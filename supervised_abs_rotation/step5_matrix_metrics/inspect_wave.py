@@ -5,6 +5,7 @@ import argparse
 import csv
 import hashlib
 import json
+import textwrap
 from collections import defaultdict
 from pathlib import Path
 
@@ -128,8 +129,17 @@ def plot(curves, path, model, channel="logit_nn"):
         metrics = ["additive_test_nmse", "pairwise_test_nmse", "pair_projection_tail1_l2", "component_tail1_l2"]
     else:
         metrics = ["UX_column_tail1_l2", "UU_edges_tail1_l2", "UU_interaction_fraction", "U_global_sign_inconsistency"]
+    metrics = [metric for metric in metrics if metric in available]
+    if not metrics:
+        # New experiments must yield real curves rather than empty axes.
+        # This is a display rule only; strict assessment uses every score.
+        preferred = sorted(available, key=lambda metric: (
+            metric.startswith('control_'), 'UX' not in metric,
+            'columns_mean' not in metric, 'effective_support_p1' not in metric, metric))
+        metrics = preferred[:4]
     estimators = sorted({r["estimator"] for r in curves})
-    fig, axes = plt.subplots(len(metrics), len(estimators), figsize=(18, 11), squeeze=False)
+    fig, axes = plt.subplots(len(metrics), len(estimators),
+        figsize=(max(8, 4*len(estimators)), max(4, 2.8*len(metrics))), squeeze=False)
     for i, metric in enumerate(metrics):
         for j, estimator in enumerate(estimators):
             ax = axes[i, j]
@@ -142,9 +152,12 @@ def plot(curves, path, model, channel="logit_nn"):
             if i == 0:
                 ax.set_title(estimator)
             if j == 0:
-                ax.set_ylabel(metric + "\nloss minus baseline")
+                ax.set_ylabel('\n'.join(textwrap.wrap(metric.replace('_', ' '), width=32))+
+                              "\nloss minus baseline", fontsize=7)
             ax.set_xticks([0, 30, 60, 90])
-    axes[0, -1].legend(fontsize=7, ncol=2)
+    handles, labels = axes[0, -1].get_legend_handles_labels()
+    if handles:
+        axes[0, -1].legend(handles, labels, fontsize=7, ncol=2)
     fig.suptitle(f"{model}: {channel}; positive interior values favor baseline")
     fig.tight_layout()
     fig.savefig(path, dpi=150)

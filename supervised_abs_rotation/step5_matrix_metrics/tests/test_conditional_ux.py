@@ -44,6 +44,16 @@ def test_conditional_omission_removes_affine_complement_without_X_independence()
     assert sum(r['scored_subjects'] for r in audit['history']) == 240
 
 
+def test_output_compression_keeps_small_feature_directions_with_large_coefficients():
+    rng = np.random.default_rng(553)
+    phi = rng.normal(size=(160, 8)); coef = rng.normal(size=(8, 2, 35))
+    phi[:, 3:] *= 1e-8; coef[3:] *= 1e8
+    z, _, gram, audit = cu.balanced_latents(phi, coef, {'test': [np.eye(35)]})
+    assert audit['maximum_task_relative_squared_reconstruction_error'] < 1e-12
+    expected = np.mean(((phi-phi.mean(0)) @ (coef-coef.mean(2, keepdims=True)).reshape(8, -1))**2)
+    assert np.trace(gram['test'][0, 0])+np.trace(gram['test'][1, 0]) == pytest.approx(expected*2, rel=1e-8)
+
+
 def test_UX_column_support_ignores_arbitrary_column_scales_and_obeys_user_example():
     a = np.tile(np.array([2., 2., .01, .01])[:, None]**2, (1, 6))
     b = np.tile(np.array([1., .5, .1, .1])[:, None]**2, (1, 6))

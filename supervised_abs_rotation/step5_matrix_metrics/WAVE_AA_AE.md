@@ -68,3 +68,19 @@ claimed to reproduce that paper's algorithm.
 Validation: 123 tests pass, including full synthetic W/Y-only pipelines,
 free pure-U/X nuisance, exact double centering, conditional affine recovery,
 per-X output-reconstruction bounds and the user's scale/sparsity example.
+
+### Numerical audit and fresh run
+
+The initial AE run stopped at the RBF function-compression guard after its
+polynomial scores had been retained. A cutoff on the feature covariance
+discarded small-variance kernel directions with large fitted coefficients.
+It is marked `FAILED_NUMERICAL_COMPRESSION`, not a failed scientific score.
+Launch code and partial artifacts are retained in that original directory.
+
+The fresh `waveAE_conditional_UX_SVD_seed407` uses direct observed-feature
+SVD and measures reconstruction error in actual function values for every
+X-omission task. Its RBF1/RBF2 worst relative squared reconstruction errors
+are about 9.89e-8 and 9.83e-8, within the prospective 1e-7 budget. A regression
+test explicitly keeps feature directions scaled down by 1e-8 when their
+coefficients are scaled up by 1e8. The full suite passes 131 tests including
+the higher-budget ALS work described in WAVE_AF_AG.md.

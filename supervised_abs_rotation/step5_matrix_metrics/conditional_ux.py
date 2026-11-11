@@ -28,30 +28,31 @@ def balanced_latents(phi, coefficients, operators, tolerance=1e-7):
     """
     phi = phi-phi.mean(0)
     coefficients = coefficients-coefficients.mean(2, keepdims=True)
-    sigma = phi.T @ phi/len(phi)
-    values, vectors = eigh((sigma+sigma.T)/2)
-    good = values > max(values.max()*1e-12, 1e-15)
-    root = (vectors[:, good]*np.sqrt(values[good])) @ vectors[:, good].T
-    inverse = (vectors[:, good]/np.sqrt(values[good])) @ vectors[:, good].T
-    task_grams, normalizers, average = {}, {}, np.zeros_like(sigma)
+    # Work in observed function values, avoiding squared conditioning in
+    # Phi.T@Phi when small kernel directions have large fitted coefficients.
+    left, singular, right = np.linalg.svd(phi, full_matrices=False)
+    good = singular > max(singular.max()*1e-12, 1e-15)
+    root = singular[good, None]*right[good]/np.sqrt(len(phi))
+    orthogonal = left[:, good]*np.sqrt(len(phi))
+    task_grams, normalizers, average = {}, {}, np.zeros((int(good.sum()), int(good.sum())))
     for mode, maps in operators.items():
         grams = []
         for c in range(coefficients.shape[1]):
             rows = []
             for residual in maps:
-                b = coefficients[:, c] @ residual.T
+                b = root @ coefficients[:, c] @ residual.T
                 gram = b @ b.T/residual.shape[0]
-                norm = max(float(np.sum(sigma*gram)), 1e-30)
+                direct = (phi @ coefficients[:, c]) @ residual.T
+                norm = max(float(np.mean(direct**2)), 1e-30)
                 rows.append(gram); normalizers[mode, c, len(rows)-1] = norm
                 average += gram/norm
             grams.append(rows)
         task_grams[mode] = np.asarray(grams)
     average /= len(normalizers)
-    covariance = root @ average @ root
-    importance, axes = eigh((covariance+covariance.T)/2)
+    importance, axes = eigh((average+average.T)/2)
     order = np.argsort(importance)[::-1]
     importance, axes = np.maximum(importance[order], 0.), axes[:, order]
-    candidates = axes.T @ root
+    candidates = axes.T
     fractions = []
     for mode, grams in task_grams.items():
         for c, row in enumerate(grams):
@@ -61,21 +62,28 @@ def balanced_latents(phi, coefficients, operators, tolerance=1e-7):
     fractions = np.asarray(fractions)
     worst = np.min(fractions, axis=0)
     rank = min(int(np.searchsorted(np.maximum.accumulate(worst), 1-tolerance))+1, len(axes))
-    projection = inverse @ axes[:, :rank]
-    latents = phi @ projection
-    transport = axes[:, :rank].T @ root
+    latents = orthogonal @ axes[:, :rank]
+    transport = axes[:, :rank].T
     grams = {mode: np.einsum('ka,cxab,lb->cxkl', transport, g, transport, optimize=True)
              for mode, g in task_grams.items()}
     weights = importance[:rank]; weights /= weights.sum()
+    actual_errors = []
+    for mode, maps in operators.items():
+        for c in range(coefficients.shape[1]):
+            direct = phi @ coefficients[:, c]
+            compressed = latents @ (transport @ root @ coefficients[:, c])
+            for j, residual in enumerate(maps):
+                error = (direct-compressed) @ residual.T
+                actual_errors.append(float(np.mean(error**2))/normalizers[mode, c, j])
     audit = dict(source_features=phi.shape[1], latent_rank=rank,
         relative_squared_reconstruction_tolerance=tolerance,
-        maximum_task_relative_squared_reconstruction_error=float(max(0., 1-worst[rank-1])),
+        maximum_task_relative_squared_reconstruction_error=max(actual_errors),
         minimum_task_retained_energy_fraction=float(worst[rank-1]),
         empirical_latent_covariance_error=float(np.max(np.abs(latents.T @ latents/len(latents)-np.eye(rank)))),
         all_U_subjects=len(phi), balance='equal channel and omitted-X task, before PCA',
         latent_loss_weights=weights.tolist())
     if audit['maximum_task_relative_squared_reconstruction_error'] > tolerance*1.1+1e-10:
-        raise ArithmeticError('Source-function compression failed its per-X error budget')
+        raise ArithmeticError(f'Source-function compression failed its per-X error budget: {audit}')
     return latents, weights, grams, audit
 
 
