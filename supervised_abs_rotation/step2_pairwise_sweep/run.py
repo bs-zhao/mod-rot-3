@@ -184,7 +184,8 @@ def make_case(stage2, src, case, *, chunk_rows, fingerprint, overwrite):
     """Generate a complete W file in bounded memory, then publish atomically."""
     case_dir = stage2 / "cases" / case.name
     best_r = np.asarray(src["best_R"], dtype=np.float64)
-    r_case = orientation(best_r, case)
+    relative_g = givens(best_r.shape[0], case.pair, case.angle)
+    r_case = relative_g @ best_r
     u_subject = np.asarray(src["Zstd"], dtype=np.float64) @ r_case.T
     dz, dx, m = src["dz"], src["dx"], src["m"]
 
@@ -195,15 +196,20 @@ def make_case(stage2, src, case, *, chunk_rows, fingerprint, overwrite):
         recorded = json.loads(case_meta_path.read_text(encoding="utf-8"))
         w_path = case_dir / "W.npy"
         r_path = case_dir / "R.npy"
+        g_path = case_dir / "G_relative.npy"
         if (recorded.get("source_fingerprint") != fingerprint
                 or recorded.get("angle_deg") != case.angle
                 or recorded.get("pair_0based") !=
                     (list(case.pair) if case.pair is not None else None)
-                or not w_path.is_file() or not r_path.is_file()):
+                or not w_path.is_file() or not r_path.is_file()
+                or not g_path.is_file()):
             raise RuntimeError(f"Existing case is inconsistent; rerun with --overwrite: {case_dir}")
         old_w = np.load(w_path, mmap_mode="r", allow_pickle=False)
         old_r = np.load(r_path, allow_pickle=False)
-        if old_w.shape != (m, dz + dx) or not np.allclose(old_r, r_case, atol=1e-11):
+        old_g = np.load(g_path, allow_pickle=False)
+        if (old_w.shape != (m, dz + dx)
+                or not np.allclose(old_r, r_case, atol=1e-11)
+                or not np.allclose(old_g, relative_g, atol=1e-11)):
             raise RuntimeError(f"Existing case has wrong geometry; --overwrite: {case_dir}")
         return "reused"
 
@@ -211,6 +217,7 @@ def make_case(stage2, src, case, *, chunk_rows, fingerprint, overwrite):
     with tempfile.TemporaryDirectory(prefix=".step2_case_", dir=stage2 / "cases") as temp:
         pending = Path(temp) / case.name
         pending.mkdir()
+        np.save(pending / "G_relative.npy", relative_g)
         np.save(pending / "R.npy", r_case)
         np.save(pending / "U_subject.npy", u_subject)
         w = np.lib.format.open_memmap(
@@ -230,6 +237,9 @@ def make_case(stage2, src, case, *, chunk_rows, fingerprint, overwrite):
             "pair_0based": list(case.pair) if case.pair is not None else None,
             "pair_1based": [k + 1 for k in case.pair] if case.pair is not None else None,
             "definition": "R_case=G_ij(theta)@R_best; U=Zstd@R_case.T",
+            "G_relative_path": "G_relative.npy",
+            "R_case_path": "R.npy",
+            "R_is_relative_to_step1_best": True,
             "W_columns": [f"u{k+1}" for k in range(dz)]
                          + [f"x{k+1}" for k in range(dx)],
             "W_shape": [m, dz + dx],
@@ -334,8 +344,8 @@ def run_sweep(stage1_dir, stage2_dir, *, model, chunk_rows=100_000,
     table_path = stage2 / "cases.csv"
     with table_path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=(
-            "case", "dimension_1", "dimension_2", "angle_deg", "R_path",
-            "W_path", "Y_shared_path"))
+            "case", "dimension_1", "dimension_2", "angle_deg",
+            "G_relative_path", "R_path", "W_path", "Y_shared_path"))
         writer.writeheader()
         for case in cases:
             writer.writerow({
@@ -343,6 +353,7 @@ def run_sweep(stage1_dir, stage2_dir, *, model, chunk_rows=100_000,
                 "dimension_1": "" if case.pair is None else case.pair[0] + 1,
                 "dimension_2": "" if case.pair is None else case.pair[1] + 1,
                 "angle_deg": case.angle,
+                "G_relative_path": f"cases/{case.name}/G_relative.npy",
                 "R_path": f"cases/{case.name}/R.npy",
                 "W_path": f"cases/{case.name}/W.npy",
                 "Y_shared_path": "Y.npz",
@@ -358,6 +369,9 @@ def run_sweep(stage1_dir, stage2_dir, *, model, chunk_rows=100_000,
     index["complete"] = all(
         (stage2 / "cases" / case.name / "case.json").is_file()
         and (stage2 / "cases" / case.name / "W.npy").is_file()
+        and (stage2 / "cases" / case.name / "G_relative.npy").is_file()
+        and json.loads((stage2 / "cases" / case.name / "case.json").read_text(
+            encoding="utf-8")).get("source_fingerprint") == src["fingerprint"]
         for case in cases)
     write_json_atomic(index_path, index)
     print(f"[Step 2] {model}: {'complete' if index['complete'] else 'partial'} "
