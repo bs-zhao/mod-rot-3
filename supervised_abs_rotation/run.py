@@ -286,6 +286,18 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
     save_matrix(out / "D.csv", result["D"], axes, axes)
     save_matrix(out / "DR.csv", result["DR"], axes, znames)
     save_matrix(out / "A_rawZ_to_Tstd.csv", result["DR"], axes, znames)
+    intercept = -(result["DR"] @ zm)
+    save_rows(out / "b_rawZ_to_Tstd.csv", [
+        {"parameter": label, "intercept": float(value)}
+        for label, value in zip(labels, intercept)
+    ])
+    if plots:
+        plot_heatmap(out / "R.png", result["R"], axes, znames,
+                     f"{model} supervised orthogonal R", correlation=False)
+        plot_heatmap(out / "D.png", result["D"], axes, axes,
+                     f"{model} fitted diagonal D", correlation=False)
+        plot_heatmap(out / "DR.png", result["DR"], axes, znames,
+                     f"{model} complete DR map", correlation=False)
     rows = []
     for j, name in enumerate(labels):
         wrong = np.delete(cross_signed[j], j)
@@ -307,6 +319,7 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
                         prediction_Tstd=pred, abs_prediction=np.abs(pred),
                         abs_Tstd=np.abs(tstd),
                         R=result["R"], D=result["D"], DR=result["DR"],
+                        b_rawZ_to_Tstd=intercept,
                         z_mean_all=zm, theta_mean_all=tm,
                         theta_std_all=ts, scales=result["scales"],
                         full_sample_indices=np.arange(n))
@@ -319,6 +332,7 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
         "orthogonality_error_fro": float(np.linalg.norm(result["R"].T @ result["R"] - np.eye(d))),
         "best_start": result["best_start"], "attempts": result["attempts"],
         "R": result["R"].tolist(), "D": result["D"].tolist(), "DR": result["DR"].tolist(),
+        "b_rawZ_to_Tstd": intercept.tolist(),
         "z_mean_all": zm.tolist(), "theta_mean_all": tm.tolist(),
         "theta_std_all": ts.tolist(), "axis_scales": result["scales"].tolist(),
         "magnitude_MSE_mean": float(loss_abs.mean()),
