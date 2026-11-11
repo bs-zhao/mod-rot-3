@@ -159,7 +159,8 @@ def _fit_predict(x,y,train,test,feature_ids,ridge):
 
 
 def functional_scores(u, f, train_ids, test_ids, *, ridge=0.1,
-                      max_profile_outputs=64, pre_normalized=False):
+                      max_profile_outputs=64, pre_normalized=False,
+                      precomputed_poly=None):
     """Compare additive vs full polynomial response mappings on heldout subjects.
 
     The complete cubic polynomial spans the same space after rotation;
@@ -177,7 +178,10 @@ def functional_scores(u, f, train_ids, test_ids, *, ridge=0.1,
         selected = np.linspace(0,f_std.shape[1]-1,
                                max_profile_outputs,dtype=int)
         f_std = f_std[:,selected]
-    x,powers = _poly(u,train_ids)
+    x,powers = (_poly(u,train_ids) if precomputed_poly is None
+                else precomputed_poly)
+    if x.shape[0] != len(u) or powers.shape[0] != x.shape[1]:
+        raise ValueError("Precomputed polynomial design does not match U")
     degree = powers.sum(axis=1)
     n_active = (powers>0).sum(axis=1)
     add_quad = np.flatnonzero((degree<=2)&(n_active<=1))
