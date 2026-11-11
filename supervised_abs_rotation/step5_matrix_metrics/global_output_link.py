@@ -66,10 +66,19 @@ def fit_link(y, numerator, denominator, bins):
 
 
 def evaluate(link, y):
+    if link.get('kind') == 'histogram':
+        return np.asarray(link['k'])[np.searchsorted(np.asarray(link['edges'])[1:-1], y, side='right')]
     return np.interp(y, link['y'], link['k'])
 
 
 def link_audit(link, minimum, maximum):
+    if link.get('kind') == 'histogram':
+        y = np.asarray(link['edges'])
+        log_derivative = np.r_[0., np.cumsum(np.asarray(link['k'])*np.diff(y))]
+        span = float(np.ptp(log_derivative))
+        return dict(log_derivative_range=span, global_link_integrable=True, global_link_monotone=True,
+            numerical_derivative_dynamic_range_representable=span < 700., integration_y=y.tolist(),
+            log_derivative=(log_derivative-log_derivative.max()).tolist())
     centers = np.asarray(link['y']); k = np.asarray(link['k'])
     y = np.r_[minimum, centers[(centers > minimum) & (centers < maximum)], maximum]
     ky = evaluate(link, y)

@@ -238,6 +238,16 @@ as controls without changing numerical-score hashes. Budget-one tails,
 budget-curve area and 30% counts are excluded from primary sparse-support
 claims in response to the user's explicit amplitude example.
 
+AI/AJ finish rank 64 without a grid survivor (mean relative MSE
+.00151381/.0203627). AL's free-X-profile polynomial term compression also
+fails (best 3/6), despite its degree-seven RBF-function projection error
+<=.000230. AM's globally integrable output correction reaches 5/6 planes,
+baseline rank 2, but still fails the strict CR3 screen. AN's normal-rank
+U-coordinate convention fails with adequate approximation (best 3/6).
+AK all-point support, AO conditional X-balanced global correction and AP
+bounded-rank input coordinates are still running. 152 tests pass. See
+WAVE_AK_AL.md, WAVE_AM.md and WAVE_AN_AO_AP.md.
+
 ## Wave O: degree-resolved and pure-coupling structure
 
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.

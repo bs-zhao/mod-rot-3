@@ -17,9 +17,11 @@ import conditional_ux as conditional
 import fast_projection as fp
 from all_trial_moments import FrozenScaler
 import profile_polynomial_complexity as profile
+import rank_coordinates
+import cp_regression
 
 
-def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), degrees=(5, 7), maximum=256):
+def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), degrees=(5, 7), maximum=256, input_transform='identity'):
     output = Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain prior profile-complexity experiment: {output}')
@@ -32,10 +34,12 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), degrees=(
         primary_scope='few U polynomial terms with unrestricted observed-X profiles, per-X relative L2 tails',
         X_profile_function_form_assumed=False, compression_reference='observed whole U and joint-X blocks',
         source_latent_relative_squared_error_tolerance=1e-7, full_polynomial_relative_MSE_adequacy=.1,
-        score_sign='lower for every dataset', status='RUNNING',
+        score_sign='lower for every dataset', input_transform=input_transform,
+        scalar_input_independence_assumed=False, status='RUNNING',
         code_sha256=hashlib.sha256(b''.join((wave.HERE/f).read_bytes() for f in
             ('run_profile_polynomial_complexity.py', 'profile_polynomial_complexity.py', 'conditional_ux.py',
-             'ux_predictive_complexity.py', 'fast_projection.py', 'fitted_bank.py', 'matrix_io.py', 'surrogates.py', 'structure.py'))).hexdigest())
+             'ux_predictive_complexity.py', 'fast_projection.py', 'fitted_bank.py', 'matrix_io.py',
+             'rank_coordinates.py', 'cp_regression.py', 'surrogates.py', 'structure.py'))).hexdigest())
     wave.json_file(output/'protocol.json', protocol)
     maps, reveal, errors = [], {}, []
     for k, path in enumerate(data.paths):
@@ -58,13 +62,19 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), degrees=(
     blind, quality = [], []
     for name in estimators:
         coefficients, z, meta = uc.source_coefficients(bank, name)
+        if input_transform == 'identity':
+            scoring_maps = maps
+        else:
+            classes, membership = cp_regression.canonical_classes(z, maps)
+            scoring_maps = [classes[index] for index in membership]
+            np.savez_compressed(output/f'{name}_W_only_coordinate_classes.npz', classes=classes, membership=membership)
         latents, _, grams, audit = conditional.balanced_latents(conditional.source_features(z, meta), coefficients, operators)
         wave.json_file(output/f'{name}_source_function_audit.json', audit)
         for degree in degrees:
             model = fp.Polynomial(FrozenScaler(np.zeros(data.d), np.ones(data.d)), degree)
             histories, full_errors = [], defaultdict(list)
-            for case, q in enumerate(maps):
-                phi = model.features(z @ q)[:, 1:]
+            for case, q in enumerate(scoring_maps):
+                phi = model.features(rank_coordinates.transform(z @ q, input_transform))[:, 1:]
                 phi -= phi.mean(0); gram = phi.T @ phi/data.n; cross = phi.T @ latents/data.n
                 for mode, tasks in grams.items():
                     for c, channel in enumerate(data.channels):
@@ -89,7 +99,7 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), degrees=(
                 for c, channel in enumerate(data.channels):
                     values = np.asarray(full_errors[mode, c]).reshape(len(maps), data.dx)
                     drift = float(np.ptp(values, axis=0).max())
-                    if drift > 1e-5:
+                    if input_transform == 'identity' and drift > 1e-5:
                         raise ArithmeticError(f'Full U polynomial function space changed under rotation: {drift}')
                     qr = bank.quality[name, channel]
                     quality.append(dict(estimator=name, channel=channel, U_degree=degree, X_mode=mode,
@@ -122,6 +132,7 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--model', choices=wave.io.DIMS, default='CR3'); p.add_argument('--batch', action='store_true')
     p.add_argument('--run-name', default='waveAL_UX_profile_terms_seed411')
+    p.add_argument('--input-transform', choices=('identity', 'normal_rank', 'uniform_rank'), default='identity')
     args = p.parse_args(); survivors = None
     with threadpool_limits(limits=4):
         for model in (('CR3', 'C1', 'C2', 'C3') if args.batch else (args.model,)):
@@ -129,7 +140,7 @@ def main():
             bank = parent/'UX_complexity_source_seed383'
             if not bank.exists():
                 prepare_response_bank.prepare(source, bank, estimators=('poly3', 'poly5', 'rbf1', 'rbf2'))
-            rows = analyze(source, parent/args.run_name, bank)
+            rows = analyze(source, parent/args.run_name, bank, input_transform=args.input_transform)
             passed = {(r['estimator'], r['channel'], r['metric']) for r in rows if r['adequate'] and r['all_planes_pass']}
             survivors = passed if survivors is None else survivors & passed
             print(f'[WaveAL] {model}: {len(passed)} profile-complexity passes, {len(survivors)} common', flush=True)

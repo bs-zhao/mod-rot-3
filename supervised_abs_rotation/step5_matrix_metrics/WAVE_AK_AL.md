@@ -1,6 +1,6 @@
 # All-observed-point support and unrestricted X-profile compression
 
-Both experiments are running CR3 first. Neither has a result yet.
+AK is running CR3 first. AL completed CR3 without a full-plane criterion.
 Source fitting and scoring use all 5000 subjects. No task equation, saved
 rotation, original neural weights or true theta is used.
 
@@ -59,3 +59,11 @@ Sparse approximation/OLS context: Tropp and Wright,
 https://tropp.caltech.edu/papers/TW10-Computational-Methods-preprint.pdf .
 The algorithms here are explicit exploratory group-function compressions;
 no theorem of universal rotation recovery is asserted.
+
+AL's best adequate settings pass 3/6 planes and rank baseline 4/37.
+Polynomial-source degree-five reconstruction error is below 6e-12;
+RBF-source degree-seven projection error is <=.000230 (logit). Thus the
+tested sparse-term criterion fails even when the numerical projection is
+well resolved. C1/C2/C3 were skipped. Exact failed curves and direct-OLS
+audits are retained. Input-marginal coordinate variants follow in
+WAVE_AN_AO_AP.md; AL's original runner is retained in its result folder.

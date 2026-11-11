@@ -1,6 +1,6 @@
 # A globally integrable output-link correction for UX support
 
-AM is running CR3 first, using the complete degree-four/five numerical
+AM completed CR3, using the complete degree-four/five numerical
 joint-W approximations and all 5000 subjects/all recorded rows. It supplies
 no generating equation or output-link formula.
 
@@ -59,3 +59,9 @@ necessary if a grid criterion survives.
 Three tests pass before the real launch: chain-rule and rotation identities,
 global response-only recovery/integration, and a full W/Y-only pipeline
 checking every cached derivative against an independent evaluator.
+
+Actual outcome: zero primary full-plane criteria. The best selected-link
+poly4/logit settings pass 5/6 planes and rank baseline 2/37. The final
+failure is retained, so later datasets were skipped. The source functions
+pass prediction adequacy and the learned links pass integration/dynamic
+range audits. This is a near-pass, not a universal result.

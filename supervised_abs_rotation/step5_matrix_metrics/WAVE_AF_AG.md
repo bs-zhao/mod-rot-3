@@ -60,7 +60,10 @@ AI/AJ prospectively extend both teachers to ranks 32 and 64, forty sweeps
 and three starts. They verify every saved feature-geometry array before
 transferring rank-16 checkpoints, preserve all original low-rank losses,
 and hash the reused artifacts. Shared-grid pipeline tests check exact loss
-preservation. Both extensions are currently running CR3 first.
+preservation. Both extensions completed CR3 with no grid survivor. Rank-64
+mean relative squared errors are .00151381 (polynomial teacher) and
+.0203627 (RBF teacher). All original low-rank losses remain unchanged.
+These are empirical negative results, not a global-optimization proof.
 
 Only budgets >=2 and required counts at 1%,3%,10% relative L2 error qualify
 as primary sparse-support scores. Rank-one residual and 30% counts remain
