@@ -1,8 +1,10 @@
 # Step 5 — WY-only matrix metrics, wave A
 
-**Status: implementation and numerical tests only. Real C1/C2/C3/CR3
-experiments have NOT been run by the authoring cloud session. That session
-cannot access the Windows machine or its local case matrices.**
+**Status (2026-11-10, America/New_York): Wave A has now run on the real
+Windows C1/C2/C3/CR3 matrices, using 5,000 subjects in each model. It found
+zero four-model candidates. Wave B's additive/pairwise projection screen
+also failed on CR3 and stopped before the other datasets. See
+`RESEARCH_LOG_20261110.md` and `WAVE_B.md`.**
 
 This is the next experimental batch, not a successful universal rotation
 method. Earlier global/local first-gradient concentration experiments failed
@@ -143,9 +145,11 @@ python supervised_abs_rotation/step5_matrix_metrics/run.py --model CR3
 python supervised_abs_rotation/step5_matrix_metrics/run.py --compare
 ```
 
-Or run `supervised_abs_rotation\step5_matrix_metrics\run_wave.cmd` to perform
-this one package's four-model batch sequentially, stopping on errors. This
-does not run unrelated rotation packages.
+Or run `supervised_abs_rotation\step5_matrix_metrics\run_wave.cmd` for a
+CR3-first screen, followed by C1/C2/C3 only if CR3 has a passing candidate.
+Add `--all-models` to complete the four-model audit despite a CR3 failure.
+The runner verifies and reuses completed default runs; it refuses incomplete
+or changed runs. It does not run unrelated rotation packages.
 
 Results live under each original `abs_mse` folder:
 `step5_matrix_metrics/waveA_seed381/`. The final comparison CSV goes in
