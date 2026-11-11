@@ -35,7 +35,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0,str(HERE))
 from profiles import CHANNELS, load_profiles, profile_views
 from metrics import (MATRIX_METRICS, CONTROL_METRICS, FUNCTION_METRICS,
-                     normalize_response, linear_fingerprint, functional_scores)
+                     normalize_response, linear_fingerprint, functional_scores, _poly)
 
 ALL_METRICS = (*MATRIX_METRICS, *CONTROL_METRICS, *FUNCTION_METRICS)
 MAIN_PLOTS = (
@@ -325,6 +325,7 @@ def analyze(*, model, step2, output, channels=CHANNELS,
         for idx,(blind_id,path) in enumerate(blind_cases,1):
             u=_case_u(path,sid,offsets,n=n,m=m,dz=dz,dx=dx,
                       x_reference=reference,check_rows=check_rows)
+            polynomial = _poly(u,train)  # shared across Y channels and views
             for (channel,view),f_std in cached.items():
                 linear,linfo,_=linear_fingerprint(
                     u,f_std,train,ridge=fingerprint_ridge,
@@ -332,7 +333,7 @@ def analyze(*, model, step2, output, channels=CHANNELS,
                 nonlinear,ninfo=functional_scores(
                     u,f_std,train,test,ridge=nonlinear_ridge,
                     max_profile_outputs=max_profile_outputs,
-                    pre_normalized=True)
+                    pre_normalized=True,precomputed_poly=polynomial)
                 if linear is None or nonlinear is None:
                     raise ValueError(f"Missing scores for {channel} {view}")
                 values={**linear,**nonlinear}
