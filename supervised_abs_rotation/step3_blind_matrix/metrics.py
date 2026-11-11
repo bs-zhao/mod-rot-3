@@ -107,11 +107,12 @@ def _fingerprint_scores(b):
     }
 
 
-def linear_fingerprint(u, f, train_ids, *, ridge=1e-2):
+def linear_fingerprint(u, f, train_ids, *, ridge=1e-2, pre_normalized=False):
     """Fit the same isotropic Ridge per orientation; return raw B and metrics."""
     if ridge < 0:
         raise ValueError("Ridge must be nonnegative")
-    f_std, meta = normalize_response(f,train_ids)
+    f_std, meta = (np.asarray(f,float), {"selected":f.shape[1], "total":f.shape[1]})
+    if pre_normalized else normalize_response(f,train_ids)
     if f_std is None:
         return None, {"usable":False,**meta}, None
     b, uc, fc = _ridge_centered(np.asarray(u,float), f_std, train_ids,ridge)
@@ -158,7 +159,7 @@ def _fit_predict(x,y,train,test,feature_ids,ridge):
 
 
 def functional_scores(u, f, train_ids, test_ids, *, ridge=0.1,
-                      max_profile_outputs=64):
+                      max_profile_outputs=64, pre_normalized=False):
     """Compare additive vs full polynomial response mappings on heldout subjects.
 
     The complete cubic polynomial spans the same space after rotation;
@@ -168,7 +169,8 @@ def functional_scores(u, f, train_ids, test_ids, *, ridge=0.1,
     """
     if ridge <= 0 or max_profile_outputs < 1:
         raise ValueError("Invalid regularization or profile output budget")
-    f_std, meta = normalize_response(f,train_ids)
+    f_std, meta = (np.asarray(f,float), {"selected":f.shape[1], "total":f.shape[1]})
+    if pre_normalized else normalize_response(f,train_ids)
     if f_std is None:
         return None, {"usable":False,**meta}
     if f_std.shape[1] > max_profile_outputs:
