@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import csv
+import importlib.util
 import hashlib
 import json
 import math
@@ -28,8 +29,13 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 STEP1_CODE = HERE.parent
 ROOT = STEP1_CODE.parent
-sys.path.insert(0, str(STEP1_CODE))
-from run import DIMS, condition
+# Load the matching Step-1 module by explicit path. Plain 'import run' can
+# collide with unrelated math/ or rotation/ modules under a global pytest run.
+step1_spec = importlib.util.spec_from_file_location(
+    "supervised_abs_step1_dependency", STEP1_CODE / "run.py")
+step1 = importlib.util.module_from_spec(step1_spec)
+step1_spec.loader.exec_module(step1)
+DIMS, condition = step1.DIMS, step1.condition
 
 ANGLES = (15, 30, 45, 60, 75, 90)
 
