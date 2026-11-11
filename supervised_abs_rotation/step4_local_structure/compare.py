@@ -136,12 +136,19 @@ def analyze_results(c1_dir,cr3_dir,output):
 
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--c1",type=Path,required=True)
-    p.add_argument("--cr3",type=Path,required=True)
+    p.add_argument("--c1",type=Path,
+                   help="Override default C1 Step4 output folder")
+    p.add_argument("--cr3",type=Path,
+                   help="Override default CR3 Step4 output folder")
     p.add_argument("--output",type=Path,default=Path("outputs")/"supervised_abs_rotation"/
                    "step4_C1_CR3_comparison")
     args=p.parse_args(argv)
-    analyze_results(args.c1,args.cr3,args.output)
+    repo=Path(__file__).resolve().parents[2]
+    root=repo/"outputs"/"supervised_abs_rotation"
+    common="repeat01/abs_mse/step4_local_structure"
+    c1=args.c1 or (root/"C1"/"beta0p0005_lambda0_ctx0p25to0p8_L4"/common)
+    cr3=args.cr3 or (root/"CR3"/"beta5em05_lambda0_ctx0p25to0p8_L4"/common)
+    analyze_results(c1,cr3,args.output)
 
 
 if __name__=="__main__":
