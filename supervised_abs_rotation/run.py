@@ -1,7 +1,8 @@
 """Step 1: full-sample supervised orthogonal rotation + axis-wise scales.
 
-Primary objective (literal absolute values):
-    min_{R.T R=I, D diagonal} mean((abs((Z-mean(Z)) @ R.T @ D)-abs(T_std))**2)
+Primary objective (literal absolute values), with every Z axis z-scored first:
+    Zstd=(Z-mean_all(Z))/std_all(Z)
+    min_{R.T R=I, D diagonal} mean((abs(Zstd @ R.T @ D)-abs(T_std))**2)
 The optimal |D| for any R has a closed form. Axis signs are not identifiable
 from magnitudes; we select them post hoc by the signed Z/T covariance.
 This is a SUPERVISED, IN-SAMPLE ORACLE, never an unsupervised result.
@@ -107,15 +108,15 @@ def prepare_all(z, t):
     if not np.isfinite(z).all() or not np.isfinite(t).all():
         raise ValueError("Nonfinite Z/T")
     zm, tm = z.mean(axis=0), t.mean(axis=0)
-    ts = t.std(axis=0, ddof=0)
-    if np.any(ts <= 1e-12) or np.any(z.std(axis=0) <= 1e-12):
+    zs, ts = z.std(axis=0, ddof=0), t.std(axis=0, ddof=0)
+    if np.any(ts <= 1e-12) or np.any(zs <= 1e-12):
         raise ValueError("Constant Z or T axis: rotation/standardization unavailable")
-    return z - zm, (t - tm) / ts, zm, tm, ts
+    return (z - zm) / zs, (t - tm) / ts, zm, zs, tm, ts
 
 
-def profile(zc, target, r, objective="abs_mse"):
+def profile(zstd, target, r, objective="abs_mse"):
     """Profile out optimal diagonal D analytically for fixed orthogonal R."""
-    v = zc @ r.T
+    v = zstd @ r.T
     if objective == "abs_mse":
         x, y = np.abs(v), np.abs(target)
     elif objective == "signed_mse":
@@ -137,18 +138,18 @@ def skew_matrix(params, dim):
     return k
 
 
-def fit(zc, tstd, objective="abs_mse", *, seed=31, restarts=6, maxiter=350):
+def fit(zstd, tstd, objective="abs_mse", *, seed=31, restarts=6, maxiter=350):
     """Multistart local search on O(d), with exact optimal D per candidate R."""
-    zc = np.asarray(zc, float)
+    zstd = np.asarray(zstd, float)
     tstd = np.asarray(tstd, float)
-    n, d = zc.shape
+    n, d = zstd.shape
     if tstd.shape != (n, d) or restarts < 0 or maxiter < 1:
         raise ValueError("Invalid fitting settings")
 
     # Row-vector equivalent: Zc @ Q approximates Tstd, R = Q.T.
-    u, _, vh = np.linalg.svd(zc.T @ tstd, full_matrices=False)
+    u, _, vh = np.linalg.svd(zstd.T @ tstd, full_matrices=False)
     procrustes = (u @ vh).T
-    ols = np.linalg.lstsq(zc, tstd, rcond=None)[0]
+    ols = np.linalg.lstsq(zstd, tstd, rcond=None)[0]
     u2, _, vh2 = np.linalg.svd(ols, full_matrices=False)
     ols_polar = (u2 @ vh2).T
     rng = np.random.default_rng(seed)
@@ -166,13 +167,13 @@ def fit(zc, tstd, objective="abs_mse", *, seed=31, restarts=6, maxiter=350):
             return r0 @ expm(skew_matrix(x, d))
 
         def objective_fn(x):
-            return profile(zc, tstd, candidate(x), objective)[0]
+            return profile(zstd, tstd, candidate(x), objective)[0]
 
         start_loss = objective_fn(np.zeros(n_angles))
         opt = minimize(objective_fn, np.zeros(n_angles), method="L-BFGS-B",
                        options={"maxiter": maxiter, "ftol": 1e-12})
         r = candidate(opt.x)
-        loss, scale = profile(zc, tstd, r, objective)
+        loss, scale = profile(zstd, tstd, r, objective)
         attempts.append({"start": label, "initial_loss": start_loss,
                          "final_loss": loss, "iterations": int(opt.nit),
                          "success": bool(opt.success), "message": str(opt.message)})
@@ -181,7 +182,7 @@ def fit(zc, tstd, objective="abs_mse", *, seed=31, restarts=6, maxiter=350):
                     "loss": loss, "best_start": label}
 
     # |DRZ| does not identify signs: choose a sign using signed covariance.
-    v = zc @ best["R"].T
+    v = zstd @ best["R"].T
     if objective == "abs_mse":
         signed_cov = np.sum(v * tstd, axis=0)
         signs = np.where(signed_cov < 0, -1.0, 1.0)
@@ -302,19 +303,20 @@ def plot_heatmap(path, matrix, row_names, col_names, title, *, correlation=True)
 
 def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
             restarts=6, maxiter=350, plots=True, provenance=None, overwrite=False):
-    """Entire sample is used for ALL normalizers, R optimization and D fit."""
+    """ALL subjects standardize each Z axis before orthogonal R, D and whitening."""
     if model not in DIMS or z.shape[1] != DIMS[model]:
         raise ValueError("Wrong model or latent dimension")
-    zc, tstd, zm, tm, ts = prepare_all(z, theta)
-    result = fit(zc, tstd, objective, seed=seed, restarts=restarts, maxiter=maxiter)
+    zstd, tstd, zm, zs, tm, ts = prepare_all(z, theta)
+    result = fit(zstd, tstd, objective, seed=seed, restarts=restarts, maxiter=maxiter)
     u = result["U"]
     whitened = zca_whiten_all(u)  # post-processing; R and D remain fixed
     uw = whitened["U_whitened"]
     pred = result["prediction"]
-    n, d = zc.shape
+    n, d = zstd.shape
     labels = PARAMETERS[model]
     axes = [f"U{i+1}" for i in range(d)]
     znames = [f"z{i+1}" for i in range(d)]
+    zstd_names = [f"zstd{i+1}" for i in range(d)]
     loss_abs = np.mean((np.abs(pred) - np.abs(tstd)) ** 2, axis=0)
     loss_signed = np.mean((pred - tstd) ** 2, axis=0)
     abs_target = np.abs(tstd)
@@ -326,7 +328,8 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
     corr_matrices = {
         "Z_Z": (corr(z, z), znames, znames),
         "Tstd_Tstd": (corr(tstd, tstd), labels, labels),
-        "Z_Tstd": (corr(z, tstd), znames, labels),
+        "Z_Tstd": (corr(zstd, tstd), znames, labels),
+        "Zstd_Tstd": (corr(zstd, tstd), zstd_names, labels),
         "U_U": (corr(u, u), axes, axes),
         "U_Tstd": (corr(u, tstd), axes, labels),
         "U_whitened_Tstd": (corr(uw, tstd), axes, labels),
@@ -347,11 +350,17 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
                 corr(uw, uw), axes, axes)
     for key, (matrix, rows, columns) in corr_matrices.items():
         save_matrix(out / f"corr__{key}.csv", matrix, rows, columns)
-    save_matrix(out / "R.csv", result["R"], axes, znames)
+    save_rows(out / "Z_zscore_stats.csv", [
+        {"dimension": name, "mean_all": float(mean), "std_all_ddof0": float(sd)}
+        for name, mean, sd in zip(znames, zm, zs)
+    ])
+    save_matrix(out / "R.csv", result["R"], axes, zstd_names)
     save_matrix(out / "D.csv", result["D"], axes, axes)
-    save_matrix(out / "DR.csv", result["DR"], axes, znames)
-    save_matrix(out / "A_rawZ_to_Tstd.csv", result["DR"], axes, znames)
-    intercept = -(result["DR"] @ zm)
+    save_matrix(out / "DR.csv", result["DR"], axes, zstd_names)
+    # DR acts on standardized Z; convert back to original units for raw-Z maps.
+    A_raw = result["DR"] / zs[None, :]
+    save_matrix(out / "A_rawZ_to_Tstd.csv", A_raw, axes, znames)
+    intercept = -(A_raw @ zm)
     save_rows(out / "b_rawZ_to_Tstd.csv", [
         {"parameter": label, "intercept": float(value)}
         for label, value in zip(labels, intercept)
@@ -372,7 +381,9 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
         })
     save_rows(out / "per_parameter.csv", rows)
     np.savez_compressed(out / "oracle_full_sample.npz",
-                        Z_centered=zc, theta_true=np.asarray(theta),
+                        Z_centered=np.asarray(z) - zm,
+                        Z_std=zstd,
+                        theta_true=np.asarray(theta),
                         T_std=tstd, U_unscaled=u,
                         U_whitened=uw,
                         U_zca_whitening_matrix=whitened["whitening_matrix"],
@@ -383,23 +394,26 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
                         prediction_Tstd=pred, abs_prediction=np.abs(pred),
                         abs_Tstd=np.abs(tstd),
                         R=result["R"], D=result["D"], DR=result["DR"],
-                        b_rawZ_to_Tstd=intercept,
-                        z_mean_all=zm, theta_mean_all=tm,
+                        A_rawZ_to_Tstd=A_raw, b_rawZ_to_Tstd=intercept,
+                        z_mean_all=zm, z_std_all=zs, theta_mean_all=tm,
                         theta_std_all=ts, scales=result["scales"],
                         full_sample_indices=np.arange(n))
     summary = {
         "model": model, "objective": objective, "sample_policy": "ALL subjects supervised; no holdout",
         "n_subjects": n, "latent_dim": d, "parameter_names": labels,
-        "definition": "Tstd=(T-mean_all(T))/std_all(T); Zc=Z-mean_all(Z); "
-                      "U=(Zc @ R.T); prediction=U @ D; D diagonal",
+        "definition": "Tstd=(T-mean_all(T))/std_all(T); "
+                      "Zstd=(Z-mean_all(Z))/std_all(Z) [ddof=0]; "
+                      "U=Zstd @ R.T; prediction=U @ D; D diagonal; "
+                      "DR maps Zstd to Tstd, A_raw=DR @ diag(1/std_all(Z))",
         "objective_value": result["loss"], "det_R": result["determinant_R"],
         "orthogonality_error_fro": float(np.linalg.norm(result["R"].T @ result["R"] - np.eye(d))),
         "best_start": result["best_start"], "attempts": result["attempts"],
         "R": result["R"].tolist(), "D": result["D"].tolist(), "DR": result["DR"].tolist(),
+        "A_rawZ_to_Tstd": A_raw.tolist(),
         "b_rawZ_to_Tstd": intercept.tolist(),
         "post_rotation_whitening": {
             "method": "full-sample ZCA symmetric inverse covariance square root",
-            "input": "U=Zc @ R.T (before D)",
+            "input": "U=Zstd @ R.T (before D); Zstd is all-subject z-score",
             "uses_true_T": False,
             "purpose": "diagnostic; whitening never participates in fitting R or D",
             "whitening_matrix": whitened["whitening_matrix"].tolist(),
@@ -415,7 +429,9 @@ def analyze(z, theta, *, model, output, objective="abs_mse", seed=31,
                 "Full-rank whitening: covariance approximately identity"),
             "U_whitened_Tstd_corr": corr_matrices["U_whitened_Tstd"][0].tolist(),
         },
-        "z_mean_all": zm.tolist(), "theta_mean_all": tm.tolist(),
+        "z_mean_all": zm.tolist(), "z_std_all": zs.tolist(),
+        "z_scaling": "each raw Z column standardized with all-subject ddof=0 moments BEFORE R",
+        "theta_mean_all": tm.tolist(),
         "theta_std_all": ts.tolist(), "axis_scales": result["scales"].tolist(),
         "magnitude_MSE_mean": float(loss_abs.mean()),
         "signed_MSE_mean": float(loss_signed.mean()),
