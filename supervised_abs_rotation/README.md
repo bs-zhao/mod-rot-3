@@ -24,15 +24,16 @@ S5 stores `z`, `theta_true`, the original split IDs and S1/S3 provenance hashes.
 Let Z and T be N×d matrices (rows = subjects). Define statistics using **all N subjects**:
 
 \[
-Z_c=Z-\mathbf1\bar Z^\top,\qquad
+Z_{\rm std}=(Z-\mathbf1\bar Z^\top)\,\mathrm{diag}(\sigma_Z)^{-1},
+\qquad
 T_{\rm std}=(T-\mathbf1\bar T^\top)\,\mathrm{diag}(\sigma_T)^{-1}.
 \]
 
-Z is **centered, not standardized or whitened**: only genuinely orthogonal rotations of the original Z coordinate system are admissible. For column-vector notation:
+**Every original Z dimension is z-scored first** using the mean and population standard deviation (\`ddof=0\`) of **all subjects**; T is z-scored the same way. These preprocessing statistics are fixed before R optimization. Z-scoring is axis scaling, not whitening: the correlations among Z dimensions remain unchanged. R is orthogonal **in Z-score coordinates**, not in the original raw-Z coordinate system. For column-vector notation:
 
 \[
 R^\top R=I,\quad D=\mathrm{diag}(s_1,\ldots,s_d),\quad
-U_s=R(Z_s-\bar Z),\quad \hat T_{{\rm std},s}=D U_s.
+U_s=RZ_{{\rm std},s},\quad \hat T_{{\rm std},s}=D U_s.
 \]
 
 **Default objective — literal absolute-value recovery** (`--objective abs_mse`):
@@ -40,10 +41,10 @@ U_s=R(Z_s-\bar Z),\quad \hat T_{{\rm std},s}=D U_s.
 \[
 \min_{R^\top R=I,\,D}\;\frac1{Nd}
 \sum_{s=1}^N\sum_{j=1}^d
-\left(\left|[DR(Z_s-\bar Z)]_j\right|-|T_{{\rm std},sj}|\right)^2.
+\left(\left|[DRZ_{{\rm std},s}]_j\right|-|T_{{\rm std},sj}|\right)^2.
 \]
 
-For fixed R let v=Zc Rᵀ. The optimal scale **magnitude** for each output axis has the closed form
+For fixed R let v=Zstd Rᵀ. The optimal scale **magnitude** for each output axis has the closed form
 
 \[
 |s_j|=\frac{\sum_s |v_{sj}|\,|T_{{\rm std},sj}|}
@@ -57,11 +58,11 @@ This allows a search **over R alone**: a multistart manifold parameterization `R
 **Alternative objective — signed parameter recovery** (`--objective signed_mse`):
 
 \[
-\min_{R^\top R=I,\,D}\;\frac1{Nd}\|Z_c R^\top D-T_{\rm std}\|_F^2,\qquad
+\min_{R^\top R=I,\,D}\;\frac1{Nd}\|Z_{\rm std} R^\top D-T_{\rm std}\|_F^2,\qquad
 s_j=\frac{\sum_s v_{sj}T_{{\rm std},sj}}{\sum_s v_{sj}^2}.
 \]
 
-This is a separate comparison; it does **not** minimize the absolute-value loss. Unlike whitening or unconstrained OLS, the fitted rows of `DR` remain orthogonal (up to scaling). For centered Z and unit-variance centered Tstd, minimizing this profiled signed MSE is equivalent to maximizing the **sum of squared signed Pearson correlations** between matching U/T axes (and hence their squared absolute correlations); it is **not** the same objective as fitting the absolute magnitudes.
+This is a separate comparison; it does **not** minimize the absolute-value loss. Unlike whitening or unconstrained OLS, the fitted rows of `DR` remain orthogonal (up to scaling). For columnwise-standardized Z and Tstd, minimizing this profiled signed MSE is equivalent to maximizing the **sum of squared signed Pearson correlations** between matching U/T axes (and hence their squared absolute correlations); it is **not** the same objective as fitting the absolute magnitudes.
 
 ## Windows CMD, from repository root
 
@@ -93,7 +94,7 @@ python np/s5_extract_z.py --model CR3 --beta 0.00005 --latent-dim 4
 
 ## Additional diagnostic: whiten U after fitting R
 
-After optimizing R and D, define **unscaled** rotated U from the already fitted rotation: `U = (Z - mean_all(Z)) @ R.T`. Using all subjects' **U only**, calculate `Cov(U)` with `ddof=0` and apply symmetric **ZCA whitening**:
+After optimizing R and D, define **unscaled** rotated U from the already fitted rotation: `U = Zstd @ R.T` with `Zstd = (Z-mean_all(Z))/std_all(Z)`. Using all subjects' **U only**, calculate `Cov(U)` with `ddof=0` and apply symmetric **ZCA whitening**:
 
 ```text
 W = eigvecs @ diag(1 / sqrt(eigenvalues)) @ eigvecs.T
@@ -117,13 +118,29 @@ python supervised_abs_rotation/run.py --model C1 --overwrite
 `outputs/supervised_abs_rotation/<MODEL>/<CONDITION>/repeat01/<OBJECTIVE>/`
 
 - `summary.json`: full R, D, DR, objective, each start's optimizer trace, sample count, normalizers, parameter-wise and aggregate diagnostics, entire correlation matrices, provenance SHA256.
-- `R.csv`, `D.csv`, `DR.csv`, `A_rawZ_to_Tstd.csv`: fitted matrices; `R.png`, `D.png`, `DR.png`: annotated coefficient heatmaps. `b_rawZ_to_Tstd.csv` saves the intercept. The full raw-Z affine map is `prediction = (Z @ A.T) + b`, where `A=DR` and `b=-DR @ mean_all(Z)`.
+- `Z_zscore_stats.csv`: each original Z axis's all-subject mean and population SD. `R.csv`, `D.csv`, `DR.csv`, `A_rawZ_to_Tstd.csv`: fitted matrices; `R.png`, `D.png`, `DR.png`: annotated coefficient heatmaps. `b_rawZ_to_Tstd.csv` saves the intercept. The full raw-Z affine map is `prediction = (Z @ A_raw.T) + b`, where `DR` maps **Z-score Z** to Tstd, `A_raw = DR @ diag(1/std_all(Z))`, and `b=-A_raw @ mean_all(Z)`. These are not the same coefficients when original Z dimensions have different scales.
 - `per_parameter.csv`: each true-parameter axis' fitted D, signed and magnitude Pearson r, signed and magnitude R², MSE and worst incorrect-parameter signed correlation.
 - `corr__*.csv`: all dimensions × all dimensions Pearson matrices for raw Z–Z, Tstd–Tstd, raw Z–Tstd, unscaled U–U, U–Tstd, calibrated prediction–Tstd, absolute prediction–absolute Tstd, and calibrated prediction internal correlations (signed/magnitude).
 - Matching `corr__*.png` annotated correlation heatmaps.
-- `oracle_full_sample.npz`: all-subject arrays `Z_centered`, `T_std`, `U_unscaled`, `prediction_Tstd`, `abs_prediction`, `abs_Tstd`, R, D, DR, original T and normalization statistics, for subsequent experiments.
+- `oracle_full_sample.npz`: all-subject arrays `Z_std` (the actual input to R), `Z_centered` (raw centered Z retained for compatibility), `z_mean_all`, `z_std_all`, `A_rawZ_to_Tstd`, `b_rawZ_to_Tstd`, `T_std`, `U_unscaled`, `prediction_Tstd`, `abs_prediction`, `abs_Tstd`, R, D, DR, original T and normalization statistics, for subsequent experiments.
 
 A correlation matrix for magnitudes is `corr(|prediction_i|,|Tstd_j|)`, **not** `|corr(prediction_i,Tstd_j)|`; both versions are saved separately to avoid mixing these distinct questions.
+
+## Re-run after changing initial Z normalization
+
+The new standardized-Z input changes the geometry of the permitted rotations.
+**Prior results obtained from raw centered Z are not directly comparable as the same R optimization.**
+Rerun each model with `--overwrite` to regenerate R, D, whitening and all
+correlation heatmaps:
+
+```cmd
+git pull origin main
+python -m unittest discover -s supervised_abs_rotation/tests -p "test_*.py" -v
+python supervised_abs_rotation/run.py --model C1 --overwrite
+python supervised_abs_rotation/run.py --model C2 --overwrite
+python supervised_abs_rotation/run.py --model C3 --overwrite
+python supervised_abs_rotation/run.py --model CR3 --overwrite
+```
 
 ## Windows PNG-writing failures
 
