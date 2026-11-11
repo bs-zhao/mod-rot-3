@@ -7,7 +7,7 @@ def features(x):
     x = np.asarray(x, dtype=float)
     knots = np.arange(-2., 3.)
     return np.concatenate((np.ones_like(x)[..., None], x[..., None], x[..., None]**2,
-        x[..., None]**3, np.exp(-.5*(x[..., None]-knots)**2)), axis=-1)
+        x[..., None]**3, x[..., None]**4, np.exp(-.5*(x[..., None]-knots)**2)), axis=-1)
 
 
 def whiten(phi):

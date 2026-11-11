@@ -13,7 +13,7 @@ import joint_bank as jb
 import predictive_compression as pc
 
 
-def analyze(source, output, bank_folder, seed=392, max_terms=128):
+def analyze(source, output, bank_folder, seed=392, max_terms=128, interaction_only=False, all_subject_compression=False):
     source, output = Path(source), Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain existing experiment: {output}')
@@ -23,7 +23,11 @@ def analyze(source, output, bank_folder, seed=392, max_terms=128):
         seed=seed, bank_seed=bank.protocol['seed'], degrees=bank.protocol['degrees'], channels=list(data.channels),
         max_terms=max_terms, adequacy_validation_nmse=.1, conditional_relative_energy_floor=1e-8,
         all_subjects_used=True, status='RUNNING', score_sign='lower for all datasets',
-        target='fixed all-data joint projection; compression fit on 75% subjects, validation on 25%',
+        target=('fixed all-data joint projection; empirical compression fit and score use all subjects'
+                if all_subject_compression else 'fixed all-data joint projection; compression fit on 75% subjects, validation on 25%'),
+        all_subject_compression=all_subject_compression,
+        candidate_terms='UX-containing monomials' if interaction_only else 'U-containing monomials',
+        free_nuisance='all pure-U and pure-X monomials' if interaction_only else 'all X-only monomials',
         source_signature_sha256=bank.protocol['manifest_sha256'],
         code_sha256=hashlib.sha256(b''.join((wave.HERE/f).read_bytes() for f in
             ('run_predictive_compression.py', 'predictive_compression.py', 'coefficient_support.py',
@@ -36,9 +40,11 @@ def analyze(source, output, bank_folder, seed=392, max_terms=128):
     blind, quality, audits = [], [], []
     for degree in bank.protocol['degrees']:
         name = f'poly{degree}'; saved = bank.load(degree)
-        transport = pc.Transport(saved['powers'], data.d, seed)
-        system = pc.nuisance_system(saved['g_all']-saved['g_validation'], saved['g_validation'],
-                                    saved['coef'], transport.structure.has_u)
+        transport = pc.Transport(saved['powers'], data.d, seed, interaction_only)
+        train_gram = saved['g_all'] if all_subject_compression else saved['g_all']-saved['g_validation']
+        score_gram = saved['g_all'] if all_subject_compression else saved['g_validation']
+        system = pc.nuisance_system(train_gram, score_gram,
+                                    saved['coef'], np.isin(np.arange(len(saved['powers'])), transport.u))
         relative = system['ss_train']/np.maximum(system['full_train'], np.finfo(float).tiny)
         for c, channel in enumerate(data.channels):
             qr = bank.quality[name, channel]
@@ -91,18 +97,26 @@ def main():
     p.add_argument('--bank-name', default='joint_bank_seed391')
     p.add_argument('--seed', type=int, default=392)
     p.add_argument('--max-terms', type=int, default=128)
+    p.add_argument('--interaction-only', action='store_true')
+    p.add_argument('--all-subject-compression', action='store_true')
     args = p.parse_args()
     if args.max_terms < 2:
         p.error('At least two terms required')
-    survivors = None
+    survivors = None; bank_degrees = None
     with threadpool_limits(limits=4):
         for model in (('CR3', 'C1', 'C2', 'C3') if args.batch else (args.model,)):
             source = wave.io.default_step2(wave.ROOT, model)
             folder = source.parent/'step5_matrix_metrics'
             bank_folder, output = folder/args.bank_name, folder/args.run_name
             if not bank_folder.exists():
-                jb.prepare(source, bank_folder)
-            rows = analyze(source, output, bank_folder, args.seed, args.max_terms)
+                jb.prepare(source, bank_folder, degrees=bank_degrees or (2, 3, 4))
+            import json
+            current_degrees = tuple(json.loads((bank_folder/'protocol.json').read_text())['degrees'])
+            if bank_degrees is not None and current_degrees != bank_degrees:
+                raise ValueError('Source polynomial degrees differ across datasets')
+            bank_degrees = current_degrees
+            rows = analyze(source, output, bank_folder, args.seed, args.max_terms,
+                           args.interaction_only, args.all_subject_compression)
             passed = {(r['estimator'], r['channel'], r['metric']) for r in rows
                       if r['adequate'] and r['all_planes_pass']}
             survivors = passed if survivors is None else survivors & passed

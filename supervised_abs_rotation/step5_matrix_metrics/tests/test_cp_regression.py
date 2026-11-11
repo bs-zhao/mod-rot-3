@@ -28,8 +28,8 @@ def test_whitened_features_and_warm_rank_embedding_preserve_predictions():
             gram = up[g, :, d].T @ up[g, :, d]/300
             np.testing.assert_allclose(np.diag(gram), au[g, d].astype(float), atol=1e-7)
     tensors = [torch.tensor(a, dtype=torch.float32) for a in (xp, up, au, ax)]
-    model = cp.Model(2, 2, 2, 3, 2, 9, 1)
-    bigger = cp.Model(2, 2, 2, 3, 2, 9, 4, previous=model.snapshot())
+    model = cp.Model(2, 2, 2, 3, 2, up.shape[-1], 1)
+    bigger = cp.Model(2, 2, 2, 3, 2, up.shape[-1], 4, previous=model.snapshot())
     ids = torch.arange(8); subjects = torch.arange(40)
     a = model.predict(ids, subjects, tensors[0][:40], tensors[1], tensors[2], tensors[3])
     b = bigger.predict(ids, subjects, tensors[0][:40], tensors[1], tensors[2], tensors[3])
@@ -40,7 +40,7 @@ def test_batched_fit_gradients_are_independent_across_cases_and_channels():
     rng = np.random.default_rng(523)
     up, _, _, au = cp.whiten(cp.features(rng.normal(size=(2, 50, 2))))
     xp, _, _, ax = cp.whiten(cp.features(rng.normal(size=(50, 2))))
-    model = cp.Model(2, 2, 1, 2, 2, 9, 2)
+    model = cp.Model(2, 2, 1, 2, 2, up.shape[-1], 2)
     ids, subjects = torch.tensor([0]), torch.arange(50)
     pred = model.predict(ids, subjects, torch.tensor(xp, dtype=torch.float32), torch.tensor(up, dtype=torch.float32),
                          torch.tensor(au, dtype=torch.float32), torch.tensor(ax, dtype=torch.float32))

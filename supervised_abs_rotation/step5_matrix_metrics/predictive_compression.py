@@ -38,9 +38,10 @@ def nuisance_system(g, v, coef, has_u):
 
 
 class Transport:
-    def __init__(self, powers, d, seed=392):
+    def __init__(self, powers, d, seed=392, interaction_only=False):
         self.structure = cs.Structure(powers, d, seed)
-        self.u = np.flatnonzero(self.structure.has_u)
+        candidate = self.structure.has_u & self.structure.has_x if interaction_only else self.structure.has_u
+        self.u = np.flatnonzero(candidate)
         self.lookup = {row: i for i, row in enumerate(self.u)}
 
     def blocks(self, q):
@@ -48,7 +49,7 @@ class Transport:
         transform = ka.rotation_representation(s.up, s.uw, q, s.probes)
         out = []
         for pairs in s.blocks.values():
-            if not s.has_u[pairs[0][1]]:
+            if pairs[0][1] not in self.lookup:
                 continue
             uid, rows = map(list, zip(*pairs))
             out.append((np.array([self.lookup[r] for r in rows]), transform[np.ix_(uid, uid)]))

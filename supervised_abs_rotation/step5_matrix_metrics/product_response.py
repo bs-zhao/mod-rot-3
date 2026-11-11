@@ -67,7 +67,7 @@ def x_projection(bank, dictionary, x, seed=401):
         validation_u_subjects_used_to_select_ridge=0, interpretation='X interpolation check on source response bank')
 
 
-def prepare_function(bank, name, mapping):
+def prepare_function(bank, name, mapping, need_derivatives=True):
     # Reconstruct and verify the original U basis through the existing loader.
     bank.model(name)
     with np.load(bank.folder/f'model_{name}.npz', allow_pickle=False) as saved:
@@ -81,9 +81,12 @@ def prepare_function(bank, name, mapping):
     model.set_coef(coef.reshape(len(coef), -1))
     phi = model.features(bank.u)
     full = (phi @ model.coef).reshape(bank.data.n, channels, -1)
-    g, h = model.derivatives(bank.u)
     p, d = mapping.shape[1], bank.data.d
-    g, h = g.reshape(bank.data.n, channels, p, d), h.reshape(bank.data.n, channels, p, d, d)
+    if need_derivatives:
+        g, h = model.derivatives(bank.u)
+        g, h = g.reshape(bank.data.n, channels, p, d), h.reshape(bank.data.n, channels, p, d, d)
+    else:
+        g, h = None, None
     # Reproduce a training-only U fit to audit actual held-out original Y.
     fit = json.loads((bank.folder/f'fit_{name}.json').read_text())
     pt = phi[bank.train]

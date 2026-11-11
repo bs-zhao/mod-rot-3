@@ -12,22 +12,32 @@ from threadpoolctl import threadpool_limits
 import run as wave
 import fast_projection as fp
 import cp_regression as cp
+import approximate_ux_function as ux_teacher
 
 
-def prepare_arrays(data, maps, output, device, seed):
+def prepare_arrays(data, maps, output, device, seed, teacher='observed'):
     rng = np.random.default_rng(seed)
     train = np.sort(rng.permutation(data.n)[:int(.75*data.n)])
     x = data.w[:, data.d:]
     scaler = wave.sur.Scaler(x, 1, row_mask=np.isin(data.sid, train))
-    nuisance = fp.Polynomial(scaler, 4)
-    coef, fit = fp.fit(nuisance, x, data.y, data.sid, train, device=device)
-    wave.json_file(output/'X_nuisance_fit.json', fit)
-    np.savez_compressed(output/'X_nuisance_model.npz', coef=coef, mean=scaler.mean, scale=scaler.scale,
-                        powers=nuisance.powers, weights=nuisance.weights)
-    residual = np.empty_like(data.y)
-    for a in range(0, data.m, 8192):
-        b = min(a+8192, data.m)
-        residual[a:b] = data.y[a:b]-nuisance.features(x[a:b]) @ coef
+    if teacher == 'observed':
+        nuisance = fp.Polynomial(scaler, 4)
+        coef, fit = fp.fit(nuisance, x, data.y, data.sid, train, device=device)
+        wave.json_file(output/'X_nuisance_fit.json', fit)
+        np.savez_compressed(output/'X_nuisance_model.npz', coef=coef, mean=scaler.mean, scale=scaler.scale,
+                            powers=nuisance.powers, weights=nuisance.weights)
+        residual = np.empty_like(data.y)
+        for a in range(0, data.m, 8192):
+            b = min(a+8192, data.m)
+            residual[a:b] = data.y[a:b]-nuisance.features(x[a:b]) @ coef
+        teacher_audit = dict(teacher='observed_Y_after_X_nuisance', validation_nmse=[0.]*len(data.channels))
+    elif teacher == 'poly4_UX':
+        residual, teacher_audit = ux_teacher.polynomial(data, 4)
+    elif teacher == 'rbf2_UX':
+        residual, teacher_audit = ux_teacher.kernel(data, 'rbf2')
+    else:
+        raise ValueError('Unknown approximation teacher')
+    wave.json_file(output/'teacher_audit.json', teacher_audit)
     center = residual.mean(0); sd = residual.std(0)
     fraction = sd**2/np.maximum(data.y.var(0), np.finfo(float).tiny)
     if np.any(fraction <= 1e-8):
@@ -56,7 +66,8 @@ def prepare_arrays(data, maps, output, device, seed):
         active_u=to_device(au, torch.float32), active_x=to_device(ax, torch.float32),
         target=to_device(target, torch.float64), sid=to_device(data.sid, torch.long),
         shared_x=shared, x_count=len(xp), n_rows=data.m, n_subjects=data.n, groups=len(classes),
-        membership=membership, d=data.d, dx=data.dx, channels=len(data.channels))
+        membership=membership, d=data.d, dx=data.dx, channels=len(data.channels),
+        teacher_validation_nmse=teacher_audit['validation_nmse'])
     audit = dict(all_subjects=data.n, all_original_rows=data.m, coordinate_classes=len(classes),
         original_cases=len(maps), class_grouping_uses_case_labels=False,
         signed_permutation_tolerance=1e-5, remaining_response_variance_fraction=fraction.tolist(),
@@ -136,7 +147,7 @@ def fit_rank(arrays, output, rank, epochs=80, starts=3, batch=8192, model_chunk=
     return best_state, losses
 
 
-def analyze(source, output, ranks=(1, 2, 4, 8), epochs=80, starts=3, batch=8192, model_chunk=32, seed=404, device='cuda'):
+def analyze(source, output, ranks=(1, 2, 4, 8), epochs=80, starts=3, batch=8192, model_chunk=32, seed=404, device='cuda', teacher='observed'):
     source, output = Path(source), Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain existing CP experiment: {output}')
@@ -144,22 +155,23 @@ def analyze(source, output, ranks=(1, 2, 4, 8), epochs=80, starts=3, batch=8192,
     output.mkdir(parents=True, exist_ok=True)
     config = dict(model=data.index['model'], Z_dim=data.d, n_subjects=data.n, source=str(source.resolve()), seed=seed,
         ranks=list(ranks), epochs=epochs, starts=starts, batch=batch, model_chunk=model_chunk, device=device,
-        channels=list(data.channels), univariate_basis='1,z,z2,z3 and five symmetric RBFs at -2,-1,0,1,2',
+        channels=list(data.channels), univariate_basis='1,z,z2,z3,z4 and five symmetric RBFs at -2,-1,0,1,2',
         factor_normalization='empirical marginal L2; centered whitened nonconstant features',
         ridge_output_amplitude_penalty=1e-6, gradient_clip_per_independent_model=5.,
         learning_rates={'1-40': .01, '41-60': .003, '61+': .001},
-        nuisance='all-data X-only polynomial4; ridge selected by subject validation',
-        metric_scope='fixed separated-rank empirical approximation budget; optimization validation still required',
+        teacher=teacher, nuisance='observed mode: fitted X-only nuisance; teacher mode: exact whole-U/whole-X double centering',
+        metric_scope='UX coupling compression for teacher mode; fixed separated-rank approximation budget',
         all_subjects_used=True, all_original_rows_used_in_fit_and_metric=True,
         training_precision='float32', final_loss_precision='float64', score_sign='lower for every dataset',
         status='RUNNING', code_sha256=hashlib.sha256(b''.join((wave.HERE/f).read_bytes() for f in
-            ('run_cp_regression.py', 'cp_regression.py', 'fast_projection.py', 'matrix_io.py', 'surrogates.py', 'structure.py'))).hexdigest())
+            ('run_cp_regression.py', 'cp_regression.py', 'approximate_ux_function.py', 'joint_bank.py',
+             'fitted_bank.py', 'product_response.py', 'fast_projection.py', 'matrix_io.py', 'surrogates.py', 'structure.py'))).hexdigest())
     wave.json_file(output/'protocol.json', config)
     maps, reveal, residuals = [], {}, []
     for k, path in enumerate(data.paths):
         q, residual = wave.io.registration(data.u, data.coordinates(path))
         maps.append(q); residuals.append(residual); reveal[f'case_{k:03d}'] = path.parent.name
-    arrays = prepare_arrays(data, maps, output, device, seed)
+    arrays = prepare_arrays(data, maps, output, device, seed, teacher)
     all_losses, previous = {}, None
     for rank in ranks:
         previous, losses = fit_rank(arrays, output, rank, epochs, starts, batch, model_chunk, seed, previous)
@@ -176,7 +188,7 @@ def analyze(source, output, ranks=(1, 2, 4, 8), epochs=80, starts=3, batch=8192,
                 hit = np.flatnonzero(by_rank[:, membership] <= eps**2)
                 row[f'first_budget_count_eps{int(round(eps*1000)):03d}'] = int(ranks[hit[0]]) if len(hit) else max(ranks)+1
             for metric, value in row.items():
-                blind.append(dict(anonymous_case=f'case_{k:03d}', estimator='separated_CP_basis9', channel=channel,
+                blind.append(dict(anonymous_case=f'case_{k:03d}', estimator='separated_CP_basis10', channel=channel,
                                   metric=metric, loss=value))
     wave.csv_file(output/'blind_scores.csv', blind)
     digest = hashlib.sha256((output/'blind_scores.csv').read_bytes()).hexdigest()
@@ -185,7 +197,8 @@ def analyze(source, output, ranks=(1, 2, 4, 8), epochs=80, starts=3, batch=8192,
     for row in blind:
         grouped[row['estimator'], row['channel'], row['metric']][reveal[row['anonymous_case']]] = row['loss']
     rows = [dict(estimator=e, channel=c, metric=m, **wave.st.evaluate_curve(v, data.index['cases']),
-                 adequate=True, is_control=False, optimization_stability_verified=False)
+                 adequate=arrays['teacher_validation_nmse'][data.channels.index(c)] <= .1,
+                 is_control=False, optimization_stability_verified=False)
             for (e, c, m), v in grouped.items()]
     wave.csv_file(output/'metric_summary.csv', rows)
     wave.json_file(output/'read_audit.json', dict(files=sorted(set(data.read_files)), forbidden_files_read=[],
@@ -199,7 +212,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--model', choices=wave.io.DIMS, default='CR3')
     p.add_argument('--batch', action='store_true')
-    p.add_argument('--run-name', default='waveY_cp_budget_seed404')
+    p.add_argument('--run-name', default='waveAB_poly4_UX_compression_seed404')
+    p.add_argument('--teacher', choices=('observed', 'poly4_UX', 'rbf2_UX'), default='poly4_UX')
     p.add_argument('--epochs', type=int, default=80)
     p.add_argument('--starts', type=int, default=3)
     p.add_argument('--batch-size', type=int, default=8192)
@@ -216,8 +230,9 @@ def main():
         torch.set_num_threads(4)
         for model in (('CR3', 'C1', 'C2', 'C3') if args.batch else (args.model,)):
             source = wave.io.default_step2(wave.ROOT, model); output = source.parent/'step5_matrix_metrics'/args.run_name
-            rows = analyze(source, output, ranks, args.epochs, args.starts, args.batch_size, args.model_chunk, device=args.device)
-            passed = {(r['estimator'], r['channel'], r['metric']) for r in rows if r['all_planes_pass']}
+            rows = analyze(source, output, ranks, args.epochs, args.starts, args.batch_size, args.model_chunk,
+                           device=args.device, teacher=args.teacher)
+            passed = {(r['estimator'], r['channel'], r['metric']) for r in rows if r['all_planes_pass'] and r['adequate']}
             survivors = passed if survivors is None else survivors & passed
             print(f'[WaveY] {model}: {len(passed)} preliminary grid passes; {len(survivors)} common fits', flush=True)
             if args.batch and not survivors:

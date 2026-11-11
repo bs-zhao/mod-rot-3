@@ -34,22 +34,37 @@ def test_aliases_and_feature_scales_do_not_inflate_support():
         assert alias[key] == pytest.approx(expected[key], abs=1e-7)
 
 
-def test_nuisance_and_gram_transport_match_direct_rotated_rows():
+@pytest.mark.parametrize('interaction_only', [False, True])
+def test_nuisance_and_gram_transport_match_direct_rotated_rows(interaction_only):
     rng = np.random.default_rng(403); d = 3
     w = rng.normal(size=(300, 5)); powers = sur.powers_for(5, 3); weights = sur.weights_for(powers)
     x = sur.monomials(w, powers, weights); coef = rng.normal(size=(len(powers), 2))
     g, v = x[:200].T @ x[:200], x[200:].T @ x[200:]
-    transport = pc.Transport(powers, d); system = pc.nuisance_system(g, v, coef, transport.structure.has_u)
+    transport = pc.Transport(powers, d, interaction_only=interaction_only)
+    candidate = np.isin(np.arange(len(powers)), transport.u)
+    system = pc.nuisance_system(g, v, coef, candidate)
     q, _ = np.linalg.qr(rng.normal(size=(d, d))); wr = w.copy(); wr[:, :d] = w[:, :d] @ q
     xr = sur.monomials(wr, powers, weights)
     cr = transport.structure.rotate(coef, q)
-    actual = pc.nuisance_system(xr[:200].T @ xr[:200], xr[200:].T @ xr[200:], cr, transport.structure.has_u)
+    actual = pc.nuisance_system(xr[:200].T @ xr[:200], xr[200:].T @ xr[200:], cr, candidate)
     blocks = transport.blocks(q)
     for key in ('c', 'v'):
         np.testing.assert_allclose(transport.square(system[key], blocks), actual[key], atol=1e-8)
     for key in ('ct', 'cv'):
         np.testing.assert_allclose(transport.vector(system[key], blocks), actual[key], atol=1e-8)
     np.testing.assert_allclose(system['ss_validation'], actual['ss_validation'], atol=1e-8)
+
+
+def test_UX_compression_profiles_out_both_pure_U_and_pure_X_functions():
+    rng = np.random.default_rng(550); powers = sur.powers_for(5, 3); weights = sur.weights_for(powers)
+    w = rng.normal(size=(600, 5)); phi = sur.monomials(w, powers, weights)
+    coefficients = np.zeros((len(powers), 1))
+    for p in ([2, 0, 0, 0, 0], [0, 0, 0, 3, 0]):
+        i = np.flatnonzero(np.all(powers == p, axis=1))[0]; coefficients[i] = 1/weights[i]
+    transport = pc.Transport(powers, 3, interaction_only=True)
+    mask = np.isin(np.arange(len(powers)), transport.u)
+    actual = pc.nuisance_system(phi[:400].T @ phi[:400], phi[400:].T @ phi[400:], coefficients, mask)
+    assert np.max(np.abs(actual['ss_train']/actual['full_train'])) < 1e-10
 
 
 def test_each_selected_prefix_matches_direct_train_least_squares_on_heldout():

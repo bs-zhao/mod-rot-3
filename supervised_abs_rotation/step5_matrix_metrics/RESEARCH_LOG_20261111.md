@@ -203,8 +203,26 @@ X's observed joint design and does not read a task equation. CR3 found no
 adequate full-plane candidate; some settings reached 5/6, rank 2/37.
 No remaining dataset was launched after the empty intersection.
 
-Separated-rank regression infrastructure is tested on small fixtures only;
-it has not yet run on real data. It is not counted as an empirical result.
+The initial separated-rank infrastructure was synthetic-only at that point.
+It has since run as AB/AC; the subsequent actual pilots and their unresolved
+approximation error are documented in WAVE_AA_AE.md.
+
+## UX-focused approximation/complexity continuation
+
+AA completes a degree-five full-W approximation on all 2.5 million CR3 rows
+(logit validation NMSE .00439294). Its exact all-trial UX support fails the
+strict six-plane rule. AD compresses only the UX polynomial terms after
+profiling both pure-U and pure-X nuisance; it also has no full-plane pass.
+AB/AC compress fitted polynomial/RBF UX functions with learned separable
+products. Their rank-four, 20-epoch pilots have no grid survivor and retain
+substantial prediction error (.351/.393 mean relative MSE), so remain
+provisional rather than a conclusive method rejection.
+
+AE now tests cross-fitted conditional Ui/Xj deletion on observed whole-block
+empirical designs. It emphasizes per-X normalized UX effective support,
+uses all 5000 subjects in out-of-fold scoring, and checks each X task's
+function-reconstruction error before scoring. 123 tests passed before
+launching the real CR3 batch. See WAVE_AA_AE.md and the retained run folders.
 
 ## Wave O: degree-resolved and pure-coupling structure
 
