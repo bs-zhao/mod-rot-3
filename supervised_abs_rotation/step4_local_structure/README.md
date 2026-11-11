@@ -146,6 +146,8 @@ python -m pytest -q supervised_abs_rotation/step4_local_structure/tests
 
 python supervised_abs_rotation/step4_local_structure/run.py --model C1
 python supervised_abs_rotation/step4_local_structure/run.py --model CR3
+
+python supervised_abs_rotation/step4_local_structure/compare.py
 ```
 
 Both models use the exact Step-2 `step2_pairwise_sweep/` folder
@@ -194,6 +196,24 @@ Only numerical CSV summaries and comparatively small diagnostics live
 in Step 4. Multi-million-row W files and common Y are **not duplicated**.
 The output can therefore be zipped and shared without sending original
 trial W/Y arrays.
+
+## Post-hoc C1 vs CR3 summary
+
+After both independent analyses have finished, execute
+`python supervised_abs_rotation/step4_local_structure/compare.py`.
+It locates both default output directories and writes:
+
+- `outputs/supervised_abs_rotation/step4_C1_CR3_comparison/cross_model_all_metrics.csv`
+  with both models' baseline ranks and successful-plane counts;
+- `cross_model_shortlist.csv`, ordered by the explicitly declared
+  *joint* success checks (NOT used to choose/modify the original scores);
+- `local_vs_global.csv`, reporting exactly how each local metric changes
+  baseline rank and the number of successful planes relative to the
+  corresponding global-B metric within each model;
+- `comparison.json`, with joint strict/relaxed counts and key limitations.
+
+Set `--c1`, `--cr3` or `--output` to override the defaults.
+Do not substitute Step-3 files for Step-4 metric-summary files.
 
 ## 7. Interpreting the next comparison
 
