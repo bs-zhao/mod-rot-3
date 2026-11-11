@@ -24,11 +24,7 @@ def source_moments(g, h, x, pooling):
     edges = sorted({tuple(sorted((i, int(j)))) for i in range(len(x)) for j in neighbors[i, 1:] if i != j})
     a, b = np.asarray(edges).T
     delta = g[:, a]-g[:, b]
-    energy = np.sum(delta**2, axis=-1)
-    if pooling == "context":
-        delta = delta/np.maximum(np.sqrt(energy.mean(0))[None, :, None], 1e-100)
-    elif pooling == "point":
-        delta = delta/np.maximum(np.sqrt(energy)[..., None], 1e-100)
+    delta = ts.balanced_field(delta, pooling)
     ux = np.einsum("nei,nej->eij", delta, delta, optimize=True)/len(delta)
     return covariance, ux
 

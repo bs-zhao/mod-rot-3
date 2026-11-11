@@ -1,0 +1,90 @@
+# Continuation on 2026-11-11 (America/New_York)
+
+The authorized goal remains open: one common WY-only effective-sparsity
+criterion for C1/C2/C3/CR3, followed by stability and blind rotation
+optimization. CR3 is always screened first. A partial or single-estimator
+pass is not declared universal success. All numerical work uses the real
+Windows checkout and py11 environment; unrelated local edits are preserved.
+
+## Completed unknown-link experiment
+
+`waveD_adaptive_seed384` completed on CR3. It had zero adequate full-plane
+candidates. The best passing-plane count was 4/6, baseline rank 4/37,
+for poly3 probability component direction variation. The remaining models
+were not launched. Earlier slow partial runs have explicit stopped runtime
+statuses, rather than false COMPLETE or scientific-failure labels.
+
+Cached interpolation matched 370 original anonymous scores to 6.94e-18.
+The adaptive batch reused a fit only when its stored validation history
+selected exactly the same iteration under patience=3. This was tested in
+the complete numerical pipeline. Test error and baseline identity were not
+used for stopping or checkpoint reuse.
+
+## Fixed cubic lead rejected by C1
+
+`waveJ3_cubic_projection_seed389` prospectively fixed poly3 logit,
+scale 0.2, worst-axis effective L0.5 separation support, before testing
+the remaining datasets. This explicitly tested a low-order projection
+statistic, without relabeling Wave J's higher-order/kernel failures.
+
+| Dataset | Baseline rank | Passing planes | Fit adequate |
+| --- | ---: | ---: | --- |
+| CR3 | 1/37 | 6/6 | Yes |
+| C1 | 15/37 | 0/6 | Yes |
+
+C2/C3 were not launched after the fixed rule failed C1. This is not a
+universal criterion. Source function banks now have immutable file
+manifests and explicitly distinguish function preparation from case
+scoring. No dummy case-score results are created for preparation.
+
+## Wave L: direct joint U/X projection support
+
+Completed CR3 as `waveL_joint_projection_seed391`. It fits complete
+isotropic polynomial projections of degrees 2/3/4 directly on all
+2,500,000 original W/Y rows, rather than compressing X into one response
+mode. CUDA is used only for double-precision matrix sufficient statistics;
+no original decoder or neural weights are read.
+
+| Degree | Logit validation NMSE | Probability validation NMSE |
+| --- | ---: | ---: |
+| 2 | 0.0781663 | 0.0865902 |
+| 3 | 0.0173500 | 0.0372309 |
+| 4 | 0.00892709 | 0.0165713 |
+
+There were zero full-plane candidates. The closest was degree-4
+probability UU-cross-term fractional support at 1%/3% relative L2 error:
+rank 3/37, 5/6 planes. The source control coefficient norms stayed
+invariant under exact generic U-coordinate coefficient transformations.
+No failed plane was excluded.
+
+## Stronger numerical scale controls
+
+Support normalization now divides by maximum energy before summation,
+avoiding a false numerical zero at very small but representable scales.
+Context/point balancing has no absolute amplitude floor. Global field
+balancing uses a single maximum-point Frobenius norm, which preserves
+primary support scores and rotation controls while keeping normalized units.
+
+Tests cover overall amplitudes from 1e-152 to 1e152. On 19,536 actual
+ANOVA/spectral energy vectors, the stable implementation changed scores
+by at most 1.215e-11, below 1e-10. Old frozen outputs and their original
+code revision are retained. The audit stays in ignored local outputs.
+
+## Next methods
+
+Prioritize actual prediction-compression tails at fixed relative error,
+profiling out X-only nuisance functions and respecting empirical feature
+correlations. This can distinguish effective sparsity from arbitrary
+coefficient splitting among correlated dictionary columns.
+
+Also investigate full joint U/X block-separation spectra. Single-U spectra
+cannot identify axes of a purely linear U response; mixed U/X partitions
+can distinguish sparse bilinear coupling from rotated dense coupling.
+All method definitions must remain identical across the four datasets.
+
+## Verification
+
+65 tests passed before the next statistics-bank extension, including
+actual CUDA-vs-NumPy double-precision checks, exact joint polynomial
+coordinate changes, the user's sparsity example, extreme rescaling,
+immutable function manifests, and source-only complete pipelines.

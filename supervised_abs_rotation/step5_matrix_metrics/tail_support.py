@@ -12,13 +12,17 @@ def scores(energy):
     e = np.maximum(np.asarray(energy, dtype=float).ravel(), 0.)
     if not np.isfinite(e).all():
         raise ValueError("Non-finite energy")
-    if e.sum() <= 1e-300:
+    peak = float(e.max(initial=0.))
+    if peak == 0.:
         return {key: 0. for key in (
             "effective_support_p0p5", "effective_support_p1",
             "soft_count_eps001", "soft_count_eps003", "soft_count_eps010",
             "fractional_count_eps001", "fractional_count_eps003", "fractional_count_eps010",
             "tail2_l2")}
-    p = np.sort(e/e.sum())[::-1]
+    # Divide before summation so a representable global scale cannot turn
+    # the same support into a numerical zero or overflow the energy sum.
+    p = np.sort(e/peak)[::-1]
+    p /= p.sum()
     out = {}
     for label, power in (("p0p5", .5), ("p1", 1.)):
         out["effective_support_"+label] = float(np.sum(p**(power/2))**(1/(1-power/2)))
@@ -33,24 +37,34 @@ def scores(energy):
     return out
 
 
-def moment_covariance(field, pooling):
-    """field[subject, context, ...] -> covariance of vectorized effects.
+def balanced_field(field, pooling):
+    """Stable, scale-free field normalization before pooling.
 
     Equal-context and equal-point modes remove overall effect magnitude
     before pooling. The normalization is invariant to U rotations.
     """
     field = np.asarray(field, dtype=float)
     flat = field.reshape(*field.shape[:2], -1)
-    energy = np.sum(flat*flat, axis=-1)
+    peak = float(np.max(np.abs(flat), initial=0.))
+    unit = flat/peak if peak else flat.copy()
+    energy = np.sum(unit*unit, axis=-1)
     if pooling == "global":
-        normalized = flat
+        scale = np.sqrt(energy.max(initial=0.))
     elif pooling == "context":
-        scale = np.sqrt(np.mean(energy, axis=0))
-        normalized = flat/np.maximum(scale[None, :, None], 1e-100)
+        scale = np.sqrt(np.mean(energy, axis=0))[None, :, None]
     elif pooling == "point":
-        normalized = flat/np.maximum(np.sqrt(energy)[..., None], 1e-100)
+        scale = np.sqrt(energy)[..., None]
     else:
         raise ValueError(pooling)
+    normalized = np.divide(unit, scale, out=np.zeros_like(unit), where=np.asarray(scale) > 0)
+    return normalized.reshape(field.shape)
+
+
+def moment_covariance(field, pooling):
+    """Covariance of balanced effects; Frobenius controls use normalized units."""
+    field = np.asarray(field, dtype=float)
+    normalized = balanced_field(field, pooling)
+    normalized = normalized.reshape(*field.shape[:2], -1)
     matrix = normalized.reshape(-1, normalized.shape[-1])
     return matrix.T @ matrix/len(matrix)
 

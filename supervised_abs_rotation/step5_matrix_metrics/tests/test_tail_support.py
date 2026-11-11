@@ -20,7 +20,7 @@ def test_users_effective_support_example():
 def test_overall_rescaling_cannot_change_support():
     energy = np.array([4., 4., .0001, .0001])
     a = ts.scores(energy)
-    for scale in (1e-12, .01, 100., 1e12):
+    for scale in (1e-152, 1e-12, .01, 100., 1e12, 1e152):
         b = ts.scores(energy*scale**2)
         for key in a:
             assert b[key] == pytest.approx(a[key], rel=1e-12)
@@ -36,3 +36,13 @@ def test_covariance_rotation_matches_full_field(pooling):
     rotated = np.einsum("ij,nsjk,kl->nsil", q.T, h, q)
     direct = ts.moment_covariance(rotated, pooling).diagonal().reshape(4, 4)
     np.testing.assert_allclose(expected, direct, atol=1e-12)
+
+
+@pytest.mark.parametrize("pooling", ["global", "context", "point"])
+def test_balancing_has_no_absolute_amplitude_floor(pooling):
+    rng = np.random.default_rng(81)
+    h = rng.normal(size=(80, 12, 4, 4)); h = (h+h.swapaxes(-1, -2))/2
+    h[:, 0] = 0.
+    a = ts.moment_covariance(h, pooling)
+    for scale in (1e-150, 1e150):
+        np.testing.assert_allclose(ts.moment_covariance(h*scale, pooling), a, atol=1e-12)

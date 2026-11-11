@@ -6,9 +6,11 @@ zero four-model candidates. Wave B's additive/pairwise projection screen
 and Wave C's conditional direction/finite-effect screen also failed on
 CR3 and stopped before the other datasets. Waves E/F/H/I also failed the
 CR3 screen. Wave J has one poly3-only CR3 pass that fails higher-degree
-and RBF stability; it is not accepted. Wave D's adaptive unknown-link
-experiment is still running. See
+and RBF stability; it is not accepted. Its fixed cubic-only follow-up also
+failed C1. Wave D's adaptive unknown-link experiment and Wave L's direct
+joint coefficient-support screen completed with no CR3 full-plane pass. See
 `RESEARCH_LOG_20261110.md` and the individual `WAVE_*.md` protocols.**
+The continuation record is `RESEARCH_LOG_20261111.md`.
 
 **Primary sparsity clarification:** effective support and small relative
 L2 tails take priority over Shannon entropy or top-1 concentration.

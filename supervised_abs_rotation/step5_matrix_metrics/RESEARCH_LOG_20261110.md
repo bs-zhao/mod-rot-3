@@ -1,5 +1,7 @@
 # Real Windows experiments, 2026-11-10 (America/New_York)
 
+Continuation and later completed results: RESEARCH_LOG_20261111.md.
+
 Checkout: D:\Projects\mod-rot-3; Anaconda environment: py11.
 Initial Wave A scoring revision: db82999; scoring SHA256 is recorded in
 every protocol. Only Step 5 code/docs are changed by this research session.

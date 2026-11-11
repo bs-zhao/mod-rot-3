@@ -94,7 +94,7 @@ def analyze(source, fields, output, seed=389, anchors_count=8):
             reference_coverage=aa[0]["reference_coverage"], is_control=False))
     wave.csv_file(output / "metric_summary.csv", summaries)
     wave.json_file(output / "read_audit.json", dict(files=sorted(set(data.read_files)),
-        derived_files=sorted(fitted.derived_reads), source_scores_sha256=old["scores_sha256"],
+        derived_files=sorted(fitted.derived_reads), source_signature_sha256=fitted.source_digest,
         anchor_subjects=anchor_ids.tolist(), forbidden_files_read=[], all_subjects=data.n, all_rows=data.m))
     config.update(status="COMPLETE", scores_sha256=digest)
     wave.json_file(output / "protocol.json", config)

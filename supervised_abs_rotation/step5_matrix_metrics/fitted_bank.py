@@ -16,8 +16,18 @@ class FittedBank:
         self.protocol = json.loads(self.read("protocol.json").decode())
         if self.protocol["status"] != "COMPLETE":
             raise ValueError("Incomplete source function fit")
-        if hashlib.sha256(self.read("blind_scores.csv")).hexdigest() != self.protocol["scores_sha256"]:
-            raise ValueError("Source frozen scores changed")
+        if "fit_manifest_sha256" in self.protocol:
+            manifest_bytes = self.read("fit_manifest.json")
+            self.source_digest = hashlib.sha256(manifest_bytes).hexdigest()
+            if self.source_digest != self.protocol["fit_manifest_sha256"]:
+                raise ValueError("Source function manifest changed")
+            for name, expected in json.loads(manifest_bytes).items():
+                if Path(name).name != name or hashlib.sha256(self.read(name)).hexdigest() != expected:
+                    raise ValueError("Source function artifact changed")
+        else:
+            self.source_digest = hashlib.sha256(self.read("blind_scores.csv")).hexdigest()
+            if self.source_digest != self.protocol["scores_sha256"]:
+                raise ValueError("Source frozen scores changed")
         self.data = wave.io.MatrixCases(source, tuple(self.protocol["channels"]), self.protocol["seed"])
         if self.data.index["model"] != self.protocol["model"] or self.data.n != self.protocol["n_subjects"]:
             raise ValueError("Source functions do not match W data")
