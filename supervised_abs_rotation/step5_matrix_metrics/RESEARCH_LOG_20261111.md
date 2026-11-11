@@ -186,6 +186,26 @@ Validation NMSE was .0161565/.0352302 for RBF1 and .0150766/.0344631
 for RBF2 (logit/probability). No adequate full-plane candidate survived.
 Other datasets were skipped. See WAVE_V.md. 97 tests passed.
 
+## V2/W/X/Z continuation and user's UX emphasis
+
+V2 improved raw CR3 logit validation NMSE to .00597715 for U-RBF2 while
+retaining every original row; it still had no full-plane criterion.
+W's full joint product-reference ANOVA retained seven common settings
+through CR3/C1/C2, but C3 rejected all seven. X's observed-neighborhood
+contrast design passed its full-rank guard at k=32/64 but found no adequate
+full-plane CR3 criterion. See WAVE_V2_W_X_Z.md for complete definitions.
+
+The user reiterated approximation followed by complexity measurement and
+made UX sparsity the priority. Z directly implements that separation:
+polynomial/RBF U-response functions first, held-out-X omission contrasts,
+then normalized support of Ui-Xj first/total-effect energies. It preserves
+X's observed joint design and does not read a task equation. CR3 found no
+adequate full-plane candidate; some settings reached 5/6, rank 2/37.
+No remaining dataset was launched after the empty intersection.
+
+Separated-rank regression infrastructure is tested on small fixtures only;
+it has not yet run on real data. It is not counted as an empirical result.
+
 ## Wave O: degree-resolved and pure-coupling structure
 
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.

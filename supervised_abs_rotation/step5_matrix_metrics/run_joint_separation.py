@@ -13,7 +13,7 @@ import joint_separation as js
 import coefficient_support as cs
 
 
-def analyze(source, output, bank_folder, seed=393, sigmas=(.5, 1., 2.), resolved=False):
+def analyze(source, output, bank_folder, seed=393, sigmas=(.5, 1., 2.), resolved=False, joint_anova=False):
     source, output = Path(source), Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain existing experiment: {output}')
@@ -21,14 +21,15 @@ def analyze(source, output, bank_folder, seed=393, sigmas=(.5, 1., 2.), resolved
     output.mkdir(parents=True, exist_ok=True)
     config = dict(model=data.index['model'], Z_dim=data.d, n_subjects=data.n, source=str(source.resolve()),
         seed=seed, bank_seed=bank.protocol['seed'], degrees=bank.protocol['degrees'], channels=list(data.channels),
-        sigmas=list(sigmas), resolved_scope_analysis=resolved,
+        sigmas=list(sigmas), resolved_scope_analysis=resolved, joint_ANOVA_analysis=joint_anova,
         adequacy_validation_nmse=.1, all_subjects_used=True, status='RUNNING',
         reference='isotropic Gaussian U times empirical univariate X marginals; no empirical-independence claim',
         score_sign='lower for all datasets', source_signature_sha256=bank.protocol['manifest_sha256'],
         code_sha256=hashlib.sha256(b''.join((wave.HERE/f).read_bytes() for f in
             ('run_joint_separation.py', 'joint_separation.py', 'coefficient_support.py', 'kernel_anova.py',
              'joint_bank.py', 'tail_support.py', 'matrix_io.py', 'structure.py') +
-             (('resolved_structure.py',) if resolved else ()))).hexdigest())
+             (('resolved_structure.py',) if resolved else ()) +
+             (('joint_anova.py',) if joint_anova else ()))).hexdigest())
     wave.json_file(output/'protocol.json', config)
     maps, reveal, residuals = [], {}, []
     for k, path in enumerate(data.paths):
@@ -51,7 +52,10 @@ def analyze(source, output, bank_folder, seed=393, sigmas=(.5, 1., 2.), resolved
             for sigma, moment in moments.items():
                 orthogonal = moment.T @ (saved['weights'][:, None]*coef)
                 for c, channel in enumerate(data.channels):
-                    if resolved:
+                    if joint_anova:
+                        import joint_anova as ja
+                        scores, audit = ja.scores(model, orthogonal[:, c])
+                    elif resolved:
                         import resolved_structure
                         scores, audit = resolved_structure.scores(model, orthogonal[:, c])
                     else:
@@ -64,7 +68,8 @@ def analyze(source, output, bank_folder, seed=393, sigmas=(.5, 1., 2.), resolved
                     audits.append(dict(anonymous_case=f'case_{k:03d}', estimator=name, channel=channel,
                                        sigma=sigma, x_marginal_ranks=model.x_ranks, spectra=audit))
             if k % 12 == 0:
-                print(f'[{"WaveO" if resolved else "WaveN"}] {data.index["model"]} {name} anonymous {k+1}/{len(maps)}', flush=True)
+                label = 'WaveW' if joint_anova else ('WaveO' if resolved else 'WaveN')
+                print(f'[{label}] {data.index["model"]} {name} anonymous {k+1}/{len(maps)}', flush=True)
         wave.csv_file(output/'blind_scores.csv', blind)
         wave.csv_file(output/'fit_quality.csv', quality)
         wave.json_file(output/'separation_audit.json', audits)
@@ -99,15 +104,19 @@ def main():
     p.add_argument('--bank-name', default='joint_bank_seed391')
     p.add_argument('--seed', type=int, default=393)
     p.add_argument('--resolved', action='store_true', help='Use Wave O pure-UX and degree-resolved definitions')
+    p.add_argument('--joint-anova', action='store_true', help='Use Wave W joint product-reference ANOVA support')
     args = p.parse_args(); survivors = None; seen = {}
-    label = 'WaveO' if args.resolved else 'WaveN'
+    if args.resolved and args.joint_anova:
+        p.error('Select one scoring family per frozen run')
+    label = 'WaveW' if args.joint_anova else ('WaveO' if args.resolved else 'WaveN')
     with threadpool_limits(limits=4):
         for model in (('CR3', 'C1', 'C2', 'C3') if args.batch else (args.model,)):
             source = wave.io.default_step2(wave.ROOT, model); folder = source.parent/'step5_matrix_metrics'
             bank_folder, output = folder/args.bank_name, folder/args.run_name
             if not bank_folder.exists():
                 jb.prepare(source, bank_folder)
-            rows = analyze(source, output, bank_folder, args.seed, resolved=args.resolved)
+            rows = analyze(source, output, bank_folder, args.seed,
+                           resolved=args.resolved, joint_anova=args.joint_anova)
             seen[model] = rows
             passed = {(r['estimator'], r['channel'], r['metric']) for r in rows
                       if r['adequate'] and r['all_planes_pass'] and not r['is_control']}

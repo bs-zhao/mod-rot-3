@@ -64,6 +64,17 @@ def test_complete_link_geometry_uses_all_trials_and_frozen_anonymous_scores(tmp_
     assert audit['forbidden_files_read'] == []
 
 
+def test_joint_anova_pipeline_writes_complete_component_audits(tmp_path):
+    source = tmp_path/'source'; make_cases(source)
+    bank = tmp_path/'bank'; output = tmp_path/'joint_anova'
+    with threadpool_limits(limits=2):
+        jb.prepare(source, bank, degrees=(2,), device='numpy')
+        rows = rn.analyze(source, output, bank, joint_anova=True)
+    assert any(row['metric'].startswith('s1_UX_components_') for row in rows)
+    assert json.loads((output/'protocol.json').read_text())['status'] == 'COMPLETE'
+    assert len(json.loads((output/'separation_audit.json').read_text())) > 0
+
+
 def test_complete_all_trial_covariance_pipeline_from_original_matrices(tmp_path):
     source = tmp_path/'source'; make_cases(source)
     bank = tmp_path/'bank'; output = tmp_path/'all_trials'

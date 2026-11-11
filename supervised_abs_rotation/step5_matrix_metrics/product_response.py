@@ -13,14 +13,14 @@ PROFILES = ('raw_global',)+lu.PROFILES
 
 
 class XDictionary:
-    def __init__(self, data, seed=383, centers=64):
+    def __init__(self, data, seed=383, centers=64, degree=2):
         x = data.w[:, data.d:]
         trial = np.load(data.folder/'trial_index.npy', allow_pickle=False)
         keep = trial % 5 != 0
         self.scaler = wave.sur.Scaler(x, 1, row_mask=keep)
         self.center_ids = np.random.default_rng(seed).choice(np.flatnonzero(keep), min(centers, int(keep.sum())), replace=False)
         self.kernel = wave.sur.RBF(self.scaler, x[self.center_ids], 2.)
-        self.poly = fp.Polynomial(self.scaler, 2)
+        self.poly = fp.Polynomial(self.scaler, degree)
         self.powers, self.weights = self.poly.powers, self.poly.weights
         p = len(self.powers)
         gp, gw, gc, _, _, _ = jf.derivative_coefficients(self.powers, self.weights, np.eye(p))

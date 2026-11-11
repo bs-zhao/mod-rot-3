@@ -14,7 +14,7 @@ import product_response as pr
 import link_ux as lu
 
 
-def analyze(source, output, bank_folder, seed=401):
+def analyze(source, output, bank_folder, seed=401, x_degree=2, x_centers=64):
     source, output = Path(source), Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain prior product-kernel experiment: {output}')
@@ -25,7 +25,8 @@ def analyze(source, output, bank_folder, seed=401):
         channels=list(data.channels), profiles=list(pr.PROFILES), source_signature_sha256=bank.source_digest,
         source_code_sha256=bank.protocol['code_sha256'], all_subjects_used=True,
         all_original_rows_used_in_fit=True, all_original_rows_used_in_metric=True,
-        X_dictionary='complete degree2 plus 64-center isotropic RBF length2; original-X training scales',
+        X_dictionary='complete polynomial plus isotropic RBF length2; original-X training scales',
+        X_polynomial_degree=x_degree, X_kernel_centers=x_centers,
         X_ridge_grid=[1e-8, 1e-6, 1e-4, .01], adequacy_raw_validation_nmse=.1,
         adequacy_X_interpolation_nmse=.1, minimum_active_subject_fraction=.95,
         score_sign='lower for every dataset', status='RUNNING',
@@ -38,7 +39,7 @@ def analyze(source, output, bank_folder, seed=401):
     for k, path in enumerate(data.paths):
         q, residual = wave.io.registration(data.u, data.coordinates(path))
         maps.append(q); residuals.append(residual); reveal[f'case_{k:03d}'] = path.parent.name
-    dictionary = pr.XDictionary(data, seed=bank.protocol['seed'])
+    dictionary = pr.XDictionary(data, seed=bank.protocol['seed'], centers=x_centers, degree=x_degree)
     with np.load(bank.folder/'response_bank.npz', allow_pickle=False) as saved:
         probes = saved['x']
     mapping, x_quality = pr.x_projection(bank, dictionary, probes, seed)
@@ -102,14 +103,19 @@ def main():
     p.add_argument('--batch', action='store_true')
     p.add_argument('--run-name', default='waveV_product_kernel_seed401')
     p.add_argument('--bank-name', default='product_response_bank_seed383')
+    p.add_argument('--x-degree', type=int, default=2)
+    p.add_argument('--x-centers', type=int, default=64)
     args = p.parse_args(); survivors = None
+    if args.x_degree < 2 or args.x_centers < 1:
+        p.error('X degree >=2 and positive center count required')
     with threadpool_limits(limits=4):
         for model in (('CR3', 'C1', 'C2', 'C3') if args.batch else (args.model,)):
             source = wave.io.default_step2(wave.ROOT, model); parent = source.parent/'step5_matrix_metrics'
             bank_folder = parent/args.bank_name
             if not bank_folder.exists():
                 prepare_response_bank.prepare(source, bank_folder, estimators=('rbf1', 'rbf2'))
-            rows = analyze(source, parent/args.run_name, bank_folder)
+            rows = analyze(source, parent/args.run_name, bank_folder,
+                           x_degree=args.x_degree, x_centers=args.x_centers)
             passed = {(r['estimator'], r['channel'], r['metric']) for r in rows
                       if r['adequate'] and r['all_planes_pass'] and not r['is_control']}
             survivors = passed if survivors is None else survivors & passed

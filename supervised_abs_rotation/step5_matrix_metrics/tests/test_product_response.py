@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 import numpy as np
+import pytest
 from threadpoolctl import threadpool_limits
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
@@ -13,10 +14,11 @@ import run_product_response as runner
 from test_matrix_metrics import make_cases
 
 
-def test_x_dictionary_standardized_derivatives_and_product_all_row_holdout(tmp_path):
+@pytest.mark.parametrize('degree', [2, 4])
+def test_x_dictionary_standardized_derivatives_and_product_all_row_holdout(tmp_path, degree):
     source = tmp_path/'source'; make_cases(source)
     data = matrix_io.MatrixCases(source, ('logit_nn', 'p_nn'), 383)
-    dictionary = pr.XDictionary(data, centers=12)
+    dictionary = pr.XDictionary(data, centers=12, degree=degree)
     x = np.asarray(data.w[50:56, data.d:], dtype=float)
     phi, gradient = dictionary.evaluate(x, gradient=True)
     for j in range(data.dx):
