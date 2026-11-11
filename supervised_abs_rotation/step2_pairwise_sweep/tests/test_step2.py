@@ -97,6 +97,8 @@ class TestPairwiseStep2(unittest.TestCase):
             case_folder = self.stage2 / "cases" / name
             R_case = np.load(case_folder / "R.npy")
             G = mod.givens(self.dz, pair, angle)
+            np.testing.assert_allclose(
+                np.load(case_folder / "G_relative.npy"), G, atol=1e-14)
             np.testing.assert_allclose(R_case, G @ self.r, atol=1e-14)
             np.testing.assert_allclose(R_case @ R_case.T, np.eye(self.dz), atol=1e-14)
             W_case = np.load(case_folder / "W.npy")
