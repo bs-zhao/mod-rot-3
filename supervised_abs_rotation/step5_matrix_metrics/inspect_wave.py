@@ -72,7 +72,15 @@ def plot(curves, path, model, channel="logit_nn"):
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     available = {r["metric"] for r in curves}
-    if "all_U_effective_support_p0p5" in available:
+    if "prediction_tail2_l2" in available:
+        metrics = ["prediction_tail2_l2", "prediction_tail8_l2",
+                   "prediction_count_eps010", "prediction_count_eps100"]
+    elif "s0.5_UX_block_full_mean_effective_support_p0p5" in available:
+        metrics = ["s0.5_UX_block_full_mean_effective_support_p0p5",
+                   "s1_UX_block_full_mean_effective_support_p0p5",
+                   "s0.5_UX_block_centered_mean_soft_count_eps003",
+                   "s2_UX_block_centered_worst_fractional_count_eps010"]
+    elif "all_U_effective_support_p0p5" in available:
         metrics = ["all_U_effective_support_p0p5", "UX_terms_effective_support_p0p5",
                    "UU_cross_terms_fractional_count_eps003", "UX_columns_soft_count_eps003"]
     elif "s0.2_axis_mean_effective_support_p0p5" in available:

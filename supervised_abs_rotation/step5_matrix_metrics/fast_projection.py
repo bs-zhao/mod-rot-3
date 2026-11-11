@@ -57,7 +57,7 @@ def _solve_stats(ga, ca, gv, cv, sa, sv, ya, yv, count, nv, ridges):
         validation_rows=nv, train_rows=nt, feature_count=p)
 
 
-def fit(model, w, y, sid, train_subjects, chunk=8192, device="auto", ridges=(1e-6, 1e-4, .01)):
+def fit(model, w, y, sid, train_subjects, chunk=8192, device="auto", ridges=(1e-6, 1e-4, .01), statistics_output=None):
     if device == "auto":
         try:
             import torch
@@ -67,6 +67,18 @@ def fit(model, w, y, sid, train_subjects, chunk=8192, device="auto", ridges=(1e-
     if device == "numpy":
         info = sur.fit_all_rows(model, w, y, sid, train_subjects, chunk=chunk, ridges=ridges)
         info["backend"] = "numpy_float64"
+        if statistics_output is not None:
+            p = len(model.powers)
+            ga, gv = np.zeros((p, p)), np.zeros((p, p))
+            train_mask = np.zeros(int(sid.max())+1, dtype=bool); train_mask[train_subjects] = True
+            nv = 0
+            for a in range(0, len(w), chunk):
+                b = min(a+chunk, len(w))
+                phi = model.features(w[a:b]); valid = ~train_mask[sid[a:b]]
+                ga += phi.T @ phi
+                pv = phi[valid]; gv += pv.T @ pv; nv += int(valid.sum())
+            np.savez_compressed(statistics_output, g_all=ga, g_validation=gv,
+                                n_all=len(w), n_validation=nv)
         return model.coef, info
     import torch
     torch_device = torch.device(device)
@@ -109,6 +121,9 @@ def fit(model, w, y, sid, train_subjects, chunk=8192, device="auto", ridges=(1e-
     arrays = [v.cpu().numpy() for v in (ga, ca, gv, cv, sa, sv, ya, yv)]
     if not all(np.isfinite(v).all() for v in arrays):
         raise ArithmeticError("Non-finite double-precision projection statistics")
+    if statistics_output is not None:
+        np.savez_compressed(statistics_output, g_all=arrays[0], g_validation=arrays[2],
+                            n_all=len(w), n_validation=nv)
     coef, info = _solve_stats(*arrays, len(w), nv, ridges)
     info.update(backend=f"torch_{torch_device.type}_float64", final_fit_rows=len(w),
                 final_fit_subjects=len(train_mask), train_subjects=len(train_subjects),

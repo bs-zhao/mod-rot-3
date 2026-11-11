@@ -8,7 +8,9 @@ CR3 and stopped before the other datasets. Waves E/F/H/I also failed the
 CR3 screen. Wave J has one poly3-only CR3 pass that fails higher-degree
 and RBF stability; it is not accepted. Its fixed cubic-only follow-up also
 failed C1. Wave D's adaptive unknown-link experiment and Wave L's direct
-joint coefficient-support screen completed with no CR3 full-plane pass. See
+joint coefficient-support screen completed with no CR3 full-plane pass.
+Waves M/N also failed CR3: actual-support prediction compression and mixed
+U/X block separation each reached at most 4/6 planes. See WAVE_M_N.md and
 `RESEARCH_LOG_20261110.md` and the individual `WAVE_*.md` protocols.**
 The continuation record is `RESEARCH_LOG_20261111.md`.
 

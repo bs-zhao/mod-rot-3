@@ -84,6 +84,28 @@ All method definitions must remain identical across the four datasets.
 
 ## Verification
 
+## Waves M/N completed
+
+`waveM_prediction_seed392`: empirical-support forward prediction compression,
+after X-only nuisance projection, failed CR3. Best poly3 logit 10% relative
+error count ranked 6/37 and passed 4/6 planes. Counts above 128 terms are
+explicitly censored; no exact count is claimed for them.
+
+`waveN_joint_spectra_resume_seed393`: full and double-centered mixed U/X
+block spectra failed CR3. Best count 4/6, with poly3 logit scale-0.5 mean
+soft support ranking 3/37. Both methods skipped C1/C2/C3 after CR3 rejected
+all candidates. Norm and endpoint controls were checked. See WAVE_M_N.md.
+
+The original N process was interrupted by an execution-host restart before
+score checkpoints; its protocol records interruption, not scientific failure.
+The identical protocol was rerun in a fresh output directory to completion.
+
+74 tests now pass, including full WY-only M/N pipelines, forward-selection
+prefix equivalence to direct least squares, aliased feature invariance,
+observed Gram transport, and finite-support empirical marginal bases.
+
+## Previous verification checkpoint
+
 65 tests passed before the next statistics-bank extension, including
 actual CUDA-vs-NumPy double-precision checks, exact joint polynomial
 coordinate changes, the user's sparsity example, extreme rescaling,
