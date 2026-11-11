@@ -176,6 +176,16 @@ the complete WY-only pipeline. See WAVE_U.md.
 Next move actual UX derivative evaluation to a nonparametric U-kernel
 times a generic X dictionary, with raw held-out-subject prediction audit.
 
+## V: nonparametric U kernel with actual UX derivatives
+
+`waveV_product_kernel_seed401` completed CR3 RBF1/2 on all subjects and
+all raw rows. The product dictionary permits arbitrary cross-basis
+coefficients. X interpolation ridge uses training U subjects only; a
+separate training-only U fit predicts the original held-out raw Y.
+Validation NMSE was .0161565/.0352302 for RBF1 and .0150766/.0344631
+for RBF2 (logit/probability). No adequate full-plane candidate survived.
+Other datasets were skipped. See WAVE_V.md. 97 tests passed.
+
 ## Wave O: degree-resolved and pure-coupling structure
 
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.

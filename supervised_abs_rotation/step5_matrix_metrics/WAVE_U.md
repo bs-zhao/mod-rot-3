@@ -29,7 +29,7 @@ survived. Best count was 5/6, with tangent/column variants reaching
 rank 2/37. Other models were skipped. The invariance tests verify the
 mathematics, not success of the metric on these data.
 
-Geometric background: [Riviere et al., differential geometry notes](https://pure.manchester.ac.uk/ws/portalfiles/portal/295567946/FULL_TEXT.PDF).
+Geometric background: [differential geometry notes](https://pure.manchester.ac.uk/ws/portalfiles/portal/295567946/FULL_TEXT.PDF).
 The scalar UX profiling diagnostic here is custom and is not attributed
 to that source as a published axis-recovery algorithm.
 
