@@ -91,6 +91,27 @@ python np/s5_extract_z.py --model C3 --beta 0.0005 --latent-dim 6
 python np/s5_extract_z.py --model CR3 --beta 0.00005 --latent-dim 4
 ```
 
+## Additional diagnostic: whiten U after fitting R
+
+After optimizing R and D, define **unscaled** rotated U from the already fitted rotation: `U = (Z - mean_all(Z)) @ R.T`. Using all subjects' **U only**, calculate `Cov(U)` with `ddof=0` and apply symmetric **ZCA whitening**:
+
+```text
+W = eigvecs @ diag(1 / sqrt(eigenvalues)) @ eigvecs.T
+U_whitened = (U - mean_all(U)) @ W
+```
+
+This whitening is **post hoc only**: no true T enters W; it does not refit R, re-optimize D, or change existing predictions. The additional signed-Pearson heatmap `corr__U_whitened_Tstd.png` (with numeric `corr__U_whitened_Tstd.csv`) displays **rows = whitened U axes, columns = true standardized parameters**, with the same full-sample data. It lets you compare `corr__U_Tstd.png` (before whitening) against `corr__U_whitened_Tstd.png` (after whitening).
+
+Other outputs: `U_zca_whitening_matrix.csv`, `U_whitened_covariance.csv`, `corr__U_whitened_U_whitened.csv`, and arrays `U_whitened`, `U_zca_whitening_matrix`, eigenvalues and covariance matrices in `oracle_full_sample.npz`. `summary.json` stores the whitening rank and covariance diagnostics.
+
+**Important interpretation:** whitening is generally a nonorthogonal mixing of the rotated axes, so `U_whitened` does **not** satisfy the original pure rotation plus post-axis scaling constraint in general. Consequently, an improvement in U_white–T correlations is evidence about the effect of decorrelation/whitening, **not** evidence that the originally fitted orthogonal R became better. If the empirical U covariance is rank deficient under the stated eigenvalue threshold, the script uses truncated pseudoinverse whitening; the resulting covariance is a projection rather than the identity and this is explicitly flagged in the JSON.
+
+When re-running a previously completed model/objective, append `--overwrite` so the new whitening outputs can be added:
+
+```cmd
+python supervised_abs_rotation/run.py --model C1 --overwrite
+```
+
 ## Files written per model and objective
 
 `outputs/supervised_abs_rotation/<MODEL>/<CONDITION>/repeat01/<OBJECTIVE>/`
