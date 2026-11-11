@@ -105,7 +105,11 @@ def direction_classes(maps, tolerance=1e-6):
 def complement_design(z, direction, degree, centers, lengthscale, seed):
     # Any orthonormal complement is equivalent: complete homogeneous
     # polynomial blocks and radial kernels retain their isotropic geometry.
-    rest = z @ null_space(np.asarray(direction)[None])
+    return subspace_design(z, null_space(np.asarray(direction)[None]), degree, centers, lengthscale, seed)
+
+
+def subspace_design(z, basis, degree, centers, lengthscale, seed):
+    rest = z @ basis
     powers = wave.sur.powers_for(rest.shape[1], degree)
     poly = wave.sur.monomials(rest, powers, wave.sur.weights_for(powers))
     scales = []
@@ -146,8 +150,9 @@ def regressions(design, target, train, query, linear_count, ridges):
 
 
 def omission_covariance(z, direction, latents, weights, degree=5, centers=128,
-                        lengthscale=2., seed=407, folds=5):
-    design, audit = complement_design(z, direction, degree, centers, lengthscale, seed)
+                        lengthscale=2., seed=407, folds=5, basis=None):
+    design, audit = (complement_design(z, direction, degree, centers, lengthscale, seed) if basis is None
+                     else subspace_design(z, basis, degree, centers, lengthscale, seed))
     partition = np.array_split(np.random.default_rng(seed+1).permutation(len(z)), folds)
     residual = np.empty_like(latents); history = []
     ridges = (1e-8, 1e-6, 1e-4, .01, .1)

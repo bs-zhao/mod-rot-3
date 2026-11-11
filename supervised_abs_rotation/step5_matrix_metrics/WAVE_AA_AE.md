@@ -37,7 +37,7 @@ No model-specific signs, chosen planes, original weights or saved rotations
 were used. Higher capacity must be tested before accepting/rejecting the
 separable-compression approach on approximation grounds.
 
-## AE: empirical conditional UX support (running)
+## AE: empirical conditional UX support
 
 `run_conditional_ux.py --batch` implements a distinct conditional-prediction
 diagnostic. First fit polynomial/RBF functions to WY; double-center their
@@ -77,10 +77,13 @@ discarded small-variance kernel directions with large fitted coefficients.
 It is marked `FAILED_NUMERICAL_COMPRESSION`, not a failed scientific score.
 Launch code and partial artifacts are retained in that original directory.
 
-The fresh `waveAE_conditional_UX_SVD_seed407` uses direct observed-feature
+The completed `waveAE_conditional_UX_SVD_seed407` uses direct observed-feature
 SVD and measures reconstruction error in actual function values for every
 X-omission task. Its RBF1/RBF2 worst relative squared reconstruction errors
 are about 9.89e-8 and 9.83e-8, within the prospective 1e-7 budget. A regression
 test explicitly keeps feature directions scaled down by 1e-8 when their
 coefficients are scaled up by 1e8. The full suite passes 131 tests including
-the higher-budget ALS work described in WAVE_AF_AG.md.
+the higher-budget ALS work described in WAVE_AF_AG.md. CR3 has zero adequate
+full-plane criteria; the best settings pass only 2/6 planes. C1/C2/C3 were
+skipped. Endpoint equality holds (maximum error 2.84e-14), so the failure
+is not an endpoint/sign-permutation numerical artifact.

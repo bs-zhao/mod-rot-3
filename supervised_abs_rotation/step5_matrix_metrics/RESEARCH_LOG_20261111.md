@@ -224,6 +224,20 @@ uses all 5000 subjects in out-of-fold scoring, and checks each X task's
 function-reconstruction error before scoring. 123 tests passed before
 launching the real CR3 batch. See WAVE_AA_AE.md and the retained run folders.
 
+AE's feature-covariance cutoff failed its RBF reconstruction guard; the
+fresh direct-SVD run passes reconstruction but has zero CR3 criteria
+(best 2/6 planes). AF/AG exact-grid ALS improves separated approximation to
+rank-16 mean relative MSE .0312556/.0789873 without a grid survivor. AI/AJ
+are extending the preserved fits to ranks 32/64.
+
+AH tests minimum U-variable subsets for each held-out-X contrast, rather
+than one-variable deletion importance. All 5000 subjects are scored out
+of fold. Its full-U approximation is adequate, but no full-plane CR3
+criterion survives (best 3/6 planes). AH2/AF2/AG2 classify dominance scores
+as controls without changing numerical-score hashes. Budget-one tails,
+budget-curve area and 30% counts are excluded from primary sparse-support
+claims in response to the user's explicit amplitude example.
+
 ## Wave O: degree-resolved and pure-coupling structure
 
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.

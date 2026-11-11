@@ -2,7 +2,8 @@
 
 AF (degree-four joint polynomial teacher) and AG (U-RBF2 teacher) replace
 the under-resolved AB/AC Adam pilots with exact empirical-grid alternating
-least squares (ALS). Both are running CR3 first. No result is asserted here.
+least squares (ALS). Both completed CR3 with zero grid survivors, as
+documented below; the higher-budget AI/AJ extension is now running.
 
 The function is first fitted to all original WY rows. Its whole-U/whole-X
 empirical means are subtracted. A rank-r sum of products of learned
@@ -45,3 +46,25 @@ Validation before launch: seven ALS tests passed, including all four
 polynomial/kernel x shared/unshared pipelines. The complete matrix-metrics
 test suite then passed 131 tests. No test uses a scientific success ranking
 as its expected result.
+
+## Actual CR3 outcome and capacity extension
+
+AF/AG completed with no preliminary full-plane criteria. The mean relative
+squared errors across all independent rank-16 fits are .0312556 and
+.0789873. Endpoints are identical by W-only signed/permutation grouping.
+Source fits use all 2.5 million recorded CR3 rows. This is an improvement
+over the rank-four pilots, but the remaining errors and local optimization
+preclude a conclusive rejection of converged separated compression.
+
+AI/AJ prospectively extend both teachers to ranks 32 and 64, forty sweeps
+and three starts. They verify every saved feature-geometry array before
+transferring rank-16 checkpoints, preserve all original low-rank losses,
+and hash the reused artifacts. Shared-grid pipeline tests check exact loss
+preservation. Both extensions are currently running CR3 first.
+
+Only budgets >=2 and required counts at 1%,3%,10% relative L2 error qualify
+as primary sparse-support scores. Rank-one residual and 30% counts remain
+diagnostics: the user's [2,2,.01,.01] versus [1,.5,.1,.1] example demonstrates
+that dominance and effective support need not agree. The scoped AF2/AG2
+runs retain identical numerical-score SHA256 values and still have zero
+primary passes. This scope rule was recorded before AI/AJ completed.

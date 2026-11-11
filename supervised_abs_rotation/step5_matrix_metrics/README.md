@@ -1,5 +1,19 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Latest UX-focused continuation (2026-11-11):** UX support is primary.
+AA's degree-five joint polynomial reaches CR3 logit validation NMSE .00439,
+but exact all-trial derivative moments still fail. AE's empirical conditional
+Ui/Xj deletion and AH's minimum U-variable subsets also fail CR3 (best 2/6
+and 3/6 planes), with approximation/reconstruction guards satisfied. AF/AG
+extend polynomial/RBF coupling compression to rank 16 without a grid pass;
+AI/AJ are running ranks 32/64. AK evaluates local UX support before pooling
+at every recorded W row; AL compresses U-polynomial terms while leaving
+their observed-X profiles free. Both are running CR3 first. No validated
+four-model criterion has been found. See WAVE_AA_AE.md, WAVE_AF_AG.md,
+WAVE_AH.md and WAVE_AK_AL.md. Dominance diagnostics (budget one, budget-curve
+area, 30% counts) are controls; primary support scores obey the user's
+`[2,2,.01,.01]` versus `[1,.5,.1,.1]` example.
+
 **2026-11-11 update:** Wave R has the first identical candidate passing
 all four real-data rotation grids: poly4/logit UX-column subject-median
 fractional support at a 10% relative L2 tail. CR3/C1/C2 pass 6/6 planes;
