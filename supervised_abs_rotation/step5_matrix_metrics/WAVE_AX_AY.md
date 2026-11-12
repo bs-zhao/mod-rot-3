@@ -33,8 +33,10 @@ original neural weights or saved case rotations enter scoring.
 
 The run order is CR3/C1/C2/C3, both sources in each model. This four-model
 source-resolution audit continues despite small grid deviations. It is
-currently running. Both sources reproduce CR3's six-plane candidate and
-C1's six-plane result.
+complete. Both sources give CR3 6/6, C1 6/6 and C2 5/6 (baseline ranks
+1/1/2). C3 is 11/15, rank 5 for poly5 and 12/15, rank 3 for RBF2.
+There is no same-source-family four-grid criterion. Every original model
+was run with the same function and metric definitions.
 
 AY2 transfers the already frozen AW rotations without reoptimizing them.
 The stronger counterexample scores 527 against poly5 baseline 741 (-28.88%)

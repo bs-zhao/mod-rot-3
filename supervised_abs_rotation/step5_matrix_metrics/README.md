@@ -1,5 +1,15 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Newest continuation:** AY completes both poly5/RBF2 across all four
+models without a common strict criterion. AZ's global ordinal calibration
+does not rescue GP lengthscale support, but BA2's *posterior function*
+UX effects yield 12 correlated CR3 grid combinations. Their unchanged
+four-model continuation is running. BB evaluates one fixed radial GP
+function across every rotation to remove per-case fitting perturbations;
+its raw-response four-model audit is running. See WAVE_AZ_BA_BB.md. No
+validated universal criterion is claimed. The latest full suite passes
+194 tests; four new radial-GP tests also pass.
+
 **Latest evidence (2026-11-11, America/New_York):** prediction MSE is a
 continuous diagnostic following the user's clarification. The same AU
 tree criterion gives CR3 6/6, C1 6/6, C2 5/6 and C3 11/15 planes;

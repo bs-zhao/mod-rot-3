@@ -19,16 +19,18 @@ import ux_metric_scope as scope
 
 
 def analyze(source, output, bank_folder, centers=128, training_steps=30, refit_steps=60,
-            starts=3, model_chunk=8, seed=416, device='cuda', X_contrast='omission'):
+            starts=3, model_chunk=8, seed=416, device='cuda', X_contrast='omission', bank_factory=profiles.MatrixBank):
     output = Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain previous direct-matrix GP experiment: {output}')
-    bank = profiles.MatrixBank(source, bank_folder); data = bank.data
+    bank = bank_factory(source, bank_folder); data = bank.data
     output.mkdir(parents=True, exist_ok=True)
     shared = bank.quality['mode'] == 'numerically verified shared observed X'
     protocol = dict(model=data.index['model'], Z_dim=data.d, n_subjects=data.n, source=str(Path(source).resolve()),
         seed=seed, channels=data.channels, source_matrix_manifest_sha256=bank.protocol['manifest_sha256'],
         response_reference=bank.quality['mode'], exact_original_response_grid=shared,
+        global_output_transform=bank.protocol.get('response_transform', 'identity'),
+        heldout_interpretation=bank.quality.get('validation_interpretation', 'original untransformed response functions'),
         U_function_approximation_before_GP=False, original_rows_in_response_preparation=data.m,
         centers=centers, training_steps=training_steps, all_subject_refit_steps=refit_steps, starts=starts,
         model_chunk=model_chunk, device=device, precision='float64', GP_adequacy_relative_mse=.01,

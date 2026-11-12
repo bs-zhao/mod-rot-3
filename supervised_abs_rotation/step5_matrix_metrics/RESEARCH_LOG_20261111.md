@@ -315,6 +315,26 @@ AW counterexample transfers to both sources (527 versus baselines 741/739).
 
 ## Wave O details (original continuation)
 
+## AZ/BA/BB: ordinal and fixed-function GP follow-up
+
+AY finishes both sources in all four models without a common grid score.
+AZ uses a single all-row global normal-rank calibration per response,
+before X interpolation; its ARD support fails (best 1/6) despite small
+GP error. BA scores actual posterior derivatives/finite changes instead
+of hyperparameters; raw responses reach 5/6, rank 2 with small grid gaps.
+BA2's ordinal posterior effects yield 12 correlated CR3 six-plane variants,
+and the same family is now continuing through C1/C2/C3 without MSE vetoes.
+
+BB fits one radial GP per task, then rotates its all-subject gradient
+covariance exactly. The raw four-model audit is running; CR3's fixed
+pointwise-mean primary still prefers a blind mixture, 2.74354 versus
+3.29189. This distinction separates small per-case fitting perturbations
+from substantive function-geometry preferences. Full definitions, caveats
+and actual intermediate results are in WAVE_AZ_BA_BB.md. 194 full-suite
+tests and four new radial-GP tests pass.
+
+## Wave O record (original continuation)
+
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.
 It explicitly removed U-only and X-only product-reference components
 before mixed-block spectra, and separately scored homogeneous U orders
