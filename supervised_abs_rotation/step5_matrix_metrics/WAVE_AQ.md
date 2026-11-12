@@ -1,6 +1,12 @@
 # GP automatic relevance for UX function contrasts
 
-AQ is running CR3 first. A Nystrom GP covariance model learns one inverse
+AQ completed CR3 with zero qualified full-plane criteria; later datasets
+were skipped. The best score reaches 5/6 planes, baseline rank 2, for RBF2
+logit, worst-U-row fractional support at a 3% relative tail. GP worst heldout
+relative MSE is .00167 for poly5 and .00298 for RBF2; all declared fidelity
+guards pass. Optimizer and center-count convergence remain unverified.
+
+A Nystrom GP covariance model learns one inverse
 lengthscale per U axis for each X-omission function ensemble. Primary
 scores are normalized effective support and small relative tails of that
 Ui-by-Xj relevance graph. Signal amplitude and residual noise are fitted

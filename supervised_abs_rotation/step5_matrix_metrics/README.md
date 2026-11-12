@@ -1,14 +1,23 @@
 # Step 5 — WY-only matrix rotation metrics
 
-**Latest UX-focused continuation (2026-11-11):** UX support is primary.
+**Latest continuation (2026-11-11, America/New_York):** AQ's GP relevance and
+AR's direct-response-matrix GP each reach at most 5/6 CR3 planes, baseline
+rank 2. AS's conditional active/monotone-piece counts reach 4/6, rank 6,
+despite >99.6% probe coverage. None passes, so the later datasets are skipped.
+AT is running W-only conditional X feature witnesses followed by direct
+matrix GP complexity. The full numerical suite passes 171 tests. No
+validated four-model criterion exists. See WAVE_AQ.md, WAVE_AR_AS.md and
+WAVE_AT.md for exact definitions, limitations and retained failures.
+
+**Earlier UX-focused continuation:** UX support is primary.
 AA's degree-five joint polynomial reaches CR3 logit validation NMSE .00439,
 but exact all-trial derivative moments still fail. AE's empirical conditional
 Ui/Xj deletion and AH's minimum U-variable subsets also fail CR3 (best 2/6
 and 3/6 planes), with approximation/reconstruction guards satisfied. AF/AG
 extend polynomial/RBF coupling compression to rank 16 without a grid pass;
-AI/AJ are running ranks 32/64. AK evaluates local UX support before pooling
+AI/AJ complete rank 64 without a CR3 pass. AK evaluates local UX support before pooling
 at every recorded W row; AL compresses U-polynomial terms while leaving
-their observed-X profiles free. Both are running CR3 first. No validated
+their observed-X profiles free. Both complete without a CR3 pass. No validated
 four-model criterion has been found. See WAVE_AA_AE.md, WAVE_AF_AG.md,
 WAVE_AH.md and WAVE_AK_AL.md. Dominance diagnostics (budget one, budget-curve
 area, 30% counts) are controls; primary support scores obey the user's

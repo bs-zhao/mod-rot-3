@@ -248,6 +248,32 @@ AK all-point support, AO conditional X-balanced global correction and AP
 bounded-rank input coordinates are still running. 152 tests pass. See
 WAVE_AK_AL.md, WAVE_AM.md and WAVE_AN_AO_AP.md.
 
+## AQ/AR/AS: actual GP and conditional monotone-piece results
+
+AQ learns GP inverse-lengthscale UX relevance from verified poly5/RBF2
+response functions; AR removes that U teacher and uses the raw shared Y
+table. Both satisfy their declared prediction/reconstruction guards but
+find zero CR3 full-plane criteria (best 5/6, baseline rank 2). AR worst
+heldout logit relative MSE is .00383126. These finite optimization budgets
+do not establish convergence of the GP hyperparameters. See WAVE_AQ.md
+and WAVE_AR_AS.md; failures and optimizer trajectories are retained.
+
+AS evaluates active Ui directions and monotone pieces conditionally at all
+5000 anchors, all X contexts and 17 slice nodes. Both poly5 and RBF2 retain
+>=.996388 supported probes. There are zero CR3 criteria, best 4/6 and rank
+6. Later datasets are skipped. Single-component dominance diagnostics are
+explicit controls in the GP runners as in the earlier UX scope audit.
+
+AT now tests a different X extraction: W-only conditional RBF feature
+innovations, tensorized with other-X context features, then direct-matrix
+GP relevance. No Y is used to tune the X witness. It is not a calibrated
+independence test. The full suite passes 171 tests before the actual CR3
+launch. Code, settings, primitive algebra and limitations are in WAVE_AT.md.
+
+AK, AO and AP have also completed without a CR3 pass: best 5/6 rank 3,
+5/6 rank 2 and 3/6 rank 7 respectively. Earlier running-status paragraphs
+above record their state at the time, rather than their current status.
+
 ## Wave O: degree-resolved and pure-coupling structure
 
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.

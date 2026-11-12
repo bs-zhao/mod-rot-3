@@ -17,6 +17,7 @@ import ux_predictive_complexity as uc
 import conditional_ux as conditional
 import cp_regression as cp
 import gp_ard_complexity as gp
+import ux_metric_scope as scope
 
 
 def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), centers=128,
@@ -149,7 +150,7 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), centers=1
         grouped[row['estimator'], row['channel'], row['metric']][reveal[row['anonymous_case']]] = row['loss']
     rows = [dict(estimator=e, channel=c, metric=m, **wave.st.evaluate_curve(v, data.index['cases']),
         adequate=qm[e, c]['adequate'], validation_nmse=qm[e, c]['validation_nmse'],
-        optimization_stability_verified=False, is_control=False) for (e, c, m), v in grouped.items()]
+        optimization_stability_verified=False, is_control=not scope.primary(m)) for (e, c, m), v in grouped.items()]
     wave.csv_file(output/'metric_summary.csv', rows)
     wave.json_file(output/'read_audit.json', dict(files=sorted(set(data.read_files)), forbidden_files_read=[],
         derived_function_files=sorted(bank.derived_reads), all_subjects_in_GP_refit=data.n,
@@ -177,7 +178,7 @@ def main():
             rows = analyze(source, parent/args.run_name, folder, centers=args.centers,
                 training_steps=args.training_steps, refit_steps=args.refit_steps, starts=args.starts,
                 model_chunk=args.model_chunk, device=args.device)
-            passed = {(r['estimator'], r['channel'], r['metric']) for r in rows if r['adequate'] and r['all_planes_pass']}
+            passed = {(r['estimator'], r['channel'], r['metric']) for r in rows if r['adequate'] and r['all_planes_pass'] and not r['is_control']}
             survivors = passed if survivors is None else survivors & passed
             print(f'[WaveAQ] {model}: {len(passed)} preliminary adequate GP-ARD passes, {len(survivors)} common', flush=True)
             if args.batch and not survivors:
