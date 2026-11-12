@@ -60,7 +60,7 @@ class MatrixCases:
             raise ValueError("Wrong W shape")
         self.u = np.asarray(self.w[self.offsets[:-1], :self.d], dtype=float)
         self.read_files = ["index.json", "subject_index.npy", "trial_counts.npy",
-                           "trial_index.npy", "Y.npz"]
+                           "trial_index.npy", "Y.npz", str(self.paths[0].relative_to(self.folder))]
 
     def coordinates(self, path, chunk=65536):
         w = np.load(path, mmap_mode="r", allow_pickle=False)

@@ -72,3 +72,15 @@ def test_complete_observed_matrix_shapley_pipeline_preserves_profiles_and_endpoi
         expected=next(float(r['loss']) for r in csv.DictReader(stream) if r['anonymous_case']=='case_000'
             and r['channel']=='p_nn' and r['metric']=='shapley_profile_UX_operator_columns_mean_soft_count_eps003')
     np.testing.assert_allclose(score,expected,atol=1e-10)
+    import run_mobius_function_profiles as dividend_runner
+    with threadpool_limits(2):
+        dividend_runner.analyze(source,output,tmp_path/'dividends',device='cpu',bank_folder=folder)
+    audits=json.loads((tmp_path/'dividends'/'allocation_and_trace_audits.json').read_text())
+    assert max(r['relative_squared_efficiency_error'] for r in audits)<1e-24
+    assert sum(r['new_conditional_models'] for r in audits)==0
+    import run_tree_haar_profiles as haar_runner
+    with threadpool_limits(2):
+        haar_runner.analyze(source,output,tmp_path/'haar',bank_folder=folder)
+    haar_audit=json.loads((tmp_path/'haar'/'energy_and_fit_audits.json').read_text())
+    assert max(a['relative_Parseval_error'] for r in haar_audit for a in r['X_columns'])<1e-12
+    assert json.loads((tmp_path/'haar'/'protocol.json').read_text())['all_subjects']==32

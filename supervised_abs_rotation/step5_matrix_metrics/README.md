@@ -4,12 +4,20 @@
 support gives four-grid axis deviations 0/0/15/15 degrees using the same
 p_nn metric. C2/C3 score gaps are 1.771%/.590%; doubling radial capacity
 preserves the positions, with gaps 1.785%/.619%. New blind searches give
-CR3/C1/C2 mean matched offsets 12.72/1.53/16.21 degrees and score gains
-.275%/1.170%/3.855%. CR3's small gain repeats in all 12 paired subject
-refits at both capacities. C3 blind search and the remaining paired audits
-continue. Nearby results are retained with angles and score gaps separated.
+CR3/C1/C2/C3 mean matched offsets 12.72/1.53/16.21/10.43 degrees and score
+gains .275%/1.170%/3.855%/2.227%. All 96 paired subject comparisons
+(12 per model per capacity) repeat these departures. The observed-W and
+independently random proposal arms are audited separately; C3's observed-W
+start is already equivalent to reference axes. Nearby results are retained
+with angles and score gaps separated. Smaller-step refinement continues.
 See WAVE_BS_BU.md for definitions, numerical checks, failures and limits.
-The complete suite passes 244 tests. Older status paragraphs are checkpoints.
+BU6's smaller-step continuation completes: the lower refined score has
+maximum matched offsets 7.52/1.66/24.10/15.71 degrees. The CR3 result comes
+from an independent random start. Other random-start arms can have nearby
+scores with distant axes, so unique global recovery is not claimed. BW/BX
+complete across four models and BY completes its CR3 pilot; these variants
+do not improve the main approximate result. See WAVE_BW_BX.md.
+The complete suite passes 250 tests. Older status paragraphs are checkpoints.
 
 **Latest completed audits:** the fixed-GP 3% UX criterion has one-degree
 single-plane optima at +25/-2/+2/-2 degrees in CR3/C1/C2/C3. Stronger blind

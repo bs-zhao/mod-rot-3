@@ -15,7 +15,7 @@ def model(u, targets, center_ids, starts=3):
 
 
 @torch.no_grad()
-def covariances(fitted, ids, rows):
+def gradient_profiles(fitted, ids, rows):
     phi, target, _, ratio, _, _, solved = fitted.system(ids, rows)
     beta = ratio[:, None, None]*solved
     groups = fitted.group_index[ids]; u = fitted.u[groups][:, rows]
@@ -32,8 +32,14 @@ def covariances(fitted, ids, rows):
     kernel = torch.exp(-.5*(difference*eta[:, None, None]).square().sum(-1))
     gradients = torch.stack([(-eta[:, None, i:i+1].square()*difference[..., i]*kernel) @ alpha
                              for i in range(u.shape[-1])], dim=2)
-    covariance = torch.einsum('bnir,bnjr->bnij', gradients, gradients)
     error = (phi @ beta-target).square().sum((1, 2))/torch.clamp(target.square().sum((1, 2)), min=1e-30)
+    return gradients, error
+
+
+@torch.no_grad()
+def covariances(fitted, ids, rows):
+    gradients, error = gradient_profiles(fitted, ids, rows)
+    covariance = torch.einsum('bnir,bnjr->bnij', gradients, gradients)
     return covariance.cpu().numpy(), error.cpu().numpy()
 
 

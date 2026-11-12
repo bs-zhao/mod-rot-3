@@ -33,6 +33,9 @@ WAVES={
     'BU':'waveBU_conditional_Shapley_profiles_seed471',
     'BU3':'waveBU3_conditional_Shapley_profiles_seed471',
     'BV':'waveBV_conditional_Shapley_profiles_seed471',
+    'BW':'waveBW_norm_lift_GP_profiles_seed416',
+    'BX':'waveBX_conditional_dividend_profiles_seed471',
+    'BY':'waveBY_tree_Haar_profiles_seed494',
 }
 
 

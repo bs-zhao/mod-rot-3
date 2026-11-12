@@ -52,10 +52,15 @@ def test_full_radial_GP_pipeline_fits_once_and_preserves_all_rows(tmp_path):
         profiles.prepare(source, folder)
         rows = runner.analyze(source, output, folder, centers=8, training_steps=1, refit_steps=1,
             random_count=2, optimizer_starts=0, device='cpu')
+        import run_norm_lift_profiles as lift_runner
+        lift_runner.analyze(source,output,folder,tmp_path/'lift',device='cpu')
     assert rows and max(row['endpoint_error'] for row in rows) < 1e-12
     assessment = json.loads((output/'assessment.json').read_text())
     assert assessment['source_GP_refitted_per_rotation'] is False
     assert json.loads((output/'protocol.json').read_text())['all_subjects'] == 32
+    audits=json.loads((tmp_path/'lift'/'gradient_replay_and_trace_audits.json').read_text())
+    assert max(r['covariance_replay_relative_L2_error'] for r in audits)<1e-12
+    assert json.loads((tmp_path/'lift'/'protocol.json').read_text())['all_subjects']==32
 
 
 def test_fixed_function_pipeline_accepts_an_audited_ordinal_bank_and_explicit_primary(tmp_path):

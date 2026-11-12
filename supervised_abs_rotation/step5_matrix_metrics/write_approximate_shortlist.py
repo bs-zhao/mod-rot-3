@@ -6,6 +6,11 @@ import record_rotation_optima as optima
 
 
 CANDIDATES=[
+    ('树小波局部变化：3% UX 支持（p_nn）','BY','haar_node_UX_columns_mean_soft_count_eps003','p_nn'),
+    ('树小波按 U 轴汇总：3% UX 支持（p_nn）','BY','haar_axis_UX_columns_mean_soft_count_eps003','p_nn'),
+    ('条件交互子集剖面：3% UX 支持（p_nn）','BX','conditional_dividend_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('条件交互子集能量：1% UX 分数支持（p_nn）','BX','conditional_dividend_energy_UX_columns_mean_fractional_count_eps001','p_nn'),
+    ('同向导数剖面：10% UX 分数支持','BW','norm_lift_UX_operator_columns_worst_fractional_count_eps010'),
     ('条件 Shapley 函数剖面：3% UX 支持（p_nn）','BU','shapley_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
     ('条件 Shapley，64 核中心：3% UX 支持（p_nn）','BU3','shapley_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
     ('学习输出变换的算子模态：10% UX 分数支持（p_nn）','BT','Ui_innovation_with_context_UX_operator_columns_worst_fractional_count_eps010','p_nn'),
@@ -55,7 +60,9 @@ def main():
 更多相关变体见 `four_model_overview.csv`；多个变体高度相关，不代表独立验证。
 
 条件 Shapley 的 CR3 新盲搜低约 0.275%，轴匹配平均 12.7°、最大 17.3°；
-这属于保留的近似结果，搜索未证明全局最优。BT 的 CR3 旧冻结方向低约 15%—18%，
+BU6 更细搜索进一步找到低约 1.130%、最大轴偏移 7.524° 的独立随机起点结果。
+这些属于保留的近似结果，搜索未证明全局最优；C2/C3 的部分随机起点仍有远轴近分数。
+BT 的 CR3 旧冻结方向低约 15%—18%，
 因此其近似网格位置不能单独作为坐标恢复证据。
 
 网格之外的反例另行保留：BC2 的旧盲搜方向低约 12.1%；1% 分数支持只低约

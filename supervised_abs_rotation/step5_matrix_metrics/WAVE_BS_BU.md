@@ -98,10 +98,22 @@ are read for sign/permutation-matched axis assessment.
 | CR3 | -.27454% | 12.721 deg | 17.309 deg |
 | C1 | -1.16976% | 1.526 deg | 1.664 deg |
 | C2 | -3.85467% | 16.207 deg | 25.713 deg |
+| C3 | -2.22716% | 10.435 deg | 13.915 deg |
 
-C3's fresh blind run is in progress at this checkpoint. These are finite
-search results, not proven global minima. Angle and relative score gap are
-recorded separately. In particular, a near score does not certify near axes.
+All four fresh runs are complete. These are finite search results, not
+proven global minima. Angle and relative score gap are recorded separately.
+In particular, a near score does not certify near axes.
+
+Post-freeze initialization assessment separates the observed-W proposal
+from the 32 random SO proposals. The former is initially 30 degrees from
+reference axes in CR3/C1/C2 and already equivalent to the reference axes
+in C3. The independently random Powell starts, before the final Givens pass,
+have score changes +.06867%/+3.64438%/-.03756%/+.37512% and maximum
+matched axis offsets 8.426/15.388/46.357/58.167 degrees. Their individual
+scores/angles are kept in `individual_start_positions.json`. This arm
+distinction prevents a favorable supplied coordinate frame from being
+reported as recovery from an independent random start. In C2/C3 the
+random-start near scores still have large axis offsets.
 
 ## BU5: paired subject refits and capacity sensitivity
 
@@ -121,11 +133,22 @@ CR3: 12/12 samples favor the frozen fresh frame at both capacities.
 | 64 | -.28779% | -.40241 / -.30449 / -.15194% |
 
 Thus the small CR3 departure is reproducible in this audit and is retained
-as approximate evidence. C1 and C2 also finish 12 paired refits per capacity:
-all favor the frozen fresh frames. Their 32/64-center median gains are
-1.2257%/1.1992% and 3.5465%/3.5860%, respectively. C3 refits will follow
-its completed blind run. No 15-degree or 15-percent rule is silently
-introduced as a veto.
+as approximate evidence. All four datasets finish 12 paired refits per
+capacity: 96/96 comparisons favor the frozen fresh frames. C1/C2/C3's
+32/64-center median gains are 1.2257%/1.1992%, 3.5465%/3.5860%, and
+2.2976%/2.2355%. C3's all-subject 64-center gain is 2.2345%, close to
+its 32-center gain of 2.2272%. No 15-degree or 15-percent rule is silently
+introduced as a veto. These repeated subject draws overlap and are not
+independent confirmations or confidence intervals for recovery.
+
+BU6 subsequently refines the frozen best and independently random-start
+frames with smaller exact Givens steps +/-.02/.05/.1 radians. CR3's frozen
+best refines to -1.02974% with mean/max offsets 10.068/12.917 degrees.
+The independent-random-start arm refines to a still lower score, -1.12978%,
+and smaller mean/max offsets 6.549/7.524 degrees. The three remaining
+models continue with the identical policy. All refined scores and frames
+freeze before axis assessment. These new points have not yet received the
+paired refit audit; BU5 refers to the earlier BU2 frozen points.
 
 ## Reproduction and local artifacts
 
