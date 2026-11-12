@@ -12,6 +12,8 @@ import warped_gp as warp
 
 
 class Dictionary:
+    description='joint-W RBF, one U-block and one X-block median-distance length; constant feature'
+    uses_centers=True
     def __init__(self, mean, scale, centers, d, device):
         self.device, self.d = device, d
         self.mean = torch.tensor(mean, dtype=torch.float64, device=device)
@@ -31,6 +33,9 @@ class Dictionary:
         good = values > max(float(values.max())*1e-10, 1e-12)
         self.transform = vectors[:, good]/torch.sqrt(values[good])
         self.width = int(good.sum())+1
+
+    def artifacts(self):
+        return dict(block_lengths=self.lengths,nystrom_transform=self.transform.cpu().numpy())
 
     @torch.no_grad()
     def __call__(self, w):
@@ -86,7 +91,8 @@ def warm_start(target, source):
             value.copy_(dict(source.named_parameters())[name])
 
 
-def analyze(source, output, centers=256, knot_count=33, steps=200, chunk=8192, seed=438, device='cuda'):
+def analyze(source, output, centers=256, knot_count=33, steps=200, chunk=8192, seed=438, device='cuda',
+            dictionary_factory=Dictionary):
     output = Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain earlier global-warp source: {output}')
@@ -98,14 +104,15 @@ def analyze(source, output, centers=256, knot_count=33, steps=200, chunk=8192, s
     scaler = wave.sur.Scaler(data.w, data.d, row_mask=train_mask)
     subject_ids = rng.choice(train, min(centers, len(train)), replace=False)
     center_rows = np.array([rng.integers(data.offsets[s], data.offsets[s+1]) for s in subject_ids])
-    dictionary = Dictionary(scaler.mean, scaler.scale, data.w[center_rows], data.d, device)
+    dictionary = dictionary_factory(scaler.mean, scaler.scale, data.w[center_rows], data.d, device)
     knots = [np.unique(np.quantile(data.y[:, c], np.linspace(0., 1., knot_count))) for c in range(len(data.channels))]
     if min(map(len, knots)) < 3:
         raise ValueError('Global warp needs a nonconstant response distribution')
     protocol = dict(status='RUNNING', model=data.index['model'], source=str(Path(source).resolve()),
-        all_subjects=data.n, all_original_rows=data.m, centers=len(center_rows), features=dictionary.width,
+        all_subjects=data.n, all_original_rows=data.m, centers=len(center_rows) if dictionary.uses_centers else 0, features=dictionary.width,
         seed=seed, maximum_knots=knot_count, steps_per_fit=steps, chunk=chunk, device=device, precision='float64',
-        kernel='joint-W RBF, one U-block and one X-block median-distance length; constant feature',
+        kernel=dictionary.description,dictionary_factory=dictionary_factory.__module__+'.'+dictionary_factory.__name__,
+        dictionary_code_sha256=hashlib.sha256(Path(dictionary_factory.__init__.__code__.co_filename).read_bytes()).hexdigest(),
         U_rotation_equivariant=True, link='positive-slope piecewise linear global map per Y channel',
         jacobian_included=True, knot_locations_use_all_original_Y=True,
         validation_interpretation='heldout original subject rows conditional on frozen knot locations',
@@ -116,9 +123,10 @@ def analyze(source, output, centers=256, knot_count=33, steps=200, chunk=8192, s
     all_stats, training = statistics(data, dictionary, train, knots, chunk)
     if all_stats['rows'] != data.m:
         raise ArithmeticError('Warp source did not use all actual rows')
-    np.savez_compressed(output/'dictionary.npz', mean=scaler.mean, scale=scaler.scale,
-        centers_raw=np.asarray(data.w[center_rows]), center_rows=center_rows, block_lengths=dictionary.lengths,
-        nystrom_transform=dictionary.transform.cpu().numpy(), training_subjects=train)
+    dictionary_artifacts=dict(mean=scaler.mean,scale=scaler.scale,training_subjects=train,**dictionary.artifacts())
+    if dictionary.uses_centers:
+        dictionary_artifacts.update(centers_raw=np.asarray(data.w[center_rows]),center_rows=center_rows)
+    np.savez_compressed(output/'dictionary.npz',**dictionary_artifacts)
     stats_saved = dict(all_gram=all_stats['gram'], training_gram=training['gram'])
     for c in range(len(data.channels)):
         for label, value in (('all', all_stats), ('training', training)):

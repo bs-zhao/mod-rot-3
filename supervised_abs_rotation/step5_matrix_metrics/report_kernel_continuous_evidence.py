@@ -7,6 +7,7 @@ from collections import defaultdict
 import numpy as np
 
 import run as wave
+from record_rotation_optima import WAVES
 
 
 METRICS = (
@@ -16,13 +17,16 @@ METRICS = (
 
 
 def main(tag='BC2'):
-    name = ('waveBC2_conditional_kernel_centers32_seed430' if tag=='BC2' else
-            'waveBF_learned_global_link_kernel_seed430')
+    name = WAVES[tag]
     output = wave.ROOT/f'outputs/supervised_abs_rotation/wave{tag}_continuous_evidence'
     output.mkdir(parents=True, exist_ok=True)
     root = wave.io.default_step2(wave.ROOT,'CR3').parent/'step5_matrix_metrics'
-    with (root/f'wave{tag}_frozen_counter_family_v2/assessment.csv').open() as stream:
+    counter_file=(root/f'wave{tag}_frozen_counter_family_v2/assessment.csv' if tag in ('BC2','BF') else
+                  root/name/'frozen_counter_assessment.csv')
+    with counter_file.open() as stream:
         counters = {(r['channel'],r['metric']):r for r in csv.DictReader(stream)}
+    for r in counters.values():
+        if 'relative_blind_margin' not in r:r['relative_blind_margin']=r['relative_margin']
     rows, curves, counts = [], {}, []
     common = None
     for model in ('CR3','C1','C2','C3'):
@@ -34,6 +38,7 @@ def main(tag='BC2'):
         grouped = defaultdict(dict)
         with (folder/'blind_scores.csv').open() as stream:
             for r in csv.DictReader(stream):
+                if r['anonymous_case'] not in reveal:continue
                 grouped[r['channel'],r['metric']][reveal[r['anonymous_case']]] = float(r['loss'])
         with (folder/'metric_summary.csv').open() as stream:
             summaries = {(r['channel'],r['metric']):r for r in csv.DictReader(stream)}
@@ -62,9 +67,18 @@ def main(tag='BC2'):
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     fig, axes = plt.subplots(2,4,figsize=(16,7.8))
+    metrics=METRICS
+    if tag=='BG':metrics=tuple('poly5_rbf128_'+m for m in METRICS)
+    if tag in ('BH','BJ'):
+        metrics=tuple('poly3_rbf32_posterior_mean_UX_columns_worst_'+suffix
+                      for suffix in ('soft_count_eps010','fractional_count_eps001'))
+    if tag=='BM':metrics=tuple('poly3_rbf8_posterior_mean_UX_columns_worst_'+suffix
+                               for suffix in ('soft_count_eps010','fractional_count_eps001'))
+    if tag=='BK':metrics=tuple('with_U_main_'+m for m in METRICS)
+    if tag=='BL':metrics=tuple('with_nonaffine_U_main_'+m for m in METRICS)
     for col, model in enumerate(('CR3','C1','C2','C3')):
         cases, grouped = curves[model]
-        for row, metric in enumerate(METRICS):
+        for row, metric in enumerate(metrics):
             ax = axes[row,col]; losses = grouped['logit_nn',metric]; base = losses['baseline']
             planes = defaultdict(list)
             for case in cases:
@@ -73,7 +87,7 @@ def main(tag='BC2'):
             worst = min(planes,key=lambda p:min(v for a,v in planes[p] if 0<a<90))
             for plane, points in planes.items():
                 xy = sorted([(0,base)]+points); angles = [a for a,v in xy]
-                delta = [(v/base-1)*100 for a,v in xy]
+                delta = [(v-base)/max(abs(base),1e-30)*100 for a,v in xy]
                 ax.plot(angles,delta,color='#c06a1b' if plane==worst else '#6394b6',
                         alpha=1 if plane==worst else .48,lw=2 if plane==worst else 1)
             ax.axhline(0,color='#333333',lw=.8); ax.set_xticks([0,30,60,90]); ax.grid(alpha=.18)
@@ -82,12 +96,12 @@ def main(tag='BC2'):
             if col==0:
                 ax.set_ylabel(('10% soft support' if row==0 else '1% fractional support')+'\nchange from baseline (%)')
             if row==1:ax.set_xlabel('pair rotation (degrees)')
-    fig.suptitle(f'{tag}: same logit UX support definitions across all four datasets\n'
+    fig.suptitle(f'{tag}: same logit response-support definitions across all four datasets\n'
                  'All planes shown; orange marks the lowest-scoring plane. Blind evidence is in the CSV.',fontsize=13)
     fig.tight_layout(rect=(0,0,1,.92)); fig.savefig(output/'grid_gaps_and_contrast.png',dpi=170); plt.close(fig)
     print(json.dumps(dict(models=counts,common_strict=len(common),plot=str(output/'grid_gaps_and_contrast.png'))))
 
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--tag',choices=('BC2','BF'),default='BC2')
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--tag',choices=('BC2','BF','BG','BH','BJ','BK','BL','BM','BR'),default='BC2')
     main(p.parse_args().tag)

@@ -24,7 +24,8 @@ def moments(feature, flat_targets, target_squared_norm, output_width):
     return (squared/(n*n)).cpu().numpy(), ((squared-diagonal)/(n*(n-1))).cpu().numpy()
 
 
-def analyze(source, output, bank_folder, seed=430, device='cuda', centers=16, bank_factory=profiles.MatrixBank):
+def analyze(source, output, bank_folder, seed=430, device='cuda', centers=16, bank_factory=profiles.MatrixBank,
+            include_main=False,audit_frame=None,main_nonaffine=False):
     output = Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain previous conditional kernel moment experiment: {output}')
@@ -34,6 +35,9 @@ def analyze(source, output, bank_folder, seed=430, device='cuda', centers=16, ba
         source=str(Path(source).resolve()), source_matrix_manifest_sha256=bank.protocol['manifest_sha256'],
         source_response_quality=bank.quality, seed=seed, Ui_kernel_centers=centers,
         global_output_transform=bank.protocol.get('response_transform', 'identity'),
+        include_pure_U_main_component=include_main,
+        main_component_nonaffine=main_nonaffine,
+        response_components='UX columns plus constant-X pure-U component' if include_main else 'UX columns only',
         conditional_mean='complete polynomial degree3 plus 64 radial features; nested five-fold W-only regression',
         contexts=['none', 'constant plus centered joint-other-U radial features'],
         output_mode_relative_squared_tolerance=1e-8, device=device, precision='float64',
@@ -50,6 +54,12 @@ def analyze(source, output, bank_folder, seed=430, device='cuda', centers=16, ba
     for k, path in enumerate(data.paths):
         q, _ = wave.io.registration(data.u, data.coordinates(path))
         maps.append(q); reveal[f'case_{k:03d}'] = path.parent.name
+    if audit_frame is not None:
+        audit_frame=np.asarray(audit_frame,dtype=float)
+        if audit_frame.shape!=(data.d,data.d) or not np.allclose(audit_frame.T@audit_frame,np.eye(data.d),atol=1e-8):
+            raise ValueError('Audit frame must be an orthogonal anonymous-U rotation')
+        maps.append(audit_frame)
+        protocol['fixed_audit_frame_sha256']=hashlib.sha256(audit_frame.tobytes()).hexdigest()
     directions, membership = conditional.direction_classes(maps)
     np.savez_compressed(output/'W_only_geometry.npz', directions=directions, membership=membership)
     operators, audit = x_witness.operators(bank.x)
@@ -57,6 +67,9 @@ def analyze(source, output, bank_folder, seed=430, device='cuda', centers=16, ba
     for j, operator in enumerate(operators):
         np.save(output/f'X_witness_column{j}.npy', operator, allow_pickle=False)
     tasks, targets, discarded, mode_audit = profiles.task_modes(bank.responses, operators, tolerance=1e-8)
+    if include_main:
+        tasks,targets,discarded,mode_audit=profiles.append_main_modes(bank.responses,tasks,targets,discarded,mode_audit,data.dx,
+            affine_coordinates=data.u if main_nonaffine else None)
     wave.json_file(output/'matrix_function_modes.json', dict(tasks=mode_audit,
         maximum_discarded_relative_energy=float(np.max(discarded.sum(1)/data.n)),
         moment_norm_absolute_error_bound='sqrt(discarded task energy), because Ui features have unit empirical mean squared norm'))
@@ -74,7 +87,7 @@ def analyze(source, output, bank_folder, seed=430, device='cuda', centers=16, ba
             for estimator, scores in (('raw', raw), ('diagonal_removed', corrected)):
                 key = view+'_'+estimator
                 if key not in graphs:
-                    graphs[key] = np.zeros((len(data.channels), len(directions), data.dx))
+                    graphs[key] = np.zeros((len(data.channels), len(directions), data.dx+int(include_main)))
                 for t, (c, j) in enumerate(tasks):
                     graphs[key][c, i, j] = scores[t]
         wave.json_file(output/'U_feature_audit.json', audits)
@@ -88,18 +101,26 @@ def analyze(source, output, bank_folder, seed=430, device='cuda', centers=16, ba
         for k, axes in enumerate(membership):
             for c, channel in enumerate(data.channels):
                 for metric, value in conditional.sparsity(np.maximum(graph[c, axes], 0.)).items():
-                    blind.append(dict(anonymous_case=f'case_{k:03d}', estimator='conditional_kernel_moment',
-                        channel=channel, metric=view+'_'+metric, loss=value))
+                    blind.append(dict(anonymous_case=f'case_{k:03d}' if k<len(data.paths) else 'audit_frame_000',
+                        estimator='conditional_kernel_moment',channel=channel,
+                        metric=('with_nonaffine_U_main_' if main_nonaffine else 'with_U_main_' if include_main else '')+view+'_'+metric, loss=value))
     wave.csv_file(output/'blind_scores.csv', blind)
     digest = hashlib.sha256((output/'blind_scores.csv').read_bytes()).hexdigest()
     wave.json_file(output/'reveal.json', dict(scores_sha256=digest, mapping=reveal))
-    grouped = defaultdict(dict)
+    grouped = defaultdict(dict);extra={}
     for row in blind:
-        grouped[row['channel'], row['metric']][reveal[row['anonymous_case']]] = row['loss']
+        if row['anonymous_case'] not in reveal:
+            extra[row['channel'],row['metric']]=row['loss']
+        else:
+            grouped[row['channel'], row['metric']][reveal[row['anonymous_case']]] = row['loss']
     rows = [dict(estimator='conditional_kernel_moment', channel=c, metric=m,
         **wave.st.evaluate_curve(values, data.index['cases']), is_control=not scope.primary(m),
         prediction_error_veto_applied=False) for (c, m), values in grouped.items()]
     wave.csv_file(output/'metric_summary.csv', rows)
+    if extra:
+        wave.csv_file(output/'frozen_counter_assessment.csv',[dict(channel=c,metric=m,loss=value,
+            baseline_loss=grouped[c,m]['baseline'],relative_margin=(value-grouped[c,m]['baseline'])/
+                max(abs(grouped[c,m]['baseline']),1e-30)) for (c,m),value in extra.items()])
     wave.json_file(output/'read_audit.json', dict(files=sorted(set(data.read_files)), forbidden_files_read=[],
         all_subjects=data.n, all_original_rows=data.m, source_matrix_manifest_sha256=bank.protocol['manifest_sha256']))
     protocol.update(status='COMPLETE', scores_sha256=digest)

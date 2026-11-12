@@ -17,13 +17,18 @@ KEY = 'UX_columns_worst_soft_count_eps010'
 class Scorer:
     def __init__(self, bank, original, device='cuda'):
         self.data, self.device = bank.data, device
-        self.centers = json.loads((original/'protocol.json').read_text())['Ui_kernel_centers']
+        protocol=json.loads((original/'protocol.json').read_text())
+        self.centers = protocol['Ui_kernel_centers']
+        self.include_main=protocol.get('include_pure_U_main_component',False)
         self.z = self.data.u-self.data.u.mean(0)
         self.z /= np.sqrt(np.var(self.data.u, axis=0).mean())
         operators = [np.load(original/f'X_witness_column{j}.npy', allow_pickle=False) for j in range(self.data.dx)]
-        _, targets, _, _ = profiles.task_modes(bank.responses[:, :1], operators, tolerance=1e-8)
+        tasks, targets, discarded, audits = profiles.task_modes(bank.responses[:, :1], operators, tolerance=1e-8)
+        if self.include_main:
+            tasks,targets,_,_=profiles.append_main_modes(bank.responses[:,:1],tasks,targets,discarded,audits,self.data.dx,
+                affine_coordinates=self.data.u if protocol.get('main_component_nonaffine',False) else None)
         self.width = max(t.shape[1] for t in targets)
-        values = np.zeros((self.data.n, self.data.dx, self.width))
+        values = np.zeros((self.data.n, self.data.dx+int(self.include_main), self.width))
         for j, target in enumerate(targets):
             values[:, j, :target.shape[1]] = target
         self.flat = torch.tensor(values.reshape(self.data.n, -1), dtype=torch.float64, device=device)

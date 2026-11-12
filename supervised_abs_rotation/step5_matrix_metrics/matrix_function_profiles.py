@@ -92,3 +92,37 @@ def task_modes(responses, operators, tolerance=1e-6):
 
 def full_error(retained_error, retained_energy, discarded_energy):
     return (retained_error*retained_energy+discarded_energy)/np.maximum(retained_energy+discarded_energy, 1e-30)
+
+
+def append_main_modes(responses,tasks,targets,discarded,audits,dx,affine_coordinates=None):
+    """Add the constant-X response component with the same per-task energy gauge.
+
+    X witnesses annihilate the constant-X subspace. The centered observed-X
+    mean contains the pure-U response component excluded by UX centering.
+    This adds a component; it does not redefine a pure UX graph as complete.
+    """
+    tasks,targets,audits=list(tasks),list(targets),list(audits)
+    extra=[]
+    main=responses.mean(2);main-=main.mean(0,keepdims=True)
+    original_main_energy=np.sum(main*main,axis=0)
+    coefficients=None
+    if affine_coordinates is not None:
+        design=np.column_stack((np.ones(len(main)),affine_coordinates))
+        coefficients=np.linalg.lstsq(design,main,rcond=1e-12)[0]
+        main-=design@coefficients
+        for c in range(main.shape[1]):
+            if np.sum(main[:,c]**2)<=1e-24*original_main_energy[c]:main[:,c]=0.
+    for c in range(responses.shape[1]):
+        total=float(np.sum(main[:,c]**2))
+        target=main[:,c:c+1]*np.sqrt(len(main)/total) if total>0 else np.zeros((len(main),1))
+        tasks.append((c,dx));targets.append(target);extra.append(np.zeros(len(main)))
+        audit=dict(channel_index=c,X_column='constant_X_nonaffine_U' if coefficients is not None else 'constant_X_pure_U',rank=int(total>0),
+            original_energy=total/len(main),retained_fraction=float(total>0),relative_squared_reconstruction_error=0.)
+        if coefficients is not None:
+            audit.update(affine_coefficients=coefficients[:,c].tolist(),
+                full_main_energy=original_main_energy[c]/len(main),
+                nonaffine_main_energy_fraction=total/max(original_main_energy[c],1e-30),
+                affine_interpretation='rotation-invariant affine span treated as a free reference, not a supplied response equation',
+                numerical_zero_relative_squared_floor=1e-24)
+        audits.append(audit)
+    return tasks,targets,np.concatenate((discarded,np.array(extra))),audits

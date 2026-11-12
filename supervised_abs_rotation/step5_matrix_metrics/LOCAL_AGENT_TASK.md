@@ -25,6 +25,13 @@ same score across datasets and distinguish provisional grid evidence from
 a validated universal metric. This does not waive numerical-integrity or
 matrix-only input checks.
 
+Further user steering (2026-11-12): keep approximate results when the
+optimum is slightly displaced, including the user's example of a point
+around 15. Record both rotation position in degrees and relative score
+error in percent, together with the affected plane and stability. Do not
+silently reject a candidate solely because its optimum is not exactly at
+baseline. Exact ranks remain useful diagnostics alongside continuous gaps.
+
 First inspect local status and existing outputs. Read this package's README,
 then test and run wave A on the four real datasets. Default source paths are
 resolved by `matrix_io.default_step2`. Never regenerate Y from a known

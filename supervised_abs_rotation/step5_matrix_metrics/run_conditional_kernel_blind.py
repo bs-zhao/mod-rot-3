@@ -1,4 +1,5 @@
 """BC3: blind rotations of the frozen derivative-free conditional kernel metric."""
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -13,10 +14,10 @@ import tree_rotation_stability as rotations
 from conditional_kernel_blind import Scorer
 
 
-def main():
+def main(original_name='waveBC_conditional_kernel_UX_seed430',output_name='waveBC3_conditional_kernel_blind_seed439',seed=439):
     source = wave.io.default_step2(wave.ROOT, 'CR3'); parent = source.parent/'step5_matrix_metrics'
-    original = parent/'waveBC_conditional_kernel_UX_seed430'
-    output = parent/'waveBC3_conditional_kernel_blind_seed439'
+    original = parent/original_name
+    output = parent/output_name
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain earlier kernel blind search: {output}')
     old = json.loads((original/'protocol.json').read_text())
@@ -27,8 +28,10 @@ def main():
     if bank.protocol['manifest_sha256'] != old['source_matrix_manifest_sha256']:
         raise ValueError('Original matrix profile source changed')
     output.mkdir(parents=True)
-    protocol = dict(status='RUNNING', seed=439, all_subjects=bank.data.n, source_scores_sha256=digest,
+    protocol = dict(status='RUNNING', seed=seed, all_subjects=bank.data.n, source_scores_sha256=digest,
         primary='logit, Ui innovation with context, raw moment, worst-X soft count at 10%',
+        include_pure_U_main_component=old.get('include_pure_U_main_component',False),
+        main_component_nonaffine=old.get('main_component_nonaffine',False),
         proposals='32 random SO frames, 2 KNN-proxy Powell starts with 60 evaluations',
         final_score='original nested W-only polynomial/RBF conditional regression, unchanged BC statistic',
         exact_refinement='Givens coordinate descent at +/- .25/.1 radians, one pass',
@@ -42,7 +45,7 @@ def main():
     reproduced = scorer.direction(v, force=True)
     if not np.allclose(expected, reproduced, rtol=1e-7, atol=1e-10):
         raise ArithmeticError('Exact blind scorer did not reproduce the original moment statistic')
-    rng = np.random.default_rng(439); proposals, proxy_rows = [], []
+    rng = np.random.default_rng(seed); proposals, proxy_rows = [], []
     for k in range(32):
         q = rotations.random_rotation(bank.data.d, rng)
         loss = scorer.score(q, exact=False)
@@ -115,5 +118,13 @@ def main():
 
 
 if __name__ == '__main__':
+    p=argparse.ArgumentParser(description=__doc__)
+    p.add_argument('--complete-response',action='store_true')
+    p.add_argument('--nonaffine-main',action='store_true')
+    args=p.parse_args()
     with threadpool_limits(limits=4):
-        main()
+        if args.nonaffine_main:
+            main('waveBL_complete_response_kernel_seed430','waveBL2_nonaffine_response_blind_seed457',457)
+        elif args.complete_response:
+            main('waveBK_complete_response_kernel_seed430','waveBK2_complete_response_blind_seed456',456)
+        else:main()

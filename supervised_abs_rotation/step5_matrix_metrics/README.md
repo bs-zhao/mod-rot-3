@@ -1,5 +1,32 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Latest completed audits:** the fixed-GP 3% UX criterion has one-degree
+single-plane optima at +25/-2/+2/-2 degrees in CR3/C1/C2/C3. Stronger blind
+search followed by best-decrease line refinement gives maximum matched
+axis offsets 53.25/2.08/9.79/15.85 degrees and score changes
+-2.924/-2.665/-2.177/-1.920%. All are retained as continuous evidence.
+BQ's polynomial global warped GP fits every original WY row, reducing C3
+original-Y validation MSE to .00296/.00245; BR completes all four models
+without a common strict score. BM also completes. See WAVE_BN_BR.md for
+the matrix lower bounds, approximate angular results, separate initialization
+arms and source-quality evidence. Earlier running-status paragraphs below
+are historical checkpoints.
+The current complete suite passes 237 tests.
+
+**Current continuation (2026-11-12): nearby optima are retained.** The same
+BA2 posterior-GP 3% UX tail criterion has four-grid axis deviations
+0/0/15/15 degrees and maximum score improvement over baseline .1171%.
+The fixed-field BB2 counterpart has the same four-grid deviations; its
+blind-axis audit remains separate. `write_approximate_shortlist.py` records
+these alongside selected earlier families, with angles and relative percent
+gaps in separate fields. There is no exact-baseline or .01-MSE veto.
+BG/BH/BJ/BK/BL complete across all four models. BG has two identical strict
+four-grid combinations with retained blind counterexamples. BK reduces
+the independently reoptimized CR3 score gap to 2.0365%, but is partly driven
+by pure-U support. BM's all-subset radial-GP continuation is running after
+CR3. The full suite passes 230 tests. See WAVE_BG_BM.md for definitions,
+approximate successes, source-quality limits and all retained failures.
+
 **Newest completed evidence (2026-11-12, America/New_York):** BC2 has one
 identical conditional-kernel UX support metric ranking baseline first on
 all four grids (6/6, 6/6, 6/6, 15/15). A frozen CR3 blind frame is 12.094%
