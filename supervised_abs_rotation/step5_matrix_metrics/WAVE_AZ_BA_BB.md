@@ -46,7 +46,10 @@ at 1%/3% thresholds, for derivatives and both finite scales, in the two
 highly related output channels. These are correlated exploratory variants.
 `run_rank_posterior_wave.py` continues the frozen family through C1/C2/C3,
 reporting prediction errors without a rigid veto. The continuation is
-currently running; there is no validated universal result.
+complete: 12/354/120/0 primary grid combinations in CR3/C1/C2/C3, with no
+common four-model score. The derivative pooled worst-X 3% variant gives
+6/6, 6/6, 5/6, 11/15; C2/C3 lower grid gaps are only .01090%/.11706%.
+These remain useful approximate candidates rather than MSE-veto failures.
 
 ## BB: one fixed radial GP function per task
 
@@ -59,10 +62,18 @@ then rotates this *same* fixed field exactly; there is no per-case refit.
 The primary blind metric is pointwise X-mean, subject-mean soft support
 at 10% relative activation. There are 64 random SO rotations and two
 100-evaluation blind Powell searches, with labels read after scores freeze.
-The raw-response four-model run is in progress. CR3 has no strict grid
+The raw-response four-model run is complete. CR3 has no strict grid
 candidate and a blind primary loss 2.74354 versus baseline 3.29189. C1/C2
 have strong grid signals, with primary optima 1.50595/2.18349 against
-baselines 1.51366/2.22958. C3 remains to be assessed.
+baselines 1.51366/2.22958. C3's primary blind minimum is 4.28367 against
+baseline 3.85745. This finite search does not establish global optimality.
+
+BB2 repeats the same fixed-field audit on the ordinal source, optimizing
+pooled worst-X soft support at 3%. Strict primary grid counts are 4/120/40/0
+in CR3/C1/C2/C3; no common score remains. CR3's blind primary minimum
+3.90966 versus 3.95149 is 1.06% lower. C1/C2/C3 blind minima 3.54061,
+3.79325, 5.86765 exceed baselines 3.17920, 3.66842, 5.61302. These searches
+are local diagnostics, not proofs that the other baselines are optimal.
 
 The preceding full suite passes 194 tests. Four additional radial-GP tests
 pass: exact radial constraint/fit equivariance, covariance versus actual
@@ -71,4 +82,6 @@ one-fit matrix-only pipeline.
 
 Background on output transformations:
 [Snelson et al., Warped Gaussian Processes](https://proceedings.neurips.cc/paper/2003/file/6b5754d737784b51ec5075c0dc437bf0-Paper.pdf).
-This implementation uses empirical rank calibration, not that full model.
+AZ/BA/BB2 use empirical rank calibration, not that full model. The later
+BE experiment implements a learned global map with the density Jacobian;
+see WAVE_BC_BE_BF.md.

@@ -350,3 +350,19 @@ near-passes establishes the requested common criterion.
 actual CUDA-vs-NumPy double-precision checks, exact joint polynomial
 coordinate changes, the user's sparsity example, extreme rescaling,
 immutable function manifests, and source-only complete pipelines.
+# 2026-11-12 00:05 America/New_York: BC/BE/BF completed
+
+See WAVE_BC_BE_BF.md for the frozen definitions and exact results. BC2's
+32-center logit contextual raw worst-X soft support at 10% ranks baseline
+first on every CR3/C1/C2/C3 grid (6/6,6/6,6/6,15/15). BC3's exact blind
+counterexample transfers unchanged, scoring 3.00439103 vs 3.41771473,
+12.094% lower. No new optimization was used in that transfer.
+
+BE learns a single global strictly monotone response map per channel from
+all actual original WY rows, using joint-W radial GP density including the
+Jacobian. BF applies the learned map to actual Y before profile preparation
+and completes the same 32-center kernel criterion in all four models. No
+strict common four-grid metric remains; the frozen counterexample's gap on
+the earlier primary shrinks to 9.244%. Continuous gap/contrast reports and
+all-plane plots retain the small-tail near-ties. Larger source MSEs do not
+veto experiments. Entire suite: 213 passed. No validated universal result.

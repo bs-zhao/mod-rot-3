@@ -56,3 +56,24 @@ def test_full_radial_GP_pipeline_fits_once_and_preserves_all_rows(tmp_path):
     assessment = json.loads((output/'assessment.json').read_text())
     assert assessment['source_GP_refitted_per_rotation'] is False
     assert json.loads((output/'protocol.json').read_text())['all_subjects'] == 32
+
+
+def test_fixed_function_pipeline_accepts_an_audited_ordinal_bank_and_explicit_primary(tmp_path):
+    import json
+    from threadpoolctl import threadpool_limits
+    import matrix_function_profiles as profiles
+    import rank_response_profiles as ranked
+    import run_isotropic_gp_rotation as runner
+    from test_matrix_metrics import make_cases
+    source = tmp_path/'source'; make_cases(source)
+    raw, folder, output = tmp_path/'raw', tmp_path/'ranked', tmp_path/'out'
+    metric = 'pooled_UX_columns_worst_soft_count_eps003'
+    torch.set_num_threads(2)
+    with threadpool_limits(2):
+        profiles.prepare(source, raw)
+        ranked.prepare(source, folder, raw)
+        runner.analyze(source, output, folder, centers=8, training_steps=1, refit_steps=1,
+            random_count=2, optimizer_starts=0, device='cpu', bank_factory=ranked.MatrixBank, primary_metric=metric)
+    protocol = json.loads((output/'protocol.json').read_text())
+    assert protocol['global_output_transform'] == 'normal_rank'
+    assert json.loads((output/'assessment.json').read_text())['primary_metric'] == metric

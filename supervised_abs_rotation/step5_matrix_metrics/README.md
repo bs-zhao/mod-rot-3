@@ -1,5 +1,18 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Newest completed evidence (2026-11-12, America/New_York):** BC2 has one
+identical conditional-kernel UX support metric ranking baseline first on
+all four grids (6/6, 6/6, 6/6, 15/15). A frozen CR3 blind frame is 12.094%
+lower, so this is grid evidence rather than validated global recovery.
+BE fits a genuinely learned global monotone output map, using a GP density
+with its Jacobian and all actual WY rows; BF evaluates it in all four models.
+BF has no identical strict four-grid combination and reduces the same blind
+gap to 9.244%. Small-tail alternatives are retained with continuous gap and
+contrast reports, without rigid MSE or tiny-ranking-gap vetoes. BA2/BB/BB2
+also complete across all four models. See WAVE_BC_BE_BF.md and the updated
+WAVE_AZ_BA_BB.md. The paragraphs below preserve earlier chronological status.
+The current complete code suite passes 213 tests.
+
 **Newest continuation:** AY completes both poly5/RBF2 across all four
 models without a common strict criterion. AZ's global ordinal calibration
 does not rescue GP lengthscale support, but BA2's *posterior function*

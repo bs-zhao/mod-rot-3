@@ -21,19 +21,21 @@ PRIMARY = 'point_UX_columns_Xmean_subject_mean_soft_count_eps010'
 
 
 def analyze(source, output, bank_folder, centers=128, training_steps=30, refit_steps=60,
-            random_count=64, optimizer_starts=2, optimizer_evaluations=100, seed=416, device='cuda'):
+            random_count=64, optimizer_starts=2, optimizer_evaluations=100, seed=416, device='cuda',
+            bank_factory=profiles.MatrixBank, primary_metric=PRIMARY):
     output = Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain previous radial GP experiment: {output}')
-    bank = profiles.MatrixBank(source, bank_folder); data = bank.data
+    bank = bank_factory(source, bank_folder); data = bank.data
     output.mkdir(parents=True)
     protocol = dict(status='RUNNING', model=data.index['model'], source=str(Path(source).resolve()),
         all_subjects=data.n, all_original_rows=data.m, source_matrix_manifest_sha256=bank.protocol['manifest_sha256'],
         source_response_reference=bank.quality['mode'], seed=seed, centers=centers,
+        global_output_transform=bank.protocol.get('response_transform', 'identity'),
         training_steps=training_steps, all_subject_refit_steps=refit_steps, starts=3,
         source_fit='one isotropic GP per X/channel task, exact common-eta constraint',
         coordinate_evaluation='rotate fixed posterior gradient covariance; no per-case refit',
-        primary_blind_metric=PRIMARY, primary_blind_channel='logit_nn', random_SO_rotations=random_count,
+        primary_blind_metric=primary_metric, primary_blind_channel='logit_nn', random_SO_rotations=random_count,
         blind_optimizer_starts=optimizer_starts, blind_optimizer_evaluations=optimizer_evaluations,
         prediction_quality_policy='continuous diagnostic, no fixed veto',
         derivative_accuracy_verified=False, precision='float64', device=device,
@@ -104,15 +106,18 @@ def analyze(source, output, bank_folder, centers=128, training_steps=30, refit_s
     wave.csv_file(output/'blind_scores.csv', blind)
     digest = hashlib.sha256((output/'blind_scores.csv').read_bytes()).hexdigest()
     # The blind primary objective and starts do not read case labels.
+    def primary_value(q):
+        return (radial.primary_value(covariance[:, 0], q) if primary_metric == PRIMARY else
+                radial.scores(covariance[:, 0], q)[primary_metric])
     random_rng = np.random.default_rng(seed+10); random_q, random_loss = [], []
     for _ in range(random_count):
         q = rotations.random_rotation(data.d, random_rng)
-        random_q.append(q); random_loss.append(radial.primary_value(covariance[:, 0], q))
+        random_q.append(q); random_loss.append(primary_value(q))
     history, optimized = [], []
     for start, index in enumerate(np.argsort(random_loss)[:optimizer_starts]):
         q0 = random_q[int(index)]
         def objective(parameters):
-            value = radial.primary_value(covariance[:, 0], q0 @ rotations.increment(parameters, data.d))
+            value = primary_value(q0 @ rotations.increment(parameters, data.d))
             history.append(dict(start=start, parameters=np.asarray(parameters).tolist(), loss=value))
             return value
         result = minimize(objective, np.zeros(data.d*(data.d-1)//2), method='Powell',
@@ -134,9 +139,9 @@ def analyze(source, output, bank_folder, centers=128, training_steps=30, refit_s
         **wave.st.evaluate_curve(values, data.index['cases']), is_control=not scope.primary(m),
         prediction_error_veto_applied=False) for (c, m), values in grouped.items()]
     wave.csv_file(output/'metric_summary.csv', rows)
-    baseline = next(float(r['loss']) for r in blind if r['channel']=='logit_nn' and r['metric']==PRIMARY
+    baseline = next(float(r['loss']) for r in blind if r['channel']=='logit_nn' and r['metric']==primary_metric
                     and reveal[r['anonymous_case']]=='baseline')
-    assessment = dict(primary_metric=PRIMARY, baseline_loss=baseline,
+    assessment = dict(primary_metric=primary_metric, baseline_loss=baseline,
         random_minimum_loss=float(min(random_loss)), blind_optimized_minimum_loss=min((r['loss'] for r in optimized), default=None),
         source_GP_refitted_per_rotation=False, source_prediction_errors_reported_without_cutoff=True)
     wave.json_file(output/'assessment.json', assessment)

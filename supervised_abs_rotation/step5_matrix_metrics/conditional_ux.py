@@ -94,7 +94,11 @@ def direction_classes(maps, tolerance=1e-6):
         for raw in q.T:
             v = raw.copy()/np.linalg.norm(raw)
             v *= np.sign(v[np.flatnonzero(np.abs(v) > 1e-10)[0]])
-            match = next((i for i, old in enumerate(directions) if np.linalg.norm(v-old) < tolerance), None)
+            # The first nominally nonzero coordinate can be roundoff near a
+            # coordinate axis. Match antipodes explicitly: squared effects
+            # and conditional complement spaces are sign invariant.
+            match = next((i for i, old in enumerate(directions)
+                          if min(np.linalg.norm(v-old), np.linalg.norm(v+old)) < tolerance), None)
             if match is None:
                 match = len(directions); directions.append(v)
             indices.append(match)
