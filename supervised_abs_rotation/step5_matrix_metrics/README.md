@@ -1,5 +1,16 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Current continuation (2026-11-12):** conditional Shapley function-profile
+support gives four-grid axis deviations 0/0/15/15 degrees using the same
+p_nn metric. C2/C3 score gaps are 1.771%/.590%; doubling radial capacity
+preserves the positions, with gaps 1.785%/.619%. New blind searches give
+CR3/C1/C2 mean matched offsets 12.72/1.53/16.21 degrees and score gains
+.275%/1.170%/3.855%. CR3's small gain repeats in all 12 paired subject
+refits at both capacities. C3 blind search and the remaining paired audits
+continue. Nearby results are retained with angles and score gaps separated.
+See WAVE_BS_BU.md for definitions, numerical checks, failures and limits.
+The complete suite passes 244 tests. Older status paragraphs are checkpoints.
+
 **Latest completed audits:** the fixed-GP 3% UX criterion has one-degree
 single-plane optima at +25/-2/+2/-2 degrees in CR3/C1/C2/C3. Stronger blind
 search followed by best-decrease line refinement gives maximum matched

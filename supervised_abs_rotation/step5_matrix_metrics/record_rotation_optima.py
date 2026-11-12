@@ -28,6 +28,11 @@ WAVES={
     'BL':'waveBL_complete_response_kernel_seed430',
     'BM':'waveBM_subset_kernel_group_GP_seed448',
     'BR':'waveBR_polynomial_link_kernel_seed430',
+    'BS':'waveBS_operator_mode_support_seed430',
+    'BT':'waveBT_operator_mode_support_seed430',
+    'BU':'waveBU_conditional_Shapley_profiles_seed471',
+    'BU3':'waveBU3_conditional_Shapley_profiles_seed471',
+    'BV':'waveBV_conditional_Shapley_profiles_seed471',
 }
 
 

@@ -6,6 +6,9 @@ import record_rotation_optima as optima
 
 
 CANDIDATES=[
+    ('条件 Shapley 函数剖面：3% UX 支持（p_nn）','BU','shapley_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('条件 Shapley，64 核中心：3% UX 支持（p_nn）','BU3','shapley_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('学习输出变换的算子模态：10% UX 分数支持（p_nn）','BT','Ui_innovation_with_context_UX_operator_columns_worst_fractional_count_eps010','p_nn'),
     ('树：条件 UX 函数的 10% L2 规则成本','AU','UX_function_tree_leaves_relative_L2_eps100_Xworst'),
     ('多项式近似后：同一树规则成本','AY_poly5','UX_function_tree_leaves_relative_L2_eps100_Xworst'),
     ('GP 后验函数：3% UX 小尾部','BA2','derivative_pooled_UX_columns_worst_soft_count_eps003'),
@@ -27,8 +30,9 @@ def main():
     output=wave.ROOT/'outputs/supervised_abs_rotation/rotation_optima_including_nearby'
     with (output/'four_model_optima.csv').open() as stream:rows=list(csv.DictReader(stream))
     table=[];selected=[]
-    for label,tag,metric in CANDIDATES:
-        found={r['model']:r for r in rows if r['wave']==tag and r['channel']=='logit_nn' and r['metric']==metric}
+    for candidate in CANDIDATES:
+        label,tag,metric=candidate[:3];channel=candidate[3] if len(candidate)>3 else 'logit_nn'
+        found={r['model']:r for r in rows if r['wave']==tag and r['channel']==channel and r['metric']==metric}
         cells=[];planes=[]
         for model in ('CR3','C1','C2','C3'):
             if model not in found:cells.append('运行中');planes.append('—');continue
@@ -49,6 +53,10 @@ def main():
 
 全部最优平面、最小值并列项、15°/75° 点和完整曲线跨度见 `four_model_optima.csv`。
 更多相关变体见 `four_model_overview.csv`；多个变体高度相关，不代表独立验证。
+
+条件 Shapley 的 CR3 新盲搜低约 0.275%，轴匹配平均 12.7°、最大 17.3°；
+这属于保留的近似结果，搜索未证明全局最优。BT 的 CR3 旧冻结方向低约 15%—18%，
+因此其近似网格位置不能单独作为坐标恢复证据。
 
 网格之外的反例另行保留：BC2 的旧盲搜方向低约 12.1%；1% 分数支持只低约
 0.107%，但在 24 次成对重新估计的被试子集中始终更低。BK 的新盲搜差距约 2.04%。
