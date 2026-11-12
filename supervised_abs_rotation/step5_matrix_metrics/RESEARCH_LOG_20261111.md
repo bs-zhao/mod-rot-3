@@ -276,6 +276,24 @@ above record their state at the time, rather than their current status.
 
 ## Wave O: degree-resolved and pure-coupling structure
 
+## AT/AU and flexible approximation-quality evidence
+
+AT completes with no CR3 full-plane score, even ignoring the original
+MSE gate. Best is 3/6 planes, rank 4. Its GP heldout relative MSE is
+.000120427/.000236446, so excellent prediction does not imply recovery.
+
+AU's tree rule-description complexity yields a CR3 logit 6/6 grid
+candidate: worst-X leaves needed for 10% relative L2 approximation.
+Full-tree worst heldout relative MSE is .0662075/.0823308. The original
+.01 gate excluded it. The user explicitly instructed that these standards
+must not be rigid. AU2 therefore continues the identical frozen metric to
+C1/C2/C3 and records approximation errors without a hard numerical veto.
+The original score hashes remain unchanged. This is a provisional candidate,
+with resolution/resampling/blind rotations still to assess. Five new tree
+and policy tests pass. See WAVE_AT.md and WAVE_AU.md.
+
+## Wave O results (continued)
+
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.
 It explicitly removed U-only and X-only product-reference components
 before mixed-block spectra, and separately scored homogeneous U orders

@@ -16,6 +16,15 @@ excluded from scoring. Baseline/angles are evaluation labels only. All
 latent dimensions, 91 cases and 15 planes; the other models have four
 dimensions, 37 cases and six planes.
 
+Latest user steering (2026-11-11): prediction-quality thresholds must not
+be rigid vetoes. In particular, a .01 heldout relative-MSE cutoff must not
+discard a structurally interesting candidate before further datasets are
+examined. Report approximation error continuously and judge it together
+with resolution, resampling and blind-optimization evidence. Preserve the
+same score across datasets and distinguish provisional grid evidence from
+a validated universal metric. This does not waive numerical-integrity or
+matrix-only input checks.
+
 First inspect local status and existing outputs. Read this package's README,
 then test and run wave A on the four real datasets. Default source paths are
 resolved by `matrix_io.default_step2`. Never regenerate Y from a known

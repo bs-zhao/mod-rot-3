@@ -1,7 +1,11 @@
 # Conditional X feature witnesses followed by GP complexity
 
-AT runs CR3 first, then C1/C2/C3 only while an identical primary criterion
-survives. It is an exploratory new protocol, not an accepted result.
+AT completed CR3 without a full-plane grid criterion; C1/C2/C3 were skipped.
+Even without the original prediction-error gate there are zero primary
+six-plane scores. Best is 3/6 planes, baseline rank 4. Worst selected GP
+heldout relative MSE is .000120427/.000236446 and full-refit relative MSE
+is .0000514493/.000117928 (logit/probability). Thus the present failure is
+structural scoring despite good function prediction, not the .01 gate.
 
 The previous X omission regression used Y to tune prediction of a response
 from the other X columns. AT instead constructs a numerical conditional
@@ -25,11 +29,13 @@ empirical structural diagnostic inspired by conditional kernel covariance,
 not a calibrated KCI hypothesis test or a causal attribution. Finite-sample
 conditional-mean error can leave leakage, which is not assumed to vanish.
 
-The same direct-matrix GP implementation and fidelity gates as AR follow:
+The original protocol used the same direct-matrix GP implementation and fidelity gates as AR:
 128 centers, three starts, 30 training and 60 all-5000-subject refit steps,
 1e-6 output-mode squared-energy budget, <=.01 heldout and refit relative
 MSE for every X task/case. Primary scores are scale-normalized small-tail
-and effective-support summaries of inverse-lengthscale relevance. Budget
+and effective-support summaries of inverse-lengthscale relevance. The user
+subsequently clarified that prediction-MSE thresholds must not be rigid
+vetoes; both gated and ungated grid results above are zero. Budget
 one, budget-curve area and 30% support counts remain controls.
 
 Run:

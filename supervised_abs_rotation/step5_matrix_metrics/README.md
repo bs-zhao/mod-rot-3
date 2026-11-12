@@ -4,10 +4,15 @@
 AR's direct-response-matrix GP each reach at most 5/6 CR3 planes, baseline
 rank 2. AS's conditional active/monotone-piece counts reach 4/6, rank 6,
 despite >99.6% probe coverage. None passes, so the later datasets are skipped.
-AT is running W-only conditional X feature witnesses followed by direct
-matrix GP complexity. The full numerical suite passes 171 tests. No
+AT's W-only conditional X feature witnesses followed by direct matrix GP
+complexity also fail (best 3/6) despite very low prediction error.
+AU's conditional UX tree complexity has a CR3 6/6 logit candidate, with
+worst heldout relative MSE .0662. Following the user's clarification,
+AU2 continues it to C1/C2/C3 with prediction error reported continuously,
+without a fixed .01 veto. Four new tree tests and the continuation-policy
+test pass after the preceding 171-test suite. No
 validated four-model criterion exists. See WAVE_AQ.md, WAVE_AR_AS.md and
-WAVE_AT.md for exact definitions, limitations and retained failures.
+WAVE_AT.md and WAVE_AU.md for exact definitions, limitations and retained failures.
 
 **Earlier UX-focused continuation:** UX support is primary.
 AA's degree-five joint polynomial reaches CR3 logit validation NMSE .00439,
