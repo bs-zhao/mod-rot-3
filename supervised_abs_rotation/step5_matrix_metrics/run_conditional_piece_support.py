@@ -19,7 +19,7 @@ import conditional_piece_support as pieces
 
 
 def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), nodes=17, neighbors=64,
-            subjects_per_chunk=32, seed=418, device='cuda'):
+            subjects_per_chunk=32, seed=418, device='cuda', effect_view='X_omission'):
     output = Path(output)
     if output.exists() and any(output.iterdir()):
         raise FileExistsError(f'Retain previous conditional piece experiment: {output}')
@@ -29,12 +29,16 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), nodes=17,
         seed=seed, source_seed=bank.protocol['seed'], source_manifest_sha256=bank.source_digest,
         estimators=estimators, channels=data.channels, nodes=nodes, conditional_neighbors=neighbors,
         interval_conditional_quantiles=[.1, .9], support_k=16, support_factor=1.5, minimum_probe_coverage=.9,
-        primary_scope='soft count of active UX directions and active monotone pieces, varying one Ui with other U fixed',
+        effect_view=effect_view,
+        primary_scope=('conditional U monotonicity of raw response at each X context' if effect_view == 'raw_response' else
+                       'soft count of active UX directions and active monotone pieces, varying one Ui with other U fixed'),
         effect_energy='squared slice range / squared interval width',
-        activation='e/(e+eps^2 * mean_X_context(sum_U e)) within each subject and X-column contrast',
+        activation=('e/(e+eps^2 * sum_U e) independently in every X context' if effect_view == 'raw_response' else
+                    'e/(e+eps^2 * mean_X_context(sum_U e)) within each subject and X-column contrast'),
         piece_count='slice total variation / slice range', relative_thresholds=[.01, .03, .1],
         all_subjects_used=True, all_original_rows_in_source_fit=data.m, all_source_X_contexts_used=bank.bank.shape[2],
         device=device, precision='float64', score_sign='lower for every dataset', status='RUNNING',
+        prediction_quality_policy='continuous diagnostic, no fixed MSE veto in continuation',
         code_sha256=hashlib.sha256(b''.join((wave.HERE/f).read_bytes() for f in
             ('run_conditional_piece_support.py', 'conditional_piece_support.py', 'ux_predictive_complexity.py',
              'cp_regression.py', 'fitted_bank.py', 'matrix_io.py', 'surrogates.py', 'structure.py'))).hexdigest())
@@ -48,7 +52,13 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), nodes=17,
         old = json.loads((cached/'protocol.json').read_text())
         digest = hashlib.sha256((cached/'blind_scores.csv').read_bytes()).hexdigest()
         reuse = old['status'] == 'COMPLETE' and digest == old['scores_sha256'] and old['source_signature_sha256'] == bank.source_digest
-    if reuse:
+    if effect_view == 'raw_response':
+        operators = None
+        wave.json_file(output/'X_crossfit_audit.json', dict(X_omission_performed=False,
+            reason='evaluate raw response monotonicity with original X held fixed; no X contrast'))
+    elif effect_view != 'X_omission':
+        raise ValueError(f'Unknown effect view: {effect_view}')
+    elif reuse:
         operators = [load_npz(cached/f'X_omit_d2_column{j}.npz').toarray() for j in range(data.dx)]
         wave.json_file(output/'X_crossfit_audit.json', dict(source_run=str(cached.resolve()), scores_sha256=digest))
     else:
@@ -57,19 +67,28 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), nodes=17,
         mapping, audit = uc.omission_operators(x, wave.sur.Scaler(data.w[:, data.d:], 1).scale,
             bank.bank, bank.train, seed=405, degrees=(2,))
         operators = mapping['omit_d2']; wave.json_file(output/'X_crossfit_audit.json', audit)
-    operators = np.asarray(operators)
+    operators = np.asarray(operators) if operators is not None else None
     blind, quality, coverage = [], [], []
     for name in estimators:
         coefficients, z, meta = uc.source_coefficients(bank, name)
-        coefficients -= coefficients.mean(2, keepdims=True)
-        contrasts = np.einsum('pcm,jkm->pcjk', coefficients, operators, optimize=True)
+        if effect_view == 'raw_response':
+            contrasts = coefficients[:, :, None, :]
+            score_dx, reference = 1, 'context'
+        else:
+            coefficients -= coefficients.mean(2, keepdims=True)
+            contrasts = np.einsum('pcm,jkm->pcjk', coefficients, operators, optimize=True)
+            score_dx, reference = data.dx, 'field'
         evaluator = pieces.Evaluator(meta, contrasts.reshape(len(coefficients), -1), device=device)
         classes, membership = cp.canonical_classes(z, maps)
         np.savez_compressed(output/f'{name}_W_only_classes.npz', classes=classes, membership=membership)
         tables_by_class, audits = [], []
         for group, q in enumerate(classes):
-            tables, audit = pieces.evaluate_case(z, q, evaluator, len(data.channels), data.dx, bank.bank.shape[2],
-                nodes=nodes, neighbors=neighbors, subjects_per_chunk=subjects_per_chunk)
+            tables, audit = pieces.evaluate_case(z, q, evaluator, len(data.channels), score_dx, bank.bank.shape[2],
+                nodes=nodes, neighbors=neighbors, subjects_per_chunk=subjects_per_chunk, reference=reference)
+            if effect_view == 'raw_response':
+                for key in list(tables):
+                    if key.startswith('eps'):
+                        tables['reversal_'+key] = np.maximum(tables[key]-tables['active_'+key], 0.)
             tables_by_class.append(tables); audits.append(dict(estimator=name, coordinate_class=group, **audit))
             np.savez_compressed(output/f'{name}_subject_costs_class{group:03d}.npz', **tables)
             wave.json_file(output/f'{name}_probe_coverage.json', audits)
@@ -83,6 +102,12 @@ def analyze(source, output, bank_folder, estimators=('poly5', 'rbf2'), nodes=17,
                 validation_nmse=float(old['validation_nmse']), minimum_probe_coverage=minimum))
             for case, group in enumerate(membership):
                 for metric, value in pieces.scores(tables_by_class[group], c).items():
+                    if effect_view == 'raw_response':
+                        if '_Xworst_' in metric:
+                            continue
+                        metric = metric.replace('UX_conditional_', 'U_raw_conditional_').replace('_Xmean_', '_')
+                        if 'reversal_' in metric:
+                            metric = metric.replace('monotone_pieces_', 'monotonicity_excess_').replace('reversal_', '')
                     blind.append(dict(anonymous_case=f'case_{case:03d}', estimator=name, channel=channel, metric=metric, loss=value))
         wave.csv_file(output/'blind_scores.csv', blind); wave.csv_file(output/'fit_quality.csv', quality)
     digest = hashlib.sha256((output/'blind_scores.csv').read_bytes()).hexdigest()
@@ -108,6 +133,7 @@ def main():
     p.add_argument('--run-name', default='waveAS_conditional_UX_pieces_seed418')
     p.add_argument('--nodes', type=int, default=17); p.add_argument('--neighbors', type=int, default=64)
     p.add_argument('--device', choices=('cuda', 'cpu'), default='cuda')
+    p.add_argument('--effect-view', choices=('X_omission', 'raw_response'), default='X_omission')
     args = p.parse_args(); survivors = None
     if args.nodes < 3 or args.neighbors < 2:
         p.error('At least three nodes and two neighbors are required')
@@ -120,8 +146,9 @@ def main():
                 folder = parent/'UX_piece_source_seed383'
             if not folder.exists():
                 prepare_response_bank.prepare(source, folder, estimators=('poly5', 'rbf2'))
-            rows = analyze(source, parent/args.run_name, folder, nodes=args.nodes, neighbors=args.neighbors, device=args.device)
-            passed = {(r['estimator'], r['channel'], r['metric']) for r in rows if r['adequate'] and r['all_planes_pass']}
+            rows = analyze(source, parent/args.run_name, folder, nodes=args.nodes, neighbors=args.neighbors,
+                           device=args.device, effect_view=args.effect_view)
+            passed = {(r['estimator'], r['channel'], r['metric']) for r in rows if r['all_planes_pass']}
             survivors = passed if survivors is None else survivors & passed
             print(f'[WaveAS] {model}: {len(passed)} conditional UX complexity passes, {len(survivors)} common', flush=True)
             if args.batch and not survivors:

@@ -294,6 +294,27 @@ and policy tests pass. See WAVE_AT.md and WAVE_AU.md.
 
 ## Wave O results (continued)
 
+## AU through AY: continuous evidence after the user's clarification
+
+The identical AU criterion gives CR3/C1/C2/C3 strict plane counts
+6/6, 6/6, 5/6, 11/15. C2/C3 best grid gains over baseline are 1.59%/.98%.
+C3 runs despite the C2 deviation; prediction MSE has no fixed veto.
+AV's common error-resolution path has no strict four-grid survivor.
+
+AW's random rotations all score above CR3 baseline 739, but blind Powell
+optimization reaches 527. AW2 replays the exact paired subject draws at
+the fixed optima: both remain below baseline in all 24 refits, with the
+better frame's median relative advantage 24.79%. Detailed numerical
+evidence and caveats are in WAVE_AV_AW.md.
+
+AX tests raw conditional U monotonicity at each X context; best is 2/6,
+rank 16. AY approximates first with verified poly5/RBF2 then measures
+the same UX tree complexity; the four-model audit is running. The fixed
+AW counterexample transfers to both sources (527 versus baselines 741/739).
+186 tests pass. See WAVE_AX_AY.md. All failures are retained.
+
+## Wave O details (original continuation)
+
 `waveO_resolved_seed394` completed CR3 with no full-plane candidate.
 It explicitly removed U-only and X-only product-reference components
 before mixed-block spectra, and separately scored homogeneous U orders

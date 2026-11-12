@@ -30,6 +30,12 @@ resolution, subject resampling and blind rotations remain subsequent
 evidence for judging reliability rather than a premature declaration of
 success. See `continue_tree_function_wave.py`.
 
+The full continuation and blind counterexample are now in WAVE_AV_AW.md.
+C1 passes, C2/C3 show small grid gains over baseline, but CR3 blind
+multi-plane optimization finds a much larger improvement that persists
+under paired subject refits. This family does not establish a universal
+simplicity minimum.
+
 Four tests verify all intermediate distortion values by explicit query
 predictions, the user's sparsity example (4 versus 16 leaves at 3% error),
 output-basis invariance/discarded-energy accounting, and the complete

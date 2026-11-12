@@ -70,3 +70,22 @@ def test_complete_tree_pipeline_retains_all_original_matrix_rows(tmp_path):
     assert protocol['status'] == 'COMPLETE' and protocol['all_original_rows'] == 160
     audit = json.loads((output/'read_audit.json').read_text())
     assert audit['forbidden_files_read'] == [] and audit['all_subjects_in_tree_fit'] == 32
+
+
+def test_fitted_polynomial_tree_pipeline_uses_the_same_matrix_reference(tmp_path):
+    import json
+    from threadpoolctl import threadpool_limits
+    import matrix_function_profiles as profiles
+    import prepare_response_bank
+    import run_tree_function_complexity as runner
+    from test_matrix_metrics import make_cases
+    source = tmp_path/'source'; make_cases(source)
+    matrix, fitted, output = tmp_path/'matrix', tmp_path/'fitted', tmp_path/'out'
+    with threadpool_limits(limits=2):
+        profiles.prepare(source, matrix)
+        prepare_response_bank.prepare(source, fitted, estimators=('poly5',), centers=10)
+        rows = runner.analyze(source, output, matrix, source_estimator='poly5', fitted_folder=fitted)
+    assert rows and all(r['estimator'] == 'poly5_conditional_tree' for r in rows)
+    protocol = json.loads((output/'protocol.json').read_text())
+    assert protocol['direct_raw_response_table'] is False and protocol['fitted_source_manifest_sha256']
+    assert max(r['endpoint_error'] for r in rows) < 1e-12

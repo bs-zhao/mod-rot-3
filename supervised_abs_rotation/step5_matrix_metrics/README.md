@@ -1,5 +1,15 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Latest evidence (2026-11-11, America/New_York):** prediction MSE is a
+continuous diagnostic following the user's clarification. The same AU
+tree criterion gives CR3 6/6, C1 6/6, C2 5/6 and C3 11/15 planes;
+C2/C3 grid gains over baseline are only 1.59%/.98%. AW blind optimization
+however reaches CR3 loss 527 versus 739, with an advantage in every one
+of 24 paired subject refits. This counterexample transfers to poly5/RBF2.
+AX raw conditional monotonicity fails CR3. AY's all-four source audit is
+running. No validated universal criterion exists. See WAVE_AV_AW.md and
+WAVE_AX_AY.md. The complete suite passes 186 tests.
+
 **Latest continuation (2026-11-11, America/New_York):** AQ's GP relevance and
 AR's direct-response-matrix GP each reach at most 5/6 CR3 planes, baseline
 rank 2. AS's conditional active/monotone-piece counts reach 4/6, rank 6,

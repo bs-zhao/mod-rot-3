@@ -53,7 +53,7 @@ def probes_for(u, bounds, q, nodes):
 
 
 @torch.no_grad()
-def piece_costs(values, widths, epsilons=(.01, .03, .1)):
+def piece_costs(values, widths, epsilons=(.01, .03, .1), reference='field'):
     """values[subject,channel,Xcolumn,Uaxis,node,recorded-X-context].
 
     One monotone active direction costs one piece. Reversals add fractional
@@ -63,19 +63,23 @@ def piece_costs(values, widths, epsilons=(.01, .03, .1)):
     while giving nearly flat contexts little activation.
     """
     centered = values-values[:, :, :, :, values.shape[4]//2:values.shape[4]//2+1]
-    peak = centered.abs().amax(dim=(3, 4, 5), keepdim=True)
+    if reference not in ('field', 'context'):
+        raise ValueError('Unknown slice-energy reference')
+    peak = centered.abs().amax(dim=(3, 4) if reference == 'context' else (3, 4, 5), keepdim=True)
     unit = torch.where(peak > 0, centered/torch.clamp(peak, min=torch.finfo(values.dtype).tiny), 0.)
     amplitude = unit.amax(4)-unit.amin(4)
     variation = torch.diff(unit, dim=4).abs().sum(4)
     width = torch.as_tensor(widths, dtype=values.dtype, device=values.device)[:, None, None, :, None]
     slopes = torch.where(width > 0, amplitude/torch.clamp(width, min=torch.finfo(values.dtype).tiny), 0.)
-    maximum = slopes.amax(dim=(3, 4), keepdim=True)
+    maximum = slopes.amax(dim=(3,) if reference == 'context' else (3, 4), keepdim=True)
     energy = torch.where(maximum > 0, slopes/torch.clamp(maximum, min=torch.finfo(values.dtype).tiny), 0.).square()
-    reference = energy.sum(3, keepdim=True).mean(4, keepdim=True)
+    energy_reference = energy.sum(3, keepdim=True)
+    if reference == 'field':
+        energy_reference = energy_reference.mean(4, keepdim=True)
     pieces = torch.where(amplitude > 0, variation/torch.clamp(amplitude, min=torch.finfo(values.dtype).tiny), 0.)
     result = {}
     for eps in epsilons:
-        denominator = energy+eps**2*reference
+        denominator = energy+eps**2*energy_reference
         active = torch.where(denominator > 0, energy/torch.clamp(denominator, min=torch.finfo(values.dtype).tiny), 0.)
         label = f'eps{int(eps*1000):03d}'
         result[label] = (active*pieces).sum(3).mean(-1).cpu().numpy()
@@ -84,7 +88,7 @@ def piece_costs(values, widths, epsilons=(.01, .03, .1)):
 
 
 def evaluate_case(z, q, evaluator, channels, dx, contexts, nodes=17, neighbors=64,
-                  subjects_per_chunk=32, support_k=16, support_factor=1.5):
+                  subjects_per_chunk=32, support_k=16, support_factor=1.5, reference='field'):
     u, bounds = conditional_intervals(z, q, neighbors)
     tree = cKDTree(z); radii = tree.query(z, k=min(support_k, len(z)))[0][:, -1]
     tables, covered, total = {}, 0, 0
@@ -94,7 +98,7 @@ def evaluate_case(z, q, evaluator, channels, dx, contexts, nodes=17, neighbors=6
         distances = tree.query(probes, k=min(support_k, len(z)))[0][:, -1].reshape(n, d, nodes)
         covered += int(np.sum(distances <= support_factor*radii[start:stop, None, None])); total += distances.size
         values = evaluator(probes).reshape(n, d, nodes, channels, dx, contexts).permute(0, 3, 4, 1, 2, 5)
-        partial = piece_costs(values, bounds[start:stop, :, 1]-bounds[start:stop, :, 0])
+        partial = piece_costs(values, bounds[start:stop, :, 1]-bounds[start:stop, :, 0], reference=reference)
         if not tables:
             tables = {key: np.empty((len(z), channels, dx)) for key in partial}
         for key, value in partial.items():
