@@ -1,5 +1,12 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Retained-criterion gallery:** all 44 retained entries have four-model raw
+angle curves and saved loss-selected R/U/T correlation plots. Grid minima
+and best available case/stress/continuous-search results are separate.
+T is evaluation-only after each rotation freezes. See
+[ROTATION_GALLERY.md](ROTATION_GALLERY.md) for output paths, search scope,
+reproduction and the additional continuous-search batch.
+
 **Newest independent validation:** CL freezes BU's NN-p mean-X 3%
 Shapley UX mode-support criterion and evaluates 64 new Haar rotations
 per model with all 5000 subjects. The reference beats all 64 in each
