@@ -15,6 +15,15 @@ def test_15_degree_minimum_is_retained_with_angle_and_score_gap_as_different_uni
     assert result['minimum_grid_angle_deg']==15 and result['best_interior_axis_deviation_deg']==15
     assert abs(result['minimum_grid_relative_change_percent']+.2)<1e-12
     assert result['baseline_rank']==2
+    import json
+    bands=json.loads(result['near_optimal_grid_bands_json'])
+    assert bands[0]['baseline_included'] and bands[0]['maximum_axis_deviation_deg']==15
+    assert bands[0]['baseline_and_interior_points']==2  # 90-degree endpoint excluded
+    assert bands[1]['maximum_axis_deviation_deg']==45
+    assert result['minimum_grid_axis_deviation_deg']==15
+    assert result['grid_points']==7
+    assert abs(result['baseline_strictly_better_other_grid_points_percent']-100/6)<1e-12
+    assert abs(result['baseline_regret_relative_grid_span_percent']-100*.02/.12)<1e-10
 
 
 def test_exact_90_degree_tie_is_reported_as_reference_axes_with_all_ties_retained():

@@ -1,5 +1,35 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Newest completed variance experiments (2026-11-12):** CF's unchanged
+logit worst-X predictive-variance Shapley 3% support gives coarse axis
+deviations 0/0/15/15 degrees, with C2/C3 score gaps .749%/.224%. The
+baseline ranks are 1/37, 1/37, 4/37 and 7/91, all within the first 11% of
+the supplied grid; ranking percentages and degrees remain separate. The
+preferred p_nn mean-X view is retained separately at 15/0/15/30 degrees.
+CG's coherent nested polynomial covariance allocation conserves observed
+covariance and preserves PSD increments, but does not uniformly improve
+four-grid positions. CG2's completed CR3 blind result has mean/max matched
+offset 6.596/9.197 degrees and a 1.857% score gain. Further blind searches
+continue with all 5000 subjects. Full curves, near-optimal bands, initialization
+arms and prediction quality remain separate diagnostics. See
+[WAVE_CF_CG.md](WAVE_CF_CG.md). The full suite passes 265 tests; both new
+blind scorers additionally pass exact source-score replay tests.
+
+**Newest completed continuation (2026-11-12):** the same p_nn Shapley
+profile-support criterion preserves coarse axis deviations 0/0/15/15
+degrees under degree-3/32-center, degree-3/64-center, affine/256-center,
+degree-5/64-center and GCV-selected generic conditional fits. The adaptive
+version gives C2/C3 gains 1.776%/.623%; retaining a separate unassigned
+residual gives 1.588%/.560%. BU7's 96 paired subject refits favor the frozen
+nearby refined points. Fixed-fit PRESS audits compare approximation families
+without an absolute MSE veto. BZ/CA projection alternatives complete and
+are retained with their displaced minima. Angle, rank percent, relative
+score gap and near-optimal score bands have separate fields. See
+[WAVE_BZ_CE.md](WAVE_BZ_CE.md) for definitions and scientific limits.
+The last complete suite passes 258 tests; CF's predictive-variance
+continuation has additional targeted tests and starts with CR3. Earlier
+status paragraphs below are historical checkpoints.
+
 **Current continuation (2026-11-12):** conditional Shapley function-profile
 support gives four-grid axis deviations 0/0/15/15 degrees using the same
 p_nn metric. C2/C3 score gaps are 1.771%/.590%; doubling radial capacity

@@ -36,6 +36,14 @@ WAVES={
     'BW':'waveBW_norm_lift_GP_profiles_seed416',
     'BX':'waveBX_conditional_dividend_profiles_seed471',
     'BY':'waveBY_tree_Haar_profiles_seed494',
+    'BZ':'waveBZ_conditional_projection_profiles_seed430',
+    'CA':'waveCA_conditional_projection_profiles_seed430',
+    'CB':'waveCB_conditional_Shapley_profiles_seed471',
+    'CC':'waveCC_conditional_Shapley_profiles_seed471',
+    'CD':'waveCD_adaptive_GCV_Shapley_profiles_seed471',
+    'CE':'waveCE_residual_aware_adaptive_Shapley_profiles_seed471',
+    'CF':'waveCF_PRESS_Shapley_variance_seed471',
+    'CG':'waveCG_nested_polynomial_variance_seed471',
 }
 
 
@@ -51,11 +59,22 @@ def positions(losses,cases):
     best=min(interior,key=losses.get)
     near=[key for key in interior if int(metadata[key]['angle_deg']) in (15,75)]
     def angle(key):return int(metadata[key].get('angle_deg',0))
+    bands=[]
+    for percent in (1,3,5,15):
+        eligible=[key for key in ['baseline']+interior if losses[key]<=raw_minimum+
+                  percent/100*max(abs(raw_minimum),1e-30)+1e-10*max(1.,abs(raw_minimum))]
+        planes={tuple(metadata[key].get('pair_1based',[])) for key in eligible if key!='baseline'}
+        bands.append(dict(score_tolerance_percent=percent,baseline_included='baseline' in eligible,
+            baseline_and_interior_points=len(eligible),interior_planes=len(planes),
+            maximum_axis_deviation_deg=max((min(angle(key),90-angle(key)) for key in eligible),default=None)))
     result=dict(baseline_loss=baseline,minimum_grid_loss=raw_minimum,minimum_grid_case=full,
         raw_minimum_grid_case=raw_minimum_case,
         raw_minimum_grid_relative_change_percent=100*(raw_minimum-baseline)/scale,
         minimum_position_numerical_tie_tolerance=1e-10,
         minimum_grid_angle_deg=angle(full),minimum_grid_pair=json.dumps(metadata[full].get('pair_1based',[])),
+        minimum_grid_axis_deviation_deg=min(angle(full),90-angle(full)),
+        baseline_gap_relative_to_grid_minimum_percent=100*(baseline-raw_minimum)/max(abs(raw_minimum),1e-30),
+        near_optimal_grid_bands_json=json.dumps(bands),near_optimal_bands_exclude_90_degree_permutation_endpoints=True,
         minimum_grid_relative_change_percent=0. if full=='baseline' else 100*(raw_minimum-baseline)/scale,
         best_interior_case=best,best_interior_angle_deg=angle(best),
         best_interior_axis_deviation_deg=min(angle(best),90-angle(best)),
@@ -65,6 +84,12 @@ def positions(losses,cases):
         near_minimum_cases_json=json.dumps([dict(case=key,angle_deg=angle(key),pair=metadata[key].get('pair_1based',[]))
             for key in losses if losses[key]<=raw_minimum+1e-10*max(1,abs(raw_minimum))]),
         **wave.st.evaluate_curve(losses,cases))
+    result.update(grid_points=len(losses),baseline_one_based_rank_percent=100*result['baseline_rank']/len(losses),
+        baseline_strictly_better_other_grid_points_percent=100*(result['baseline_rank']-1)/max(len(losses)-1,1),
+        rank_percentage_scope='provided case grid, including 90-degree permutation endpoints; not random-rotation probability')
+    span=max(losses.values())-raw_minimum
+    result['baseline_regret_relative_grid_span_percent']=(100*(baseline-raw_minimum)/span
+        if span>1e-10*max(1.,max(abs(value) for value in losses.values())) else None)
     if near:
         key=min(near,key=losses.get)
         result.update(best_15_or_75_case=key,best_15_or_75_loss=losses[key],

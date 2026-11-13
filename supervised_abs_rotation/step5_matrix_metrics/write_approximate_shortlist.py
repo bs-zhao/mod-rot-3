@@ -1,11 +1,25 @@
 """Readable retained candidates, including displaced optima; no automatic veto."""
 import csv
+import json
 
 import run as wave
 import record_rotation_optima as optima
 
 
 CANDIDATES=[
+    ('一致多项式核方差剖面：3% UX 支持（p_nn）','CG','nested_polynomial_variance_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('一致多项式核方差能量：3% UX 支持（p_nn）','CG','nested_polynomial_variance_energy_UX_columns_mean_soft_count_eps003','p_nn'),
+    ('留一预测方差 Shapley：最差 X 列 3% UX 支持（logit）','CF','PRESS_variance_UX_columns_worst_soft_count_eps003'),
+    ('留一预测方差 Shapley：3% UX 支持（p_nn）','CF','PRESS_variance_UX_columns_mean_soft_count_eps003','p_nn'),
+    ('留一预测方差 Shapley：1% UX 分数支持（p_nn）','CF','PRESS_variance_UX_columns_mean_fractional_count_eps001','p_nn'),
+    ('自适应条件 Shapley＋未归因分量：3% UX 支持（p_nn）','CE','resolved_with_unassigned_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('GCV 自动选逼近器的条件 Shapley：3% UX 支持（p_nn）','CD','shapley_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('径向核 256 中心条件 Shapley：3% UX 支持（p_nn）','CB','shapley_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('五次多项式＋径向核条件 Shapley：3% UX 支持（p_nn）','CC','shapley_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('留一预测增益剖面：3% UX 支持（p_nn）','CA','conditional_PRESS_projection_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('留一预测增益能量：3% UX 支持（p_nn）','CA','conditional_PRESS_energy_UX_columns_mean_soft_count_eps003','p_nn'),
+    ('条件正交投影剖面：3% UX 支持（p_nn）','BZ','conditional_span_projection_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('条件正交投影能量：3% UX 支持（p_nn）','BZ','conditional_span_energy_UX_columns_mean_soft_count_eps003','p_nn'),
     ('树小波局部变化：3% UX 支持（p_nn）','BY','haar_node_UX_columns_mean_soft_count_eps003','p_nn'),
     ('树小波按 U 轴汇总：3% UX 支持（p_nn）','BY','haar_axis_UX_columns_mean_soft_count_eps003','p_nn'),
     ('条件交互子集剖面：3% UX 支持（p_nn）','BX','conditional_dividend_UX_operator_columns_mean_soft_count_eps003','p_nn'),
@@ -34,17 +48,44 @@ def main():
     optima.main()
     output=wave.ROOT/'outputs/supervised_abs_rotation/rotation_optima_including_nearby'
     with (output/'four_model_optima.csv').open() as stream:rows=list(csv.DictReader(stream))
-    table=[];selected=[]
+    table=[];selected=[];basins=[]
     for candidate in CANDIDATES:
         label,tag,metric=candidate[:3];channel=candidate[3] if len(candidate)>3 else 'logit_nn'
         found={r['model']:r for r in rows if r['wave']==tag and r['channel']==channel and r['metric']==metric}
         cells=[];planes=[]
         for model in ('CR3','C1','C2','C3'):
-            if model not in found:cells.append('运行中');planes.append('—');continue
+            if model not in found:
+                folder=wave.io.default_step2(wave.ROOT,model).parent/'step5_matrix_metrics'/optima.WAVES[tag]
+                if (folder/'protocol.json').exists():
+                    status=json.loads((folder/'protocol.json').read_text())['status']
+                    cells.append('未完成' if status!='COMPLETE' else '未记录此项')
+                else:cells.append('未运行')
+                planes.append('—');continue
             row=found[model];selected.append(dict(candidate_label=label,**row))
+            if tag in ('BU','BU3','CB','CC','CD','CE','CF','CG'):
+                bands={int(b['score_tolerance_percent']):b for b in json.loads(row['near_optimal_grid_bands_json'])}
+                cells_band=[str(bands[p]['maximum_axis_deviation_deg'])+'°' for p in (1,3,15)]
+                rank=f"{row['baseline_rank']}/{row['grid_points']}"
+                percentile=f"{float(row['baseline_strictly_better_other_grid_points_percent']):.3g}%"
+                value=row['baseline_regret_relative_grid_span_percent'];regret=f'{float(value):.3g}%' if value else '无幅度'
+                basins.append('| '+tag+' / '+model+' | '+rank+' | '+percentile+' | '+regret+' | '+' | '.join(cells_band)+' |')
             cells.append(f"{row['minimum_grid_angle_deg']}° / {float(row['minimum_grid_relative_change_percent']):+.6g}%")
             planes.append(f"{row['success_planes']}/{row['n_planes']}")
         table.append('| '+label+' | '+' | '.join(cells)+' | '+'，'.join(planes)+' |')
+    basin_text='''
+
+同一 Shapley 候选的“近最优网格区间”也保留。下面给出分数落在已观测网格最小值
+1% / 3% / 15% 内的点所达到的最大轴偏移。90° 置换端点不重复计数。
+这描述当前网格的定位信息，不是新淘汰标准，也不包含后续连续旋转搜索点。
+如果较小分数带也覆盖 45°，就不能只凭一个 15° 最优点声称轴已精确定位。
+“更低分点占比”以其余全部给定网格点为分母，包含 90° 置换端点；它不是随机旋转概率。
+这样角度、相对分数差和网格排名百分比都各自记录，不把 15° 和 15% 混用。
+“距最优占曲线幅度”把基准与最小值的差除以整个网格的最大最小差；曲线没有幅度时留空。
+它能区分低分差来自接近最优，还是来自整个指标对旋转都几乎不变。
+
+| 候选 / 数据库 | 基准排名 | 更低分点占比 | 距最优占曲线幅度 | 1% 分数带 | 3% 分数带 | 15% 分数带 |
+|---|---:|---:|---:|---:|---:|---:|
+'''+ '\n'.join(basins)
     text='''# 保留的近似候选：最优位置和连续分数差
 
 每行使用相同定义、同一输出通道和同一参数策略评估四库。
@@ -54,7 +95,7 @@ def main():
 
 | 同一指标 | CR3 | C1 | C2 | C3 | 严格平面计数（仅诊断） |
 |---|---|---|---|---|---|
-'''+ '\n'.join(table)+'''
+'''+ '\n'.join(table)+basin_text+'''
 
 全部最优平面、最小值并列项、15°/75° 点和完整曲线跨度见 `four_model_optima.csv`。
 更多相关变体见 `four_model_overview.csv`；多个变体高度相关，不代表独立验证。

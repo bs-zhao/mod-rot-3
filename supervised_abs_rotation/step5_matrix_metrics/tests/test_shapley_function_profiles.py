@@ -84,3 +84,20 @@ def test_complete_observed_matrix_shapley_pipeline_preserves_profiles_and_endpoi
     haar_audit=json.loads((tmp_path/'haar'/'energy_and_fit_audits.json').read_text())
     assert max(a['relative_Parseval_error'] for r in haar_audit for a in r['X_columns'])<1e-12
     assert json.loads((tmp_path/'haar'/'protocol.json').read_text())['all_subjects']==32
+    import run_conditional_projection_profiles as projection_runner
+    with threadpool_limits(2):
+        projection_runner.analyze(source,output,tmp_path/'projection',bank_folder=folder,centers=8,context_centers=8,device='cpu')
+    projection_audit=json.loads((tmp_path/'projection'/'feature_and_projection_audits.json').read_text())
+    assert max(r['linear_algebra']['maximum_context_inner_product'] for r in projection_audit)<1e-6
+    assert json.loads((tmp_path/'projection'/'protocol.json').read_text())['all_subjects']==32
+    with threadpool_limits(2):
+        projection_runner.analyze(source,output,tmp_path/'PRESS',bank_folder=folder,centers=2,context_centers=2,
+            context_degree=1,device='cpu',press=True)
+    press_audit=json.loads((tmp_path/'PRESS'/'feature_and_projection_audits.json').read_text())
+    assert max(a['relative_signed_trace_error'] for r in press_audit for a in r['projections']['conditional_PRESS']['X_columns'])<1e-12
+    import audit_conditional_emulator_quality as quality_runner
+    with threadpool_limits(2):
+        quality_rows=quality_runner.analyze(profiles.MatrixBank(source,folder),output,tmp_path/'emulator_quality',device='cpu')
+    assert len({r['coalition_mask'] for r in quality_rows})==14
+    quality_audit=json.loads((tmp_path/'emulator_quality'/'numerical_and_leverage_audits.json').read_text())
+    assert max(r['relative_squared_prediction_replay_error'] for r in quality_audit)<1e-20

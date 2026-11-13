@@ -87,9 +87,11 @@ def main():
                 ax.text(.02,.98,f'Fresh blind: {result["relative_change_percent"]:+.3f}%\n'
                     f'mean/max axis: {result["matched_mean_angle_deg"]:.1f}/{result["matched_maximum_angle_deg"]:.1f} deg',
                     transform=ax.transAxes,va='top',fontsize=9,bbox=dict(facecolor='white',alpha=.8,edgecolor='none'))
-        refit=parent/'waveBU5_paired_Shapley_refits_seed482'
-        if (refit/'summary.json').exists() and json.loads((refit/'protocol.json').read_text())['status']=='COMPLETE':
-            refits.extend(dict(model=model,**r) for r in json.loads((refit/'summary.json').read_text()))
+        for frame_source,name in (('BU2','waveBU5_paired_Shapley_refits_seed482'),
+                                  ('BU6','waveBU7_paired_refined_Shapley_refits_seed482')):
+            refit=parent/name
+            if (refit/'summary.json').exists() and json.loads((refit/'protocol.json').read_text())['status']=='COMPLETE':
+                refits.extend(dict(model=model,frame_source=frame_source,**r) for r in json.loads((refit/'summary.json').read_text()))
         refinement=parent/'waveBU6_local_Shapley_refinement_seed489'
         if (refinement/'assessment.json').exists():
             protocol=json.loads((refinement/'protocol.json').read_text())
@@ -121,11 +123,11 @@ def main():
     lines+=['','| Model | Smaller-step start | Score change | Mean/max matched axis angle |','|---|---|---:|---:|']
     for r in local:lines.append(f'| {r["model"]} | {r["start"]} | {r["relative_change_percent"]:+.6g}% | '
         f'{r["matched_mean_angle_deg"]:.3f}/{r["matched_maximum_angle_deg"]:.3f} deg |')
-    lines+=['','| Model | Centers | Paired samples favoring frozen frame | 5% / median / 95% score changes |',
-        '|---|---:|---:|---:|']
+    lines+=['','| Model | Frozen frame source | Centers | Paired samples favoring frozen frame | 5% / median / 95% score changes |',
+        '|---|---|---:|---:|---:|']
     for r in refits:
         values=' / '.join(f'{v:+.6g}%' for v in r['q05_median_q95_percent'])
-        lines.append(f'| {r["model"]} | {r["centers"]} | {r["blind_lower_count"]}/{r["replicates"]} | {values} |')
+        lines.append(f'| {r["model"]} | {r["frame_source"]} | {r["centers"]} | {r["blind_lower_count"]}/{r["replicates"]} | {values} |')
     lines+=['','Blind scores and frames were frozen before label assessment. The finite search does not prove global optimality.',
         'All original responses are retained in the Shapley full coalition, up to the audited numerical compression.',
         'Conditional proper-coalition means are estimated. Generalization has not been independently verified; GCV and resampling have different roles.',

@@ -21,7 +21,7 @@ from run_operator_mode_support import audit_frames
 
 
 def analyze(source,original,bank_folder,output,bank_factory=profiles.MatrixBank,extra_frames=(),extra_descriptions=(),
-            degree=3,centers=32,device='cuda'):
+            degree=3,centers=32,device='cuda',model_factory=None,protocol_overrides=None):
     original,output=Path(original),Path(output)
     if output.exists() and any(output.iterdir()):raise FileExistsError(f'Retain earlier Shapley profile run: {output}')
     old=json.loads((original/'protocol.json').read_text())
@@ -41,6 +41,7 @@ def analyze(source,original,bank_folder,output,bank_factory=profiles.MatrixBank,
         source_matrix_manifest_sha256=bank.protocol['manifest_sha256'],source_scores_sha256=old['scores_sha256'],
         prediction_or_position_veto=False,extra_frozen_frames=list(extra_descriptions),
         code_sha256=hashlib.sha256(b''.join((wave.HERE/f).read_bytes() for f in ('run_shapley_profile_support.py','shapley_function_profiles.py','operator_mode_support.py'))).hexdigest())
+    if protocol_overrides:protocol.update(protocol_overrides)
     wave.json_file(output/'protocol.json',protocol)
     with np.load(original/'W_only_geometry.npz',allow_pickle=False) as saved:
         old_directions,old_membership=saved['directions'],saved['membership']
@@ -59,33 +60,45 @@ def analyze(source,original,bank_folder,output,bank_factory=profiles.MatrixBank,
     y=torch.tensor(latent,dtype=torch.float64,device=device)
     task_projection=[torch.tensor(projection[:,a:b],dtype=torch.float64,device=device) for a,b in slices]
     z=data.u-data.u.mean(0);z/=np.sqrt(np.var(data.u,axis=0).mean())
-    models=shapley.CoalitionModels(z,y,output/'conditional_models',degree=degree,centers=centers,device=device)
+    factory=model_factory or shapley.CoalitionModels
+    models=factory(z,y,output/'conditional_models',degree=degree,centers=centers,device=device)
+    if hasattr(models,'protocol_info'):
+        if models.protocol_info['source_matrix_manifest_sha256']!=bank.protocol['manifest_sha256']:
+            raise ValueError('Conditional emulator factory uses different actual matrices')
+        protocol.update(models.protocol_info);wave.json_file(output/'protocol.json',protocol)
+    if hasattr(models,'response_audits'):
+        wave.json_file(output/'full_model_response_audits.json',models.response_audits(task_projection,tasks,data.channels))
     width=max(t.shape[1] for t in targets);frame_scores={};numerical=[]
     for f,axes in enumerate(frame_keys):
         q=directions[list(axes)].T
-        shares,error=models.frame_shares(q)
-        spectra=np.zeros((len(data.channels),data.d,data.dx,width));maximum_trace_error=0.
-        for t,(c,j) in enumerate(tasks):
-            component=shares@task_projection[t]
-            eigen=torch.linalg.svdvals(component).square()/data.n
-            energy=component.square().sum((1,2))/data.n
-            relative=torch.max(torch.abs(eigen.sum(1)-energy)/energy.clamp_min(1e-30))
-            maximum_trace_error=max(maximum_trace_error,float(relative))
-            if relative>1e-8:raise ArithmeticError('Shapley profile SVD did not preserve component energy')
-            spectra[c,:,j,:eigen.shape[1]]=eigen.cpu().numpy()
-        np.savez_compressed(output/f'frame{f:03d}_profile_spectra.npz',squared_singular_values=spectra)
-        numerical.append(dict(frame=f,relative_squared_efficiency_error=error,maximum_SVD_trace_relative_error=maximum_trace_error,
-                              cached_conditional_models=len(models.models)))
+        if hasattr(models,'frame_spectra'):
+            spectra,frame_audit=models.frame_spectra(q,task_projection,tasks,len(data.channels),data.dx)
+        else:
+            shares,error=models.frame_shares(q)
+            spectra=np.zeros((len(data.channels),len(shares),data.dx,width));maximum_trace_error=0.
+            for t,(c,j) in enumerate(tasks):
+                component=shares@task_projection[t]
+                eigen=torch.linalg.svdvals(component).square()/data.n
+                energy=component.square().sum((1,2))/data.n
+                relative=torch.max(torch.abs(eigen.sum(1)-energy)/energy.clamp_min(1e-30))
+                maximum_trace_error=max(maximum_trace_error,float(relative))
+                if relative>1e-8:raise ArithmeticError('Shapley profile SVD did not preserve component energy')
+                spectra[c,:,j,:eigen.shape[1]]=eigen.cpu().numpy()
+            frame_audit=dict(relative_squared_efficiency_error=error,maximum_SVD_trace_relative_error=maximum_trace_error)
+        np.savez_compressed(output/f'frame{f:03d}_profile_spectra.npz',**{getattr(models,'spectrum_key','squared_singular_values'):spectra})
+        numerical.append(dict(frame=f,cached_conditional_models=len(models.models),**frame_audit))
         scores=[]
         for c,channel in enumerate(data.channels):
-            values={'shapley_profile_'+k:v for k,v in mode_support.scores(spectra[c]).items()}
-            values.update({'shapley_energy_'+k:v for k,v in conditional.sparsity(spectra[c].sum(-1)).items()})
+            prefix=getattr(models,'metric_prefix','shapley')
+            values={prefix+'_profile_'+k:v for k,v in mode_support.scores(spectra[c]).items()}
+            values.update({prefix+'_energy_'+k:v for k,v in conditional.sparsity(spectra[c].sum(-1)).items()})
             scores.extend(dict(channel=channel,metric=m,loss=value,is_control=not scope.primary(m)) for m,value in values.items())
         frame_scores[f]=scores
         wave.json_file(output/'numerical_audits.json',numerical)
         if (f+1)%4==0 or f+1==len(frame_keys):wave.json_file(output/'conditional_model_audits.json',models.audits)
         print(f'[ShapleyProfiles] {data.index["model"]}: frames {f+1}/{len(frame_keys)}, '
               f'{len(models.models)} conditional subspace models, latent rank {latent.shape[1]}',flush=True)
+    if hasattr(models,'finalize'):protocol.update(models.finalize())
     blind=[]
     for k,f in enumerate(frame_index):
         blind.extend(dict(anonymous_case=f'case_{k:03d}' if k<len(data.paths) else f'audit_frame_{k-len(data.paths):03d}',**r) for r in frame_scores[int(f)])
