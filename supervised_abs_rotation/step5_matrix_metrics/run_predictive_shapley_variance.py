@@ -20,7 +20,7 @@ from record_rotation_optima import WAVES
 from run_operator_mode_support import audit_frames
 
 
-def frozen_extra_frames(parent,model):
+def frozen_extra_frames(parent,model,additional_tags=()):
     frames,descriptions=audit_frames(parent,model)
     folder=parent/'waveBU6_local_Shapley_refinement_seed489'
     protocol=json.loads((folder/'protocol.json').read_text())
@@ -33,6 +33,18 @@ def frozen_extra_frames(parent,model):
     with np.load(folder/'refined_frames.npz',allow_pickle=False) as saved:
         for row,q in zip(rows,saved['frames']):
             frames.append(q.copy());descriptions.append(dict(source='BU6 '+row['start'],frame_sha256=digest))
+    for tag in additional_tags:
+        tag,seed=tag if isinstance(tag,tuple) else (tag,478)
+        folder=parent/f'wave{tag}_fresh_Shapley_blind_seed{seed}'
+        if not folder.exists():continue
+        protocol=json.loads((folder/'protocol.json').read_text())
+        digest=hashlib.sha256((folder/'blind_rotations.npz').read_bytes()).hexdigest()
+        if protocol['status']!='COMPLETE' or digest!=protocol['frames_sha256']:
+            raise ValueError('Latest frozen blind frame changed or is incomplete')
+        if hashlib.sha256((folder/'random_scores.csv').read_bytes()).hexdigest()!=protocol['random_scores_sha256']:
+            raise ValueError('Latest frozen blind proposal scores changed')
+        with np.load(folder/'blind_rotations.npz',allow_pickle=False) as saved:frames.append(saved['optimized'].copy())
+        descriptions.append(dict(source=tag+' frozen blind optimized frame',frame_sha256=digest))
     return frames,descriptions
 
 

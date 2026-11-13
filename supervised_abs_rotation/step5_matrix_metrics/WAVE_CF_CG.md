@@ -137,14 +137,33 @@ numerical construction, not evidence that its objective must recover axes.
 
 CG2 applies the exact all-subject p_nn joint-mode criterion to anonymous
 W plus 32 random SO proposals, two 80-evaluation Powell starts and a Givens
-pass. Its completed CR3 result has score change -1.85661%, mean matched
-axis deviation 6.596 degrees, maximum 9.197 degrees. The remaining-model
-searches are separate from the completed four-model grids. CF2 tests the
-unchanged CF logit worst-X candidate, using W plus 16 random SO proposals,
-one 40-evaluation Powell start and a Givens pass. Both retain signs and
-axis permutations as equivalent and freeze scores/frames before angle
-assessment. Search starts and the random-only arms are recorded separately;
-the anonymous observed-W frame already equals reference axes in C3.
+pass. It completes all four models. CF2 tests the unchanged CF logit worst-X
+candidate using W plus 16 random SO proposals, one 40-evaluation Powell
+start and a Givens pass. Its CR3 pilot completes. Both retain signs and axis
+permutations as equivalent and freeze scores/frames before angle assessment.
+
+| Search | Model | Score change | Mean / maximum matched axis deviation |
+|---|---|---|---|
+| CF2 | CR3 | -.933668% | 40.005 / 59.600 degrees |
+| CG2 | CR3 | -1.85661% | 6.596 / 9.197 degrees |
+| CG2 | C1 | +.567711% | 17.207 / 28.707 degrees |
+| CG2 | C2 | -5.53978% | 26.445 / 43.475 degrees |
+| CG2 | C3 | -5.69811% | 43.437 / 58.203 degrees |
+
+CF2's displaced CR3 point has a small score gain but distant axes. The
+coarse-grid 0/0/15/15 positions and top-11% reference ranks remain useful
+approximate observations; they do not establish global axis localization.
+CF2's other three blind searches are not run, following the user's CR3-first
+priority. The criterion is retained rather than rejected by a score or MSE
+cutoff. CG2 likewise gives a useful nearby CR3 point and retained distant
+C2/C3 low-score points. A correct PSD conservation identity does not ensure
+the objective identifies the desired coordinates.
+
+Search starts and random-only arms are recorded separately; the anonymous
+observed-W frame already equals reference axes in C3. CG2's selected starts
+are [0,32], [0,16], [21,2], [31,15]; proposal 0 is observed W. CF2 selects
+random proposal 12. The finite random sets share the explicitly recorded
+seed 478 across experiments and are not independent replications.
 
 The finite searches do not prove global optimality. A search that finishes
 above the known evaluation baseline has failed to find that baseline within

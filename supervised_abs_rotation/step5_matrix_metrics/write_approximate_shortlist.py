@@ -4,9 +4,20 @@ import json
 
 import run as wave
 import record_rotation_optima as optima
+from validation_response_policy import final_Y_eligible
 
 
 CANDIDATES=[
+    ('近邻局部线性残差：最差 X 列 10% L2 分数支持（NN p）','CK','knn_local_linear_cross_covariance_profile_UX_operator_columns_worst_fractional_count_eps010','p_nn'),
+    ('近邻局部线性残差：等 X 权重 3% 模态软支持（NN p）','CK','knn_local_linear_cross_covariance_profile_equal_X_operator_entries_soft_count_eps003','p_nn'),
+    ('近邻局部线性残差协方差模态：10% UX 软支持（NN logit）','CK','knn_local_linear_cross_covariance_profile_UX_operator_columns_mean_soft_count_eps010'),
+    ('数据近邻条件协方差模态：10% UX 软支持（logit）','CJ','knn_conditional_cross_covariance_profile_UX_operator_columns_mean_soft_count_eps010'),
+    ('组内异样本配对协方差模态：10% UX 软支持（logit）','CI','pairwise_quantile_cross_covariance_profile_UX_operator_columns_mean_soft_count_eps010'),
+    ('分位数组条件方差模态：10% UX 软支持（logit）','CH2','quantile_conditional_variance_profile_UX_operator_columns_mean_soft_count_eps010'),
+    ('分位数组条件方差：最差 X 列 3% UX 支持（logit）','CH2','quantile_conditional_variance_energy_UX_columns_worst_soft_count_eps003'),
+    ('分位数组条件方差剖面，含最新压力点：3% UX 支持（p_nn）','CH2','quantile_conditional_variance_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('分位数组条件方差剖面：3% UX 支持（p_nn）','CH','quantile_conditional_variance_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
+    ('分位数组条件方差能量：3% UX 支持（p_nn）','CH','quantile_conditional_variance_energy_UX_columns_mean_soft_count_eps003','p_nn'),
     ('一致多项式核方差剖面：3% UX 支持（p_nn）','CG','nested_polynomial_variance_profile_UX_operator_columns_mean_soft_count_eps003','p_nn'),
     ('一致多项式核方差能量：3% UX 支持（p_nn）','CG','nested_polynomial_variance_energy_UX_columns_mean_soft_count_eps003','p_nn'),
     ('留一预测方差 Shapley：最差 X 列 3% UX 支持（logit）','CF','PRESS_variance_UX_columns_worst_soft_count_eps003'),
@@ -51,6 +62,7 @@ def main():
     table=[];selected=[];basins=[]
     for candidate in CANDIDATES:
         label,tag,metric=candidate[:3];channel=candidate[3] if len(candidate)>3 else 'logit_nn'
+        if not final_Y_eligible(channel):continue
         found={r['model']:r for r in rows if r['wave']==tag and r['channel']==channel and r['metric']==metric}
         cells=[];planes=[]
         for model in ('CR3','C1','C2','C3'):
@@ -89,6 +101,8 @@ def main():
     text='''# 保留的近似候选：最优位置和连续分数差
 
 每行使用相同定义、同一输出通道和同一参数策略评估四库。
+本表 logit、p 均指 case Y.npz 的 logit_nn、p_nn，即神经网络输出。
+最终验证只认可真实 choice、NN logit、NN p、NN choice；真实解析式 logit/p 仅供辅助，不能计为成功。
 单元格为“已观测网格最优角度 / 相对 baseline 的分数变化”。负值表示比 baseline 更低。
 0° 表示 baseline 是网格最小值之一。75° 与 15° 在允许轴置换时均对应 15° 轴偏移。
 这些是探索性保留项，不按 MSE=.01、是否恰好 0° 或某个小差距自动淘汰。

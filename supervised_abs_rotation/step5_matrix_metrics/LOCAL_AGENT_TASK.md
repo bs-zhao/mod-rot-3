@@ -32,6 +32,17 @@ error in percent, together with the affected plane and stability. Do not
 silently reject a candidate solely because its optimum is not exactly at
 baseline. Exact ranks remain useful diagnostics alongside continuous gaps.
 
+Final-response constraint (user, 2026-11-12): final empirical success must
+use actual observed choice, or neural-network logit, probability, or choice.
+In the case Y.npz these are choice_observed, logit_nn, p_nn, choice_nn.
+Analytic/generating-equation logit or probability may assist discovery but
+must NEVER count as final success, even with favorable rotation results.
+The actual four-case Y files and exporter have been audited: current banks
+use logit_nn/p_nn, both genuine frozen-NN outputs. See
+audit_response_provenance.py and outputs/supervised_abs_rotation/
+final_Y_provenance_audit. Do not confuse synthetic unit-test fixtures with
+real-dataset validation, or Y-source eligibility with metric success.
+
 First inspect local status and existing outputs. Read this package's README,
 then test and run wave A on the four real datasets. Default source paths are
 resolved by `matrix_io.default_step2`. Never regenerate Y from a known

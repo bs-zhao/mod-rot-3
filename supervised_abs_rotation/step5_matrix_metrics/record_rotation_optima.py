@@ -10,6 +10,7 @@ import json
 from collections import defaultdict
 
 import run as wave
+from validation_response_policy import response_fields
 
 
 WAVES={
@@ -44,6 +45,11 @@ WAVES={
     'CE':'waveCE_residual_aware_adaptive_Shapley_profiles_seed471',
     'CF':'waveCF_PRESS_Shapley_variance_seed471',
     'CG':'waveCG_nested_polynomial_variance_seed471',
+    'CH':'waveCH_quantile_conditional_variance_seed471',
+    'CH2':'waveCH2_quantile_conditional_variance_seed471',
+    'CI':'waveCI_quantile_conditional_variance_seed471',
+    'CJ':'waveCJ_knn_conditional_variance_seed471',
+    'CK':'waveCK_knn_conditional_variance_seed471',
 }
 
 
@@ -118,7 +124,7 @@ def main():
                 controls={(r.get('estimator',''),r['channel'],r['metric']):r.get('is_control','False') for r in csv.DictReader(stream)}
             for (estimator,channel,metric),losses in grouped.items():
                 rows.append(dict(wave=tag,model=model,estimator=estimator,channel=channel,metric=metric,
-                    is_control=controls[estimator,channel,metric],**positions(losses,cases)))
+                    is_control=controls[estimator,channel,metric],**response_fields(channel),**positions(losses,cases)))
             sources.append(dict(wave=tag,model=model,source_scores_sha256=digest,source_run=str(folder.resolve())))
     wave.csv_file(output/'four_model_optima.csv',rows)
     overview=defaultdict(list)
@@ -126,6 +132,7 @@ def main():
     summary=[]
     for (tag,estimator,channel,metric),items in overview.items():
         summary.append(dict(wave=tag,estimator=estimator,channel=channel,metric=metric,models_completed=len(items),
+            **response_fields(channel),
             maximum_grid_improvement_over_baseline_percent=max(-r['minimum_grid_relative_change_percent'] for r in items),
             optimum_positions_by_model_json=json.dumps({r['model']:dict(angle_deg=r['minimum_grid_angle_deg'],
                 pair=r['minimum_grid_pair'],relative_change_percent=r['minimum_grid_relative_change_percent']) for r in items}),
@@ -135,6 +142,7 @@ def main():
     wave.csv_file(output/'four_model_overview.csv',summary)
     wave.json_file(output/'protocol.json',dict(status='COMPLETE',evaluation_only=True,sources=sources,
         no_optimum_position_veto=True,no_prediction_error_veto=True,
+        final_Y_policy='observed choice or neural-network logit/probability/choice only; analytic logit/probability auxiliary only',
         units='rotation positions in degrees; score differences in relative percent',
         report_interpretation='retain approximate minima and nearby cases; exact ranks are diagnostics'))
     print(f'[Rotation positions] {len(rows)} model/metric rows, {len(summary)} cross-model summaries')

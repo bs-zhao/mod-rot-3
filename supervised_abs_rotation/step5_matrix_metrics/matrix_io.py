@@ -6,8 +6,12 @@ import math
 from pathlib import Path
 
 import numpy as np
+if __package__:
+    from .validation_response_policy import FINAL_RESPONSE_SOURCES
+else:
+    from validation_response_policy import FINAL_RESPONSE_SOURCES
 
-CHANNELS = ("logit_nn", "p_nn", "choice_nn", "choice_observed")
+CHANNELS = tuple(FINAL_RESPONSE_SOURCES)
 DIMS = {"C1": 4, "C2": 4, "C3": 6, "CR3": 4}
 
 

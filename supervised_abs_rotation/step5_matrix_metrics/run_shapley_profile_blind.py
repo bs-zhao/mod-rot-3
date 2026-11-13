@@ -18,9 +18,9 @@ from shapley_profile_blind import Scorer
 
 def main(model='CR3',source_tag='BU',run_tag='BU2',scorer_factory=Scorer,source_folder=None,
          metric='shapley_profile_UX_operator_columns_mean_soft_count_eps003',channel='p_nn',
-         random_proposals=32,optimizer_starts=2,maxfev=80):
+         random_proposals=32,optimizer_starts=2,maxfev=80,seed=478):
     source=wave.io.default_step2(wave.ROOT,model);parent=source.parent/'step5_matrix_metrics'
-    original=source_folder or parent/f'wave{source_tag}_conditional_Shapley_profiles_seed471';output=parent/f'wave{run_tag}_fresh_Shapley_blind_seed478'
+    original=source_folder or parent/f'wave{source_tag}_conditional_Shapley_profiles_seed471';output=parent/f'wave{run_tag}_fresh_Shapley_blind_seed{seed}'
     if (output/'protocol.json').exists():
         previous=json.loads((output/'protocol.json').read_text())
         if previous['status']=='COMPLETE':
@@ -36,7 +36,7 @@ def main(model='CR3',source_tag='BU',run_tag='BU2',scorer_factory=Scorer,source_
             print(f'[ShapleyBlind] {model}: reused complete frozen run',flush=True);return
     if output.exists() and any(output.iterdir()):raise FileExistsError(f'Retain earlier Shapley blind run: {output}')
     output.mkdir(parents=True)
-    protocol=dict(status='RUNNING',model=model,source_tag=source_tag,seed=478,channel=channel,metric=metric,
+    protocol=dict(status='RUNNING',model=model,source_tag=source_tag,seed=seed,channel=channel,metric=metric,
         proposals=f'anonymous W frame and {random_proposals} random SO frames',
         optimizer=f'{optimizer_starts} best proposal Powell starts, {maxfev} evaluations each',
         random_proposals=random_proposals,optimizer_starts=optimizer_starts,maximum_evaluations_per_start=maxfev,
@@ -57,7 +57,7 @@ def main(model='CR3',source_tag='BU',run_tag='BU2',scorer_factory=Scorer,source_
             and r['channel']==channel and r['metric']==protocol['metric'])
     if not np.isclose(scorer.score(qcheck,force=True),expected,rtol=1e-8,atol=1e-10):
         raise ArithmeticError('Reloaded coalition scorer did not reproduce its anonymous source case')
-    rng=np.random.default_rng(478);proposals=[np.eye(scorer.data.d)]
+    rng=np.random.default_rng(seed);proposals=[np.eye(scorer.data.d)]
     proposals.extend(rotations.random_rotation(scorer.data.d,rng) for _ in range(random_proposals))
     rows=[]
     for k,q in enumerate(proposals):

@@ -147,3 +147,48 @@ def test_nested_covariance_pipeline_records_variance_spectra_and_full_model_qual
                 and r['channel']=='p_nn' and r['metric']=='nested_polynomial_variance_profile_UX_operator_columns_mean_soft_count_eps003')
         assert np.isclose(scorer.score(q,force=True),expected,rtol=1e-10)
         assert scorer.score(q[:,[2,0,3,1]]*np.array([-1,1,-1,1]))==scorer.score(q)
+
+
+def test_quantile_covariance_pipeline_uses_W_only_partitions_without_a_response_form(sources,tmp_path):
+    folder,source,bank,original,z,target=sources
+    import run_shapley_profile_support as runner
+    from quantile_conditional_variance import QuantileConditionalVariance
+    manifest=json.loads((folder/'base'/'protocol.json').read_text())['source_matrix_manifest_sha256']
+    def factory(z,target,output,**kwargs):
+        return QuantileConditionalVariance(z,target,output,manifest,device=kwargs['device'])
+    with threadpool_limits(2):
+        runner.analyze(source,original,bank,tmp_path/'quantile',device='cpu',model_factory=factory)
+    protocol=json.loads((tmp_path/'quantile'/'protocol.json').read_text())
+    assert protocol['status']=='COMPLETE' and not protocol['response_function_form_assumed']
+    assert not protocol['bins_use_response_values'] and protocol['all_subjects']==32
+    from quantile_variance_blind import Scorer
+    with threadpool_limits(2):
+        scorer=Scorer(source,tmp_path/'quantile',tmp_path/'blind_quantile',device='cpu',bank_folder=bank)
+        with np.load(tmp_path/'quantile'/'W_only_geometry.npz') as saved:
+            q=saved['directions'][saved['frame_axes'][saved['case_frame_index'][0]]].T
+        import csv
+        with (tmp_path/'quantile'/'blind_scores.csv').open() as stream:
+            expected=next(float(r['loss']) for r in csv.DictReader(stream) if r['anonymous_case']=='case_000'
+                and r['channel']=='logit_nn' and r['metric']=='quantile_conditional_variance_profile_UX_operator_columns_mean_soft_count_eps010')
+        assert np.isclose(scorer.score(q,force=True),expected,rtol=1e-10)
+        assert scorer.score(q[:,[2,0,3,1]]*np.array([-1,1,-1,1]))==scorer.score(q)
+
+
+def test_neighbor_covariance_pipeline_and_blind_reload_reproduce_the_same_metric(sources,tmp_path):
+    folder,source,bank,original,z,target=sources
+    import csv
+    import run_shapley_profile_support as runner
+    from neighbor_conditional_variance import NeighborConditionalVariance
+    from neighbor_variance_blind import Scorer
+    manifest=json.loads((folder/'base'/'protocol.json').read_text())['source_matrix_manifest_sha256']
+    def factory(z,target,output,**kwargs):return NeighborConditionalVariance(z,target,output,manifest,device=kwargs['device'])
+    with threadpool_limits(2):
+        runner.analyze(source,original,bank,tmp_path/'neighbor',device='cpu',model_factory=factory)
+        scorer=Scorer(source,tmp_path/'neighbor',tmp_path/'blind_neighbor',device='cpu',bank_folder=bank)
+        with np.load(tmp_path/'neighbor'/'W_only_geometry.npz') as saved:
+            q=saved['directions'][saved['frame_axes'][saved['case_frame_index'][0]]].T
+        with (tmp_path/'neighbor'/'blind_scores.csv').open() as stream:
+            expected=next(float(r['loss']) for r in csv.DictReader(stream) if r['anonymous_case']=='case_000'
+                and r['channel']=='logit_nn' and r['metric']=='knn_conditional_cross_covariance_profile_UX_operator_columns_mean_soft_count_eps010')
+        assert np.isclose(scorer.score(q,force=True),expected,rtol=1e-10)
+        assert scorer.score(q[:,[2,0,3,1]]*np.array([-1,1,-1,1]))==scorer.score(q)

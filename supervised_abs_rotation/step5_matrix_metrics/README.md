@@ -1,5 +1,35 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Newest independent validation:** CL freezes BU's NN-p mean-X 3%
+Shapley UX mode-support criterion and evaluates 64 new Haar rotations
+per model with all 5000 subjects. The reference beats all 64 in each
+of CR3/C1/C2/C3, with ties counted conservatively. Exact one-sided binomial
+bounds with four-case Bonferroni give a simultaneous 95% upper bound of
+6.618% for the fraction of random orientations at least as good as reference.
+This is an independent approximate-rank result, not uniqueness or exact
+axis recovery. The earlier lower optimized points remain recorded. See
+[WAVE_CL.md](WAVE_CL.md). The full code suite passes 280 tests.
+
+**User's final-Y rule (2026-11-12):** only observed choice or frozen-NN
+logit/probability/choice can support final empirical success. Analytic
+logit/probability are auxiliary only. All four actual Y files and current
+NN-logit/p banks pass the provenance audit. Eligibility is labeled in the
+continuous ledger; synthetic tests and Y eligibility do not establish
+metric success. See [Y_POLICY.md](Y_POLICY.md).
+
+**Newest completed continuation:** CH2's form-free empirical-quantile
+variance-mode support gives four-grid axis deviations 15/0/15/15 degrees
+with a maximum .726% gap. CJ's data-only three-neighbor logit covariance
+criterion gives 15/15/15/15, maximum gap 6.632%. Fresh CR3 blind searches
+retain larger departures: CH3 max 37.303 degrees at -1.621%, CJ2 max
+52.245 degrees at -8.037%. CK's local-affine neighborhood correction
+completes four models: NN-p criteria give 0/0/15/30 degrees; the equal-X
+3% support gaps are 0/0/-5.423/-1.830%. Its CR3 worst-X criterion separates
+the tested distant old frames strongly, while C3 remains weaker. Nearby
+points, broad score bands and distant alternatives are all retained.
+See [WAVE_CH.md](WAVE_CH.md), [WAVE_CI_CJ.md](WAVE_CI_CJ.md) and
+[WAVE_CK.md](WAVE_CK.md). The complete suite passes 277 tests.
+
 **Newest completed variance experiments (2026-11-12):** CF's unchanged
 logit worst-X predictive-variance Shapley 3% support gives coarse axis
 deviations 0/0/15/15 degrees, with C2/C3 score gaps .749%/.224%. The

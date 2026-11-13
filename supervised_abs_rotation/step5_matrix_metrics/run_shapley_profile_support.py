@@ -18,6 +18,7 @@ import shapley_function_profiles as shapley
 import operator_mode_support as mode_support
 import ux_metric_scope as scope
 from run_operator_mode_support import audit_frames
+from validation_response_policy import response_fields
 
 
 def analyze(source,original,bank_folder,output,bank_factory=profiles.MatrixBank,extra_frames=(),extra_descriptions=(),
@@ -38,6 +39,7 @@ def analyze(source,original,bank_folder,output,bank_factory=profiles.MatrixBank,
         decomposition='exact all-coalition Shapley function shares; no sampled permutations',
         independence_of_inputs_assumed=False,interpretation='finite conditional explanation profiles, not exact population Shapley variance effects',
         source_response_quality=bank.quality,response_transform=bank.protocol.get('response_transform','identity'),
+        response_channel_provenance={c:response_fields(c) for c in data.channels},
         source_matrix_manifest_sha256=bank.protocol['manifest_sha256'],source_scores_sha256=old['scores_sha256'],
         prediction_or_position_veto=False,extra_frozen_frames=list(extra_descriptions),
         code_sha256=hashlib.sha256(b''.join((wave.HERE/f).read_bytes() for f in ('run_shapley_profile_support.py','shapley_function_profiles.py','operator_mode_support.py'))).hexdigest())
