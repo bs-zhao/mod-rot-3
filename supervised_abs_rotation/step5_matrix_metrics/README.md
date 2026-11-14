@@ -1,5 +1,10 @@
 # Step 5 — WY-only matrix rotation metrics
 
+**Post-rotation whitening:** the saved rotations now have a separate ZCA
+whitening viewer with new U, signed U–T correlation matrices and before/after
+heatmaps. The transform is fitted on U only and verified over all 5000 subjects.
+See [POST_ROTATION_WHITENING.md](POST_ROTATION_WHITENING.md).
+
 **Retained-criterion gallery:** all 44 retained entries have four-model raw
 angle curves and saved loss-selected R/U/T correlation plots. Grid minima
 and best available case/stress/continuous-search results are separate.
