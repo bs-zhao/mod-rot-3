@@ -1,0 +1,32 @@
+== C1 logit rep1: oracle 0.969/0.018/0.046 ;
+UX_neff                      TEST mcc/leak/max 0.969 0.022 0.046 (24s)
+UUd_share                    TEST mcc/leak/max 0.833 0.232 0.481 (24s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.925 0.132 0.341 (27s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.908 0.158 0.336 (34s)
+== C1 prob rep1: oracle 0.969/0.018/0.046 ;
+UX_neff                      TEST mcc/leak/max 0.969 0.022 0.046 (24s)
+UUd_share                    TEST mcc/leak/max 0.968 0.024 0.070 (16s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.969 0.021 0.058 (26s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.969 0.021 0.058 (29s)
+== C2 logit rep1: oracle 0.971/0.026/0.060 ;
+UX_neff                      TEST mcc/leak/max 0.969 0.034 0.131 (25s)
+UUd_share                    TEST mcc/leak/max 0.782 0.261 0.546 (24s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.912 0.136 0.440 (35s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.886 0.144 0.522 (34s)
+== C2 prob rep1: oracle 0.971/0.026/0.060 ;
+UX_neff                      TEST mcc/leak/max 0.969 0.036 0.136 (26s)
+UUd_share                    TEST mcc/leak/max 0.940 0.122 0.219 (25s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.965 0.060 0.152 (37s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.896 0.122 0.520 (35s)
+== C3 logit rep1: oracle 0.963/0.036/0.088 ;
+UX_neff                      TEST mcc/leak/max 0.962 0.039 0.108 (26s)
+UUd_share                    TEST mcc/leak/max 0.770 0.189 0.655 (26s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.919 0.107 0.336 (36s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.897 0.111 0.405 (36s)
+== C3 prob rep1: oracle 0.963/0.036/0.088 ;
+UX_neff                      TEST mcc/leak/max 0.960 0.046 0.128 (27s)
+UUd_share                    TEST mcc/leak/max 0.730 0.231 0.535 (25s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.960 0.046 0.114 (34s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.945 0.068 0.264 (34s)
+
+[exited with code 0]

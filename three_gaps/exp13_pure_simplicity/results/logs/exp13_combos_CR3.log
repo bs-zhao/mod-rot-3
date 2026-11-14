@@ -1,0 +1,23 @@
+== CR3 logit rep1: oracle 0.872/0.089/0.227 ; floor sigma2 0.0916
+UUd_share                    TEST mcc/leak/max 0.821 0.179 0.386 (26s)
+UUd_sum                      TEST mcc/leak/max 0.818 0.183 0.387 (24s)
+UUd_l1l2                     TEST mcc/leak/max 0.729 0.204 0.602 (25s)
+UUd_max                      TEST mcc/leak/max 0.648 0.305 0.667 (27s)
+cells                        TEST mcc/leak/max 0.628 0.286 0.531 (18s)
+cells+UUd_share              TEST mcc/leak/max 0.715 0.233 0.560 (30s)
+cells+UUd_sum                TEST mcc/leak/max 0.739 0.201 0.580 (31s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.831 0.160 0.394 (35s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.791 0.201 0.489 (35s)
+cells+UX_neff+UUd_share      TEST mcc/leak/max 0.648 0.276 0.738 (39s)
+== CR3 prob rep1: oracle 0.872/0.089/0.227 ; floor sigma2 0.0016
+UUd_share                    TEST mcc/leak/max 0.759 0.231 0.523 (24s)
+UUd_sum                      TEST mcc/leak/max 0.792 0.195 0.514 (23s)
+UUd_l1l2                     TEST mcc/leak/max 0.751 0.198 0.584 (23s)
+UUd_max                      TEST mcc/leak/max 0.673 0.291 0.624 (23s)
+cells                        TEST mcc/leak/max 0.663 0.266 0.521 (18s)
+cells+UUd_share              TEST mcc/leak/max 0.756 0.214 0.475 (28s)
+cells+UUd_sum                TEST mcc/leak/max 0.781 0.171 0.551 (28s)
+UX_neff+UUd_share            TEST mcc/leak/max 0.817 0.165 0.368 (32s)
+UX_neff+UUd_sum              TEST mcc/leak/max 0.805 0.178 0.385 (34s)
+cells+UX_neff+UUd_share      TEST mcc/leak/max 0.637 0.276 0.749 (41s)
+finished

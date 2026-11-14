@@ -1,0 +1,17 @@
+== CR3 logit rep1: z-scores UX_neff=2.61 UUd_share=2.06
+CR3 logit rep1 z-weighted: TEST mcc/leak/max 0.755 0.258 0.411 | oracle 0.872/0.089/0.227
+== CR3 prob rep1: z-scores UX_neff=2.75 UUd_share=2.07
+CR3 prob rep1 z-weighted: TEST mcc/leak/max 0.770 0.235 0.422 | oracle 0.872/0.089/0.227
+== C1 logit rep1: z-scores UX_neff=3.29 UUd_share=3.41
+C1 logit rep1 z-weighted: TEST mcc/leak/max 0.923 0.136 0.334 | oracle 0.969/0.018/0.046
+== C1 prob rep1: z-scores UX_neff=3.44 UUd_share=4.22
+C1 prob rep1 z-weighted: TEST mcc/leak/max 0.969 0.021 0.058 | oracle 0.969/0.018/0.046
+== C2 logit rep1: z-scores UX_neff=3.01 UUd_share=3.05
+C2 logit rep1 z-weighted: TEST mcc/leak/max 0.909 0.139 0.451 | oracle 0.971/0.026/0.060
+== C2 prob rep1: z-scores UX_neff=3.14 UUd_share=2.61
+C2 prob rep1 z-weighted: TEST mcc/leak/max 0.965 0.057 0.142 | oracle 0.971/0.026/0.060
+== C3 logit rep1: z-scores UX_neff=5.14 UUd_share=4.48
+C3 logit rep1 z-weighted: TEST mcc/leak/max 0.921 0.104 0.329 | oracle 0.963/0.036/0.088
+== C3 prob rep1: z-scores UX_neff=5.58 UUd_share=3.93
+C3 prob rep1 z-weighted: TEST mcc/leak/max 0.960 0.046 0.115 | oracle 0.963/0.036/0.088
+finished

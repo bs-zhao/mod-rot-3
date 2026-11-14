@@ -144,3 +144,14 @@ Gap 1/2 不依赖 NP（在真 Tstd 坐标中），只重跑 decoder 来源。判
   未采纳：GL(d)、软阶段 A、通道×损失组合、ICA 非高斯项（用户明确不要）。
 - 后续：损失格子改为纯 W 规则（至少两列同时取众数值的上下文单独成格，其余合并），CR3 四组 MCC .852/.857/.830/.856，与设计类别版相差 ≤0.001，C1–C3 不变；聚类、λ_min 挑格子的做法不稳，未采纳。
 - 已知限制：minimax 比例门槛 0.5→0.6 为事后改动；格子规则阈值只在四个生成器上检验；未在新数据集复现。
+
+## EXP13 — 无角色检测的纯简单性损失（2026-11-14，进行中）
+
+用户要求不再做“找角色”类操作（阶段 A / minimax 增益轴），改用 UX / UU 稀疏性与 U 平滑性定义损失。
+完整总结见 [`readmes/rotation_research/04_role_free_simplicity_losses.md`](../readmes/rotation_research/04_role_free_simplicity_losses.md)；
+代码在 `three_gaps/exp13_pure_simplicity/`，结果在其 `results/`。
+
+- 损失由 NN decoder 的 H_UX、H_UU 能量构成（UX 稀疏、UU 非对角稀疏、自曲率集中 / 占比）。CR3 上单项只有 `UUd_share` 有效（logit .821）。
+- **UX 稀疏 `UX_neff` 单独在 C1–C3 上达到 Oracle**（MCC .960–.969，泄漏 .022–.046），在 CR3 只有 .695 / .730（Oracle 处并不比随机旋转更稀疏）。
+- 等权组合 `UX_neff + UUd_share`：CR3 .831 / .817（泄漏 .160 / .165），但 C1–C3 的 logit 通道退化到 .91–.93（泄漏 .107–.136）。
+- 自然尺度权重（μ 无效）与 z 分数加权（更差）均未解决权重问题。仅 NP 重复 1，未做重复 2 确认。

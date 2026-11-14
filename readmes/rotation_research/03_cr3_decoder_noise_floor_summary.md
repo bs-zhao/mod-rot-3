@@ -2,6 +2,8 @@
 
 > **存档总结 · 2026-11-14**
 >
+> **后续**：[04 · 无角色检测的 W–Y 简单性损失](04_role_free_simplicity_losses.md)（用户要求不再做“找角色”类操作后的纯简单性路线）。
+>
 > **上一篇**：[01 · 项目生成模型、NP 与两种变换目标](01_project_overview.md)；[02 · Hessian / 导数结构实验设计](02_hessian_simplicity_experiment.md)。
 > 相关实验日志：[`three_gaps/EXPERIMENT_LOG.md`](../../three_gaps/EXPERIMENT_LOG.md)（EXP00–EXP08 为本篇的起点）。
 >
