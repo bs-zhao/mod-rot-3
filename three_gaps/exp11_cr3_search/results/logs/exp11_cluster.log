@@ -1,0 +1,49 @@
+rep1 logit K=4: context->cell [3, 0, 3, 2, 1, 3, 0, 2, 1] ; sizes [114, 106, 95, 185]
+designed (rows) x clustered cells (cols):
+ [[  0  60   0   0]
+ [  0   5  35   0]
+ [  0   0  60   0]
+ [114  41   0 185]]
+   colLog3   clustered cells: TEST mcc/leak/max 0.758 0.194 0.535   (axis e1 0.302; oracle 0.872/0.089/0.227)
+   quartimax clustered cells: TEST mcc/leak/max 0.809 0.165 0.390   (axis e1 0.302; oracle 0.872/0.089/0.227)
+rep1 prob K=4: context->cell [1, 0, 1, 3, 1, 1, 0, 1, 2] ; sizes [114, 272, 54, 60]
+designed (rows) x clustered cells (cols):
+ [[  0  52   8   0]
+ [  0  35   5   0]
+ [  0   0   0  60]
+ [114 185  41   0]]
+   colLog3   clustered cells: TEST mcc/leak/max 0.852 0.122 0.295   (axis e1 0.437; oracle 0.872/0.089/0.227)
+   quartimax clustered cells: TEST mcc/leak/max 0.833 0.149 0.310   (axis e1 0.437; oracle 0.872/0.089/0.227)
+rep2 logit K=4: context->cell [1, 2, 1, 0, 3, 1, 2, 0, 3] ; sizes [95, 185, 114, 106]
+designed (rows) x clustered cells (cols):
+ [[  0   0   0  60]
+ [ 35   0   0   5]
+ [ 60   0   0   0]
+ [  0 185 114  41]]
+   colLog3   clustered cells: TEST mcc/leak/max 0.763 0.187 0.550   (axis e1 0.299; oracle 0.869/0.105/0.223)
+   quartimax clustered cells: TEST mcc/leak/max 0.831 0.146 0.329   (axis e1 0.299; oracle 0.869/0.105/0.223)
+rep2 prob K=4: context->cell [3, 0, 3, 1, 2, 2, 0, 1, 3] ; sizes [114, 95, 103, 188]
+designed (rows) x clustered cells (cols):
+ [[  0   0  52   8]
+ [  0  35   0   5]
+ [  0  60   0   0]
+ [114   0  51 175]]
+   colLog3   clustered cells: TEST mcc/leak/max 0.791 0.170 0.512   (axis e1 0.413; oracle 0.869/0.105/0.223)
+   quartimax clustered cells: TEST mcc/leak/max 0.813 0.165 0.410   (axis e1 0.413; oracle 0.869/0.105/0.223)
+rep1 logit K=3: context->cell [2, 0, 2, 1, 0, 2, 0, 1, 0] ; sizes [220, 95, 185]
+designed (rows) x clustered cells (cols):
+ [[ 60   0   0]
+ [  5  35   0]
+ [  0  60   0]
+ [155   0 185]]
+   colLog3   clustered cells: TEST mcc/leak/max 0.751 0.199 0.620   (axis e1 0.302; oracle 0.872/0.089/0.227)
+   quartimax clustered cells: TEST mcc/leak/max 0.782 0.182 0.476   (axis e1 0.302; oracle 0.872/0.089/0.227)
+rep1 logit K=5: context->cell [4, 0, 4, 3, 1, 4, 0, 3, 2] ; sizes [114, 52, 54, 95, 185]
+designed (rows) x clustered cells (cols):
+ [[  0  52   8   0   0]
+ [  0   0   5  35   0]
+ [  0   0   0  60   0]
+ [114   0  41   0 185]]
+   colLog3   clustered cells: TEST mcc/leak/max 0.778 0.186 0.486   (axis e1 0.302; oracle 0.872/0.089/0.227)
+   quartimax clustered cells: TEST mcc/leak/max 0.820 0.157 0.350   (axis e1 0.302; oracle 0.872/0.089/0.227)
+finished

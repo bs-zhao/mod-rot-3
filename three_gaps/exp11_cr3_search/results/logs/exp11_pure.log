@@ -1,0 +1,6 @@
+{'model': 'CR3', 'rep': 1, 'channel': 'logit', 'n_axes_fixed': 1, 'mcc': 0.8522922898810391, 'leak': 0.11747501972133027, 'leak_max': 0.3127522733586736, 'oracle_mcc': 0.8719726886992089, 'oracle_leak': 0.08929902054833698, 'oracle_leak_max': 0.22666978598730358, 'secs': 17.486206769943237}
+{'model': 'CR3', 'rep': 1, 'channel': 'prob', 'n_axes_fixed': 1, 'mcc': 0.8565174613922931, 'leak': 0.11503722192374788, 'leak_max': 0.29485563133877174, 'oracle_mcc': 0.8719726886992089, 'oracle_leak': 0.08929902054833698, 'oracle_leak_max': 0.22666978598730358, 'secs': 16.91439914703369}
+{'model': 'CR3', 'rep': 2, 'channel': 'logit', 'n_axes_fixed': 1, 'mcc': 0.8297122361254715, 'leak': 0.14202856668461297, 'leak_max': 0.37497233497850196, 'oracle_mcc': 0.8690372099658508, 'oracle_leak': 0.1050640790075401, 'oracle_leak_max': 0.2229291246238515, 'secs': 16.008641004562378}
+{'model': 'CR3', 'rep': 2, 'channel': 'prob', 'n_axes_fixed': 1, 'mcc': 0.8559248649125617, 'leak': 0.11172427787070495, 'leak_max': 0.31567425332128984, 'oracle_mcc': 0.8690372099658508, 'oracle_leak': 0.1050640790075401, 'oracle_leak_max': 0.2229291246238515, 'secs': 15.641490459442139}
+done
+finished

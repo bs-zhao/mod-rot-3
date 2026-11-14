@@ -19,8 +19,9 @@ def load(model, cond, source="decoder", channel="logit"):
     c = torch.load(OUT / f"cache_{model}_{cond}_{source}_{channel}.pt", weights_only=False)
     c["cat"] = bank_categories(c["X"]) if model == "CR3" else None
     import os
-    if os.environ.get("GENERIC_CTX") and c["cat"] is not None:   # W-only contexts: mode-flag patterns of X columns
-        c["cat"] = torch.tensor(mode_contexts(c["X"].numpy()), dtype=torch.long)
+    if os.environ.get("GENERIC_CTX"):   # W-only contexts: mode-flag patterns of X columns; none exist for continuous X
+        ids = mode_contexts(c["X"].numpy())
+        c["cat"] = torch.tensor(ids, dtype=torch.long) if ids.max() > 0 else None
     return c
 
 
@@ -39,6 +40,23 @@ def mode_contexts(X, freq=0.10, min_group=0.06):
         if sizes[g] / n >= min_group:
             out[ids == g] = k; k += 1
     out[out < 0] = k
+    return out
+
+
+def pure_cells(X, freq=0.10, min_group=0.06, min_flags=2):
+    """Loss cells from W only: contexts in which at least `min_flags` X columns sit at their modal value simultaneously
+    (e.g. both amounts of the loss pair at 0, both probabilities at .5) are kept as separate cells; every other trial forms one cell."""
+    n, p = X.shape
+    flags = np.zeros((n, p), int)
+    for j in range(p):
+        v, cn = np.unique(X[:, j], return_counts=True); i = int(np.argmax(cn))
+        if cn[i] / n >= freq:
+            flags[:, j] = (X[:, j] == v[i])
+    keys = [tuple(r) for r in flags]; uk = sorted(set(keys)); ids = np.array([uk.index(k) for k in keys])
+    out = np.full(n, 0); k = 1
+    for g in np.argsort(-np.bincount(ids), kind="stable"):
+        if sum(uk[g]) >= min_flags and (ids == g).mean() >= min_group:
+            out[ids == g] = k; k += 1
     return out
 
 
