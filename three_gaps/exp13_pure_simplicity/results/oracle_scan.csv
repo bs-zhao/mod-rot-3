@@ -1,0 +1,730 @@
+model,channel,loss,z
+CR3,logit,"UX(i,j)|neff",-0.6233607306176631
+CR3,logit,"UX(i,j)|quart",-0.7094572326403987
+CR3,logit,"UX(i,j)|l1l2",-0.6027712994222817
+CR3,logit,"UX(i,j)|soft",-0.9070321151645298
+CR3,logit,"UX(i,j,c)|neff",-0.6041916192089226
+CR3,logit,"UX(i,j,c)|quart",-0.7667830808076482
+CR3,logit,"UX(i,j,c)|l1l2",-0.5122520381299998
+CR3,logit,"UX(i,j,c)|soft",-0.7647173598910991
+CR3,logit,"G(i,c)|neff",0.24708523379759365
+CR3,logit,"G(i,c)|quart",0.31197242280827886
+CR3,logit,"G(i,c)|l1l2",0.22023747528449608
+CR3,logit,"G(i,c)|soft",0.16774785223037908
+CR3,logit,UUoff(i<k)|neff,-0.6722660950106363
+CR3,logit,UUoff(i<k)|quart,-0.5941111278403804
+CR3,logit,UUoff(i<k)|l1l2,-0.706624100781765
+CR3,logit,UUoff(i<k)|soft,-0.7656970442209171
+CR3,logit,UUdiag(i)|neff,-0.5299750388399654
+CR3,logit,UUdiag(i)|quart,-0.47540965058840584
+CR3,logit,UUdiag(i)|l1l2,-0.592772850214325
+CR3,logit,UUdiag(i)|soft,-0.7884691551680008
+CR3,logit,"UU(i,k,c)|neff",-0.7163563953930471
+CR3,logit,"UU(i,k,c)|quart",-0.6715247545891293
+CR3,logit,"UU(i,k,c)|l1l2",-0.7301534330028547
+CR3,logit,"UU(i,k,c)|soft",-0.7413123404594587
+CR3,logit,"UUdiag(i,c)|neff",-0.5988466431130478
+CR3,logit,"UUdiag(i,c)|quart",-0.5615740958151832
+CR3,logit,"UUdiag(i,c)|l1l2",-0.6224180383779709
+CR3,logit,"UUdiag(i,c)|soft",-0.6718830997781647
+CR3,logit,joint UX+UUall|neff,-0.6538182386612742
+CR3,logit,joint UX+UUall|quart,-0.7090742891796894
+CR3,logit,joint UX+UUall|l1l2,-0.6882696078135164
+CR3,logit,joint UX+UUall|soft,-0.902393024649137
+CR3,logit,"UXf(i,j,c)|neff",-0.5271271080041876
+CR3,logit,"UXf(i,j,c)|quart",-0.7402897513491528
+CR3,logit,"UXf(i,j,c)|l1l2",-0.3737737723926655
+CR3,logit,"UXf(i,j,c)|soft",-0.6667711895422306
+CR3,logit,"UXf(i,j)|neff",-0.5503111559501578
+CR3,logit,"UXf(i,j)|quart",-0.6801279050698794
+CR3,logit,"UXf(i,j)|l1l2",-0.5222765262857674
+CR3,logit,"UXf(i,j)|soft",-1.0305425211217418
+CR3,logit,UUoff-f(i<k)|neff,-0.7007198910913413
+CR3,logit,UUoff-f(i<k)|quart,-0.5229744576583635
+CR3,logit,UUoff-f(i<k)|l1l2,-0.7504139522248313
+CR3,logit,UUoff-f(i<k)|soft,-0.5022044319796607
+CR3,logit,"UUoff-f(i,k,c)|neff",-0.7639645257129369
+CR3,logit,"UUoff-f(i,k,c)|quart",-0.5384822721064115
+CR3,logit,"UUoff-f(i,k,c)|l1l2",-0.8905329932659616
+CR3,logit,"UUoff-f(i,k,c)|soft",-1.0268227685684763
+CR3,logit,UUdiag-f(i)|neff,-0.502515702353199
+CR3,logit,UUdiag-f(i)|quart,-0.43930991217452947
+CR3,logit,UUdiag-f(i)|l1l2,-0.5916461291807925
+CR3,logit,UUdiag-f(i)|soft,-0.779012477334805
+CR3,logit,joint-f UX+UU|neff,-0.5871519566496781
+CR3,logit,joint-f UX+UU|quart,-0.6762585245196052
+CR3,logit,joint-f UX+UU|l1l2,-0.6536777779460611
+CR3,logit,joint-f UX+UU|soft,-0.9133346607529509
+CR3,logit,share-f:UUdiag/UU,0.932807368785114
+CR3,logit,"Gfloor(i,c)|neff",0.28935295681424134
+CR3,logit,"Gfloor(i,c)|quart",0.3372190887091088
+CR3,logit,"Gfloor(i,c)|l1l2",0.29898050573515733
+CR3,logit,"Gfloor(i,c)|soft",0.26698290875871156
+CR3,logit,colLogU1 G floor,0.1499483766984718
+CR3,logit,colLogU1 G raw,0.08966348093953072
+CR3,logit,colLogU2 G floor,0.1882673966328466
+CR3,logit,colLogU2 G raw,0.12477805354821885
+CR3,logit,colLogU3 G floor,0.2769007157837327
+CR3,logit,colLogU3 G raw,0.1623516249782162
+CR3,logit,colLogU4 G floor,0.29323065609509397
+CR3,logit,colLogU4 G raw,0.1680570865423881
+CR3,logit,colLog1  G raw,0.21028803207208224
+CR3,logit,colLog1  G floor,0.2410194412606838
+CR3,logit,"colLog1  UX(i,c) raw",-0.5681384516975816
+CR3,logit,colLog2  G raw,0.2874197733093065
+CR3,logit,colLog2  G floor,0.3830222466754946
+CR3,logit,"colLog2  UX(i,c) raw",-0.4766050250232812
+CR3,logit,colLog3  G raw,0.3345942828921038
+CR3,logit,colLog3  G floor,0.5083035302631758
+CR3,logit,"colLog3  UX(i,c) raw",-0.45770910315454033
+CR3,logit,share:UUdiag/UU,0.8768582624369687
+CR3,logit,share:UUoff/UU,-0.8768595798246784
+CR3,logit,share:UU/(UX+UU),0.3502954310338258
+CR3,prob,"UX(i,j)|neff",-0.6734523468136812
+CR3,prob,"UX(i,j)|quart",-0.7084892440271546
+CR3,prob,"UX(i,j)|l1l2",-0.694873067267984
+CR3,prob,"UX(i,j)|soft",-1.0236647323926846
+CR3,prob,"UX(i,j,c)|neff",-0.6472158629488978
+CR3,prob,"UX(i,j,c)|quart",-0.7156690180566971
+CR3,prob,"UX(i,j,c)|l1l2",-0.6335916166611085
+CR3,prob,"UX(i,j,c)|soft",-0.8259446330962533
+CR3,prob,"G(i,c)|neff",0.5690152976343699
+CR3,prob,"G(i,c)|quart",0.7078713423725232
+CR3,prob,"G(i,c)|l1l2",0.500960862082406
+CR3,prob,"G(i,c)|soft",0.40214439181430706
+CR3,prob,UUoff(i<k)|neff,-0.721969034690481
+CR3,prob,UUoff(i<k)|quart,-0.684021001743979
+CR3,prob,UUoff(i<k)|l1l2,-0.738421034307367
+CR3,prob,UUoff(i<k)|soft,-0.7647652150305786
+CR3,prob,UUdiag(i)|neff,-0.44327502176506445
+CR3,prob,UUdiag(i)|quart,-0.37246220644439615
+CR3,prob,UUdiag(i)|l1l2,-0.5203038750815134
+CR3,prob,UUdiag(i)|soft,-0.7636989232925248
+CR3,prob,"UU(i,k,c)|neff",-0.6572338923018111
+CR3,prob,"UU(i,k,c)|quart",-0.6154496839622421
+CR3,prob,"UU(i,k,c)|l1l2",-0.6691016464352963
+CR3,prob,"UU(i,k,c)|soft",-0.6775654697700154
+CR3,prob,"UUdiag(i,c)|neff",-0.5157176414898361
+CR3,prob,"UUdiag(i,c)|quart",-0.4990260723125356
+CR3,prob,"UUdiag(i,c)|l1l2",-0.5273489872837841
+CR3,prob,"UUdiag(i,c)|soft",-0.6023685826880217
+CR3,prob,joint UX+UUall|neff,-0.6965845247283319
+CR3,prob,joint UX+UUall|quart,-0.7093983938441807
+CR3,prob,joint UX+UUall|l1l2,-0.7446007691211075
+CR3,prob,joint UX+UUall|soft,-0.9535540721819907
+CR3,prob,"UXf(i,j,c)|neff",-0.5992914079186759
+CR3,prob,"UXf(i,j,c)|quart",-0.6447028868215414
+CR3,prob,"UXf(i,j,c)|l1l2",-0.6403754304780784
+CR3,prob,"UXf(i,j,c)|soft",-0.8579555187148039
+CR3,prob,"UXf(i,j)|neff",-0.6121557594343818
+CR3,prob,"UXf(i,j)|quart",-0.6611109917512701
+CR3,prob,"UXf(i,j)|l1l2",-0.6647625036769904
+CR3,prob,"UXf(i,j)|soft",-1.1687024025321244
+CR3,prob,UUoff-f(i<k)|neff,-0.7295127395311125
+CR3,prob,UUoff-f(i<k)|quart,-0.6126906677745552
+CR3,prob,UUoff-f(i<k)|l1l2,-0.7468880004225695
+CR3,prob,UUoff-f(i<k)|soft,-0.45963033014087246
+CR3,prob,"UUoff-f(i,k,c)|neff",-0.8289097991407429
+CR3,prob,"UUoff-f(i,k,c)|quart",-0.7806576243654281
+CR3,prob,"UUoff-f(i,k,c)|l1l2",-0.8063417866800323
+CR3,prob,"UUoff-f(i,k,c)|soft",-0.7030316841387734
+CR3,prob,UUdiag-f(i)|neff,-0.40556113882490646
+CR3,prob,UUdiag-f(i)|quart,-0.31921154025150483
+CR3,prob,UUdiag-f(i)|l1l2,-0.5171131245007498
+CR3,prob,UUdiag-f(i)|soft,-0.7546507473285
+CR3,prob,joint-f UX+UU|neff,-0.6402394249595147
+CR3,prob,joint-f UX+UU|quart,-0.655576377587415
+CR3,prob,joint-f UX+UU|l1l2,-0.7468184686592595
+CR3,prob,joint-f UX+UU|soft,-0.9116475838772838
+CR3,prob,share-f:UUdiag/UU,0.7436009579926195
+CR3,prob,"Gfloor(i,c)|neff",0.7067685794549443
+CR3,prob,"Gfloor(i,c)|quart",0.7958232227484329
+CR3,prob,"Gfloor(i,c)|l1l2",0.7755092044000418
+CR3,prob,"Gfloor(i,c)|soft",1.9953735792317373
+CR3,prob,colLogU1 G floor,0.3518747381094067
+CR3,prob,colLogU1 G raw,0.3012755422711307
+CR3,prob,colLogU2 G floor,0.6095944527488638
+CR3,prob,colLogU2 G raw,0.3535209016457968
+CR3,prob,colLogU3 G floor,0.9492668779913844
+CR3,prob,colLogU3 G raw,0.38639318104960596
+CR3,prob,colLogU4 G floor,1.030049722750282
+CR3,prob,colLogU4 G raw,0.39073756123534714
+CR3,prob,colLog1  G raw,0.4862759035570509
+CR3,prob,colLog1  G floor,0.5862251375813293
+CR3,prob,"colLog1  UX(i,c) raw",-0.6420425330012787
+CR3,prob,colLog2  G raw,0.5551009623332084
+CR3,prob,colLog2  G floor,0.9284748934683824
+CR3,prob,"colLog2  UX(i,c) raw",-0.628402542816023
+CR3,prob,colLog3  G raw,0.59056777738531
+CR3,prob,colLog3  G floor,1.3178423149923237
+CR3,prob,"colLog3  UX(i,c) raw",-0.6273430667556
+CR3,prob,share:UUdiag/UU,0.7426846606725408
+CR3,prob,share:UUoff/UU,-0.742686293439596
+CR3,prob,share:UU/(UX+UU),0.34230157519455673
+CR3,plugin,"UX(i,j)|neff",-0.37033553832366367
+CR3,plugin,"UX(i,j)|quart",-0.6371587585639087
+CR3,plugin,"UX(i,j)|l1l2",-0.10283576308394785
+CR3,plugin,"UX(i,j)|soft",1.0929331311938082
+CR3,plugin,"UX(i,j,c)|neff",-0.3856639277029004
+CR3,plugin,"UX(i,j,c)|quart",-0.6627102897034075
+CR3,plugin,"UX(i,j,c)|l1l2",-0.00582695419720222
+CR3,plugin,"UX(i,j,c)|soft",5.287800348513273
+CR3,plugin,"G(i,c)|neff",0.48492866702112813
+CR3,plugin,"G(i,c)|quart",0.3988099822909146
+CR3,plugin,"G(i,c)|l1l2",0.8263177331293619
+CR3,plugin,"G(i,c)|soft",5.522046785829636
+CR3,plugin,UUoff(i<k)|neff,2.002612447490036
+CR3,plugin,UUoff(i<k)|quart,2.1579295597772106
+CR3,plugin,UUoff(i<k)|l1l2,2.1352757880795723
+CR3,plugin,UUoff(i<k)|soft,7.8102505762720655
+CR3,plugin,UUdiag(i)|neff,-1.0552987016577238
+CR3,plugin,UUdiag(i)|quart,-0.9632762637794401
+CR3,plugin,UUdiag(i)|l1l2,-1.0591596070164744
+CR3,plugin,UUdiag(i)|soft,-0.6549775632154228
+CR3,plugin,"UU(i,k,c)|neff",2.4501539342171577
+CR3,plugin,"UU(i,k,c)|quart",2.195206894698423
+CR3,plugin,"UU(i,k,c)|l1l2",3.049428694092355
+CR3,plugin,"UU(i,k,c)|soft",7.791145024328232
+CR3,plugin,"UUdiag(i,c)|neff",-0.7968735920055494
+CR3,plugin,"UUdiag(i,c)|quart",-0.8535962520922779
+CR3,plugin,"UUdiag(i,c)|l1l2",-0.4304724042600713
+CR3,plugin,"UUdiag(i,c)|soft",2.185298541113612
+CR3,plugin,joint UX+UUall|neff,-0.3747832441978911
+CR3,plugin,joint UX+UUall|quart,-0.6408498358472771
+CR3,plugin,joint UX+UUall|l1l2,0.009182121937141827
+CR3,plugin,joint UX+UUall|soft,1.6935178797828254
+CR3,plugin,"UXf(i,j,c)|neff",-0.3428739805395076
+CR3,plugin,"UXf(i,j,c)|quart",-0.6668427201445456
+CR3,plugin,"UXf(i,j,c)|l1l2",0.10764266611413309
+CR3,plugin,"UXf(i,j,c)|soft",3.2701015318057256
+CR3,plugin,"UXf(i,j)|neff",-0.32421249410694486
+CR3,plugin,"UXf(i,j)|quart",-0.6380152687619247
+CR3,plugin,"UXf(i,j)|l1l2",0.03971109325141536
+CR3,plugin,"UXf(i,j)|soft",2.076347232224275
+CR3,plugin,UUoff-f(i<k)|neff,2.002612447490036
+CR3,plugin,UUoff-f(i<k)|quart,2.1579295597772106
+CR3,plugin,UUoff-f(i<k)|l1l2,2.1352757880795723
+CR3,plugin,UUoff-f(i<k)|soft,7.8102505762720655
+CR3,plugin,"UUoff-f(i,k,c)|neff",2.2066815262190205
+CR3,plugin,"UUoff-f(i,k,c)|quart",2.2410475911921144
+CR3,plugin,"UUoff-f(i,k,c)|l1l2",2.76340659638103
+CR3,plugin,"UUoff-f(i,k,c)|soft",7.06575355824553
+CR3,plugin,UUdiag-f(i)|neff,-1.0552987016577238
+CR3,plugin,UUdiag-f(i)|quart,-0.9632762637794401
+CR3,plugin,UUdiag-f(i)|l1l2,-1.0591596070164744
+CR3,plugin,UUdiag-f(i)|soft,-0.6549775632154228
+CR3,plugin,joint-f UX+UU|neff,-0.32918804710986477
+CR3,plugin,joint-f UX+UU|quart,-0.641751352578618
+CR3,plugin,joint-f UX+UU|l1l2,0.1341139018622938
+CR3,plugin,joint-f UX+UU|soft,1.7460752735811287
+CR3,plugin,share-f:UUdiag/UU,1.9498536431513531
+CR3,plugin,"Gfloor(i,c)|neff",0.48492866702112813
+CR3,plugin,"Gfloor(i,c)|quart",0.3988099822909146
+CR3,plugin,"Gfloor(i,c)|l1l2",0.8263177331293619
+CR3,plugin,"Gfloor(i,c)|soft",5.522046785829636
+CR3,plugin,colLogU1 G floor,0.8545026832386572
+CR3,plugin,colLogU1 G raw,0.8545026832386572
+CR3,plugin,colLogU2 G floor,1.4040888077570144
+CR3,plugin,colLogU2 G raw,1.4040888077570144
+CR3,plugin,colLogU3 G floor,2.120237501708217
+CR3,plugin,colLogU3 G raw,2.120237501708217
+CR3,plugin,colLogU4 G floor,2.4605724835354796
+CR3,plugin,colLogU4 G raw,2.4605724835354796
+CR3,plugin,colLog1  G raw,0.46056215428927433
+CR3,plugin,colLog1  G floor,0.46056215428927433
+CR3,plugin,"colLog1  UX(i,c) raw",-0.29450530223228866
+CR3,plugin,colLog2  G raw,0.8397955327528281
+CR3,plugin,colLog2  G floor,0.8397955327528281
+CR3,plugin,"colLog2  UX(i,c) raw",0.031016902272122632
+CR3,plugin,colLog3  G raw,1.4804549014159358
+CR3,plugin,colLog3  G floor,1.4804549014159358
+CR3,plugin,"colLog3  UX(i,c) raw",0.1480541999438228
+CR3,plugin,share:UUdiag/UU,1.9498536431513531
+CR3,plugin,share:UUoff/UU,-1.9498531591652293
+CR3,plugin,share:UU/(UX+UU),-1.6420531309688922
+C1,logit,"UX(i,j)|neff",4.185054779751787
+C1,logit,"UX(i,j)|quart",4.089528942242477
+C1,logit,"UX(i,j)|l1l2",4.6865524624367065
+C1,logit,"UX(i,j)|soft",7.03596572868379
+C1,logit,"UX(i,j,c)|neff",4.185054779751787
+C1,logit,"UX(i,j,c)|quart",4.089528942242477
+C1,logit,"UX(i,j,c)|l1l2",4.6865524624367065
+C1,logit,"UX(i,j,c)|soft",7.03596572868379
+C1,logit,"G(i,c)|neff",4.291972894935399
+C1,logit,"G(i,c)|quart",4.209064424246418
+C1,logit,"G(i,c)|l1l2",4.82241261384759
+C1,logit,"G(i,c)|soft",8.008771520679831
+C1,logit,UUoff(i<k)|neff,0.6471665745409336
+C1,logit,UUoff(i<k)|quart,0.5830283606244305
+C1,logit,UUoff(i<k)|l1l2,0.6673602507076599
+C1,logit,UUoff(i<k)|soft,0.6694054211985293
+C1,logit,UUdiag(i)|neff,2.6660534235082647
+C1,logit,UUdiag(i)|quart,2.3567231857670436
+C1,logit,UUdiag(i)|l1l2,2.94480628146248
+C1,logit,UUdiag(i)|soft,4.324473794508426
+C1,logit,"UU(i,k,c)|neff",1.0310235146983981
+C1,logit,"UU(i,k,c)|quart",1.1556347897257029
+C1,logit,"UU(i,k,c)|l1l2",1.000519302579458
+C1,logit,"UU(i,k,c)|soft",1.0994338357876219
+C1,logit,"UUdiag(i,c)|neff",2.6660534235082647
+C1,logit,"UUdiag(i,c)|quart",2.3567231857670436
+C1,logit,"UUdiag(i,c)|l1l2",2.94480628146248
+C1,logit,"UUdiag(i,c)|soft",4.324473794508426
+C1,logit,joint UX+UUall|neff,4.18750003393344
+C1,logit,joint UX+UUall|quart,4.087272909814622
+C1,logit,joint UX+UUall|l1l2,4.713087681002841
+C1,logit,joint UX+UUall|soft,6.639555975881627
+C1,logit,"UXf(i,j,c)|neff",4.206669610212112
+C1,logit,"UXf(i,j,c)|quart",4.089237686172258
+C1,logit,"UXf(i,j,c)|l1l2",4.815383658772103
+C1,logit,"UXf(i,j,c)|soft",7.407044730912183
+C1,logit,"UXf(i,j)|neff",4.206669610212112
+C1,logit,"UXf(i,j)|quart",4.089237686172258
+C1,logit,"UXf(i,j)|l1l2",4.815383658772103
+C1,logit,"UXf(i,j)|soft",7.407044730912183
+C1,logit,UUoff-f(i<k)|neff,0.5187001799749641
+C1,logit,UUoff-f(i<k)|quart,0.44488540446032004
+C1,logit,UUoff-f(i<k)|l1l2,0.5370497095229074
+C1,logit,UUoff-f(i<k)|soft,0.4980103769382634
+C1,logit,"UUoff-f(i,k,c)|neff",0.5186939926912482
+C1,logit,"UUoff-f(i,k,c)|quart",0.44488280110807615
+C1,logit,"UUoff-f(i,k,c)|l1l2",0.5370690878162354
+C1,logit,"UUoff-f(i,k,c)|soft",0.49698730497242166
+C1,logit,UUdiag-f(i)|neff,2.742085184488754
+C1,logit,UUdiag-f(i)|quart,2.3642163633629103
+C1,logit,UUdiag-f(i)|l1l2,3.1127121466572825
+C1,logit,UUdiag-f(i)|soft,5.0958804701748095
+C1,logit,joint-f UX+UU|neff,4.2094426997037075
+C1,logit,joint-f UX+UU|quart,4.0868761296332385
+C1,logit,joint-f UX+UU|l1l2,4.845883378854438
+C1,logit,joint-f UX+UU|soft,7.279618134831508
+C1,logit,share-f:UUdiag/UU,1.0648527603661833
+C1,logit,"Gfloor(i,c)|neff",4.291977688456597
+C1,logit,"Gfloor(i,c)|quart",4.2090644669003066
+C1,logit,"Gfloor(i,c)|l1l2",4.8229264944351025
+C1,logit,"Gfloor(i,c)|soft",8.008436040189391
+C1,logit,colLogU1 G floor,4.086439504427827
+C1,logit,colLogU1 G raw,4.079160584060082
+C1,logit,colLogU2 G floor,4.922825892613327
+C1,logit,colLogU2 G raw,4.87757794616854
+C1,logit,colLogU3 G floor,5.606666718760768
+C1,logit,colLogU3 G raw,5.492770079116057
+C1,logit,colLogU4 G floor,5.79167022901658
+C1,logit,colLogU4 G raw,5.648799385016141
+C1,logit,colLog1  G raw,4.184479572506156
+C1,logit,colLog1  G floor,4.184482000504004
+C1,logit,"colLog1  UX(i,c) raw",3.3631564355549366
+C1,logit,colLog2  G raw,5.036200930231123
+C1,logit,colLog2  G floor,5.036214608190384
+C1,logit,"colLog2  UX(i,c) raw",4.998181756896137
+C1,logit,colLog3  G raw,5.753328161881233
+C1,logit,colLog3  G floor,5.753370251015695
+C1,logit,"colLog3  UX(i,c) raw",6.919669308817481
+C1,logit,share:UUdiag/UU,1.0334961493256969
+C1,logit,share:UUoff/UU,-1.0334937691582962
+C1,logit,share:UU/(UX+UU),-1.6509217923852957
+C1,prob,"UX(i,j)|neff",4.049294367543676
+C1,prob,"UX(i,j)|quart",4.094581574802361
+C1,prob,"UX(i,j)|l1l2",4.197007746089728
+C1,prob,"UX(i,j)|soft",5.115134203665721
+C1,prob,"UX(i,j,c)|neff",4.049294367543676
+C1,prob,"UX(i,j,c)|quart",4.094581574802361
+C1,prob,"UX(i,j,c)|l1l2",4.197007746089728
+C1,prob,"UX(i,j,c)|soft",5.115134203665721
+C1,prob,"G(i,c)|neff",4.293582336944035
+C1,prob,"G(i,c)|quart",4.192429332293932
+C1,prob,"G(i,c)|l1l2",4.888639633286643
+C1,prob,"G(i,c)|soft",5.616762212667828
+C1,prob,UUoff(i<k)|neff,-1.2245078148743194
+C1,prob,UUoff(i<k)|quart,-1.2808639436741116
+C1,prob,UUoff(i<k)|l1l2,-1.187455345279335
+C1,prob,UUoff(i<k)|soft,-1.0486287898899007
+C1,prob,UUdiag(i)|neff,1.4145022857263707
+C1,prob,UUdiag(i)|quart,1.369728145841844
+C1,prob,UUdiag(i)|l1l2,1.432728660611119
+C1,prob,UUdiag(i)|soft,1.4639932532420927
+C1,prob,"UU(i,k,c)|neff",-2.9951625780105995
+C1,prob,"UU(i,k,c)|quart",-2.833474659377815
+C1,prob,"UU(i,k,c)|l1l2",-3.0472134456528317
+C1,prob,"UU(i,k,c)|soft",-2.9609072586770426
+C1,prob,"UUdiag(i,c)|neff",1.4145022857263707
+C1,prob,"UUdiag(i,c)|quart",1.369728145841844
+C1,prob,"UUdiag(i,c)|l1l2",1.432728660611119
+C1,prob,"UUdiag(i,c)|soft",1.4639932532420927
+C1,prob,joint UX+UUall|neff,4.053648231027967
+C1,prob,joint UX+UUall|quart,4.096429399012125
+C1,prob,joint UX+UUall|l1l2,4.204966731520242
+C1,prob,joint UX+UUall|soft,0.27523057018733627
+C1,prob,"UXf(i,j,c)|neff",4.181631957442636
+C1,prob,"UXf(i,j,c)|quart",4.089413085550998
+C1,prob,"UXf(i,j,c)|l1l2",4.666062702756713
+C1,prob,"UXf(i,j,c)|soft",6.286153358599777
+C1,prob,"UXf(i,j)|neff",4.181631957442636
+C1,prob,"UXf(i,j)|quart",4.089413085550998
+C1,prob,"UXf(i,j)|l1l2",4.666062702756713
+C1,prob,"UXf(i,j)|soft",6.286153358599777
+C1,prob,UUoff-f(i<k)|neff,-1.3440415763644418
+C1,prob,UUoff-f(i<k)|quart,-1.5614855097973201
+C1,prob,UUoff-f(i<k)|l1l2,-1.039082882789063
+C1,prob,UUoff-f(i<k)|soft,-0.292124278068755
+C1,prob,"UUoff-f(i,k,c)|neff",-1.3440367819278707
+C1,prob,"UUoff-f(i,k,c)|quart",-1.5614879603936798
+C1,prob,"UUoff-f(i,k,c)|l1l2",-1.039076801688432
+C1,prob,"UUoff-f(i,k,c)|soft",-0.271727089512772
+C1,prob,UUdiag-f(i)|neff,1.8294205655023335
+C1,prob,UUdiag-f(i)|quart,1.6231691083449855
+C1,prob,UUdiag-f(i)|l1l2,1.9264159328437949
+C1,prob,UUdiag-f(i)|soft,2.1408082076404567
+C1,prob,joint-f UX+UU|neff,4.184039822570709
+C1,prob,joint-f UX+UU|quart,4.0913206651153775
+C1,prob,joint-f UX+UU|l1l2,4.612376510509279
+C1,prob,joint-f UX+UU|soft,2.333141379982965
+C1,prob,share-f:UUdiag/UU,3.875989424334348
+C1,prob,"Gfloor(i,c)|neff",4.2939390692286485
+C1,prob,"Gfloor(i,c)|quart",4.192428572656571
+C1,prob,"Gfloor(i,c)|l1l2",4.897366644700604
+C1,prob,"Gfloor(i,c)|soft",5.623523870959887
+C1,prob,colLogU1 G floor,4.419310866888244
+C1,prob,colLogU1 G raw,4.413624116982219
+C1,prob,colLogU2 G floor,5.399723975033396
+C1,prob,colLogU2 G raw,5.356533871849479
+C1,prob,colLogU3 G floor,6.018054304901329
+C1,prob,colLogU3 G raw,5.933723013182733
+C1,prob,colLogU4 G floor,6.135879263628707
+C1,prob,colLogU4 G raw,6.047120164523984
+C1,prob,colLog1  G raw,4.184107945939718
+C1,prob,colLog1  G floor,4.184275517321385
+C1,prob,"colLog1  UX(i,c) raw",3.2323758110923326
+C1,prob,colLog2  G raw,5.053944663345314
+C1,prob,colLog2  G floor,5.05521030674259
+C1,prob,"colLog2  UX(i,c) raw",3.868186337724768
+C1,prob,colLog3  G raw,5.747767676801568
+C1,prob,colLog3  G floor,5.750655829107407
+C1,prob,"colLog3  UX(i,c) raw",4.072647965756033
+C1,prob,share:UUdiag/UU,3.883431799869664
+C1,prob,share:UUoff/UU,-3.8834339988045867
+C1,prob,share:UU/(UX+UU),0.735797653350322
+C2,logit,"UX(i,j)|neff",3.8825687997260694
+C2,logit,"UX(i,j)|quart",3.0839572990972495
+C2,logit,"UX(i,j)|l1l2",5.168589673278526
+C2,logit,"UX(i,j)|soft",7.62723655634698
+C2,logit,"UX(i,j,c)|neff",3.8825687997260694
+C2,logit,"UX(i,j,c)|quart",3.0839572990972495
+C2,logit,"UX(i,j,c)|l1l2",5.168589673278526
+C2,logit,"UX(i,j,c)|soft",7.62723655634698
+C2,logit,"G(i,c)|neff",4.839285733622808
+C2,logit,"G(i,c)|quart",4.611725724270896
+C2,logit,"G(i,c)|l1l2",5.6136806819195995
+C2,logit,"G(i,c)|soft",9.601048882264092
+C2,logit,UUoff(i<k)|neff,2.295125282394261
+C2,logit,UUoff(i<k)|quart,2.3910630359281972
+C2,logit,UUoff(i<k)|l1l2,2.2714270691042318
+C2,logit,UUoff(i<k)|soft,2.329728621657954
+C2,logit,UUdiag(i)|neff,1.9973451148502144
+C2,logit,UUdiag(i)|quart,1.382315493543242
+C2,logit,UUdiag(i)|l1l2,2.388295987327558
+C2,logit,UUdiag(i)|soft,3.763904247347694
+C2,logit,"UU(i,k,c)|neff",1.4004567562531154
+C2,logit,"UU(i,k,c)|quart",0.970947319917215
+C2,logit,"UU(i,k,c)|l1l2",1.6376841558472524
+C2,logit,"UU(i,k,c)|soft",2.3020671100042365
+C2,logit,"UUdiag(i,c)|neff",1.9973451148502144
+C2,logit,"UUdiag(i,c)|quart",1.382315493543242
+C2,logit,"UUdiag(i,c)|l1l2",2.388295987327558
+C2,logit,"UUdiag(i,c)|soft",3.763904247347694
+C2,logit,joint UX+UUall|neff,3.8765384062836183
+C2,logit,joint UX+UUall|quart,3.0822119976802016
+C2,logit,joint UX+UUall|l1l2,5.143427176644772
+C2,logit,joint UX+UUall|soft,7.613967649078672
+C2,logit,"UXf(i,j,c)|neff",3.914235054563581
+C2,logit,"UXf(i,j,c)|quart",3.083679556671505
+C2,logit,"UXf(i,j,c)|l1l2",5.397358487620036
+C2,logit,"UXf(i,j,c)|soft",8.582375903459353
+C2,logit,"UXf(i,j)|neff",3.914235054563581
+C2,logit,"UXf(i,j)|quart",3.083679556671505
+C2,logit,"UXf(i,j)|l1l2",5.397358487620036
+C2,logit,"UXf(i,j)|soft",8.582375903459353
+C2,logit,UUoff-f(i<k)|neff,2.2346143308836557
+C2,logit,UUoff-f(i<k)|quart,2.4172124261701486
+C2,logit,UUoff-f(i<k)|l1l2,2.178703502791889
+C2,logit,UUoff-f(i<k)|soft,2.2293207031034514
+C2,logit,"UUoff-f(i,k,c)|neff",2.2346129020199026
+C2,logit,"UUoff-f(i,k,c)|quart",2.4172142316258696
+C2,logit,"UUoff-f(i,k,c)|l1l2",2.1786987782369827
+C2,logit,"UUoff-f(i,k,c)|soft",2.2323726141377858
+C2,logit,UUdiag-f(i)|neff,2.0749310814033604
+C2,logit,UUdiag-f(i)|quart,1.3573177610838252
+C2,logit,UUdiag-f(i)|l1l2,2.589373983819643
+C2,logit,UUdiag-f(i)|soft,4.7473581975364905
+C2,logit,joint-f UX+UU|neff,3.9081777838684997
+C2,logit,joint-f UX+UU|quart,3.0814554139013324
+C2,logit,joint-f UX+UU|l1l2,5.370675721110536
+C2,logit,joint-f UX+UU|soft,8.628410862489025
+C2,logit,share-f:UUdiag/UU,0.6825050260637786
+C2,logit,"Gfloor(i,c)|neff",4.839290296173849
+C2,logit,"Gfloor(i,c)|quart",4.611725481180653
+C2,logit,"Gfloor(i,c)|l1l2",5.613651834132792
+C2,logit,"Gfloor(i,c)|soft",9.603141404203981
+C2,logit,colLogU1 G floor,4.2699006338915995
+C2,logit,colLogU1 G raw,4.298239198636142
+C2,logit,colLogU2 G floor,5.132017033694233
+C2,logit,colLogU2 G raw,5.199932002892915
+C2,logit,colLogU3 G floor,5.924120455372394
+C2,logit,colLogU3 G raw,6.026305089682491
+C2,logit,colLogU4 G floor,6.210008526871582
+C2,logit,colLogU4 G raw,6.322037518158481
+C2,logit,colLog1  G raw,4.754663730035791
+C2,logit,colLog1  G floor,4.754665440308226
+C2,logit,"colLog1  UX(i,c) raw",2.9703633693932345
+C2,logit,colLog2  G raw,5.928557842417091
+C2,logit,colLog2  G floor,5.928577340729713
+C2,logit,"colLog2  UX(i,c) raw",4.2574887590060175
+C2,logit,colLog3  G raw,6.9940385682559185
+C2,logit,colLog3  G floor,6.994145327274189
+C2,logit,"colLog3  UX(i,c) raw",5.908646574420301
+C2,logit,share:UUdiag/UU,0.5644608020979379
+C2,logit,share:UUoff/UU,-0.5644559323369341
+C2,logit,share:UU/(UX+UU),0.6814067806906244
+C2,prob,"UX(i,j)|neff",3.657881091008051
+C2,prob,"UX(i,j)|quart",3.1104746759873505
+C2,prob,"UX(i,j)|l1l2",4.261107912481246
+C2,prob,"UX(i,j)|soft",4.657153310930017
+C2,prob,"UX(i,j,c)|neff",3.657881091008051
+C2,prob,"UX(i,j,c)|quart",3.1104746759873505
+C2,prob,"UX(i,j,c)|l1l2",4.261107912481246
+C2,prob,"UX(i,j,c)|soft",4.657153310930017
+C2,prob,"G(i,c)|neff",4.861457923563776
+C2,prob,"G(i,c)|quart",4.704492339006421
+C2,prob,"G(i,c)|l1l2",5.45439054345171
+C2,prob,"G(i,c)|soft",5.471237828746212
+C2,prob,UUoff(i<k)|neff,2.634873865941805
+C2,prob,UUoff(i<k)|quart,2.591699901585753
+C2,prob,UUoff(i<k)|l1l2,2.644047608403086
+C2,prob,UUoff(i<k)|soft,2.607002863629435
+C2,prob,UUdiag(i)|neff,2.5985435327113593
+C2,prob,UUdiag(i)|quart,1.87067954050452
+C2,prob,UUdiag(i)|l1l2,3.078136418896312
+C2,prob,UUdiag(i)|soft,4.925614887493584
+C2,prob,"UU(i,k,c)|neff",0.9563506674960799
+C2,prob,"UU(i,k,c)|quart",0.26335708179056305
+C2,prob,"UU(i,k,c)|l1l2",1.4097049592486373
+C2,prob,"UU(i,k,c)|soft",3.205858194130284
+C2,prob,"UUdiag(i,c)|neff",2.5985435327113593
+C2,prob,"UUdiag(i,c)|quart",1.87067954050452
+C2,prob,"UUdiag(i,c)|l1l2",3.078136418896312
+C2,prob,"UUdiag(i,c)|soft",4.925614887493584
+C2,prob,joint UX+UUall|neff,3.6645577049116005
+C2,prob,joint UX+UUall|quart,3.1117232730118745
+C2,prob,joint UX+UUall|l1l2,4.305436180821418
+C2,prob,joint UX+UUall|soft,4.678503060203929
+C2,prob,"UXf(i,j,c)|neff",3.8692415508713554
+C2,prob,"UXf(i,j,c)|quart",3.1134575474020805
+C2,prob,"UXf(i,j,c)|l1l2",5.00042801998264
+C2,prob,"UXf(i,j,c)|soft",7.863203650826569
+C2,prob,"UXf(i,j)|neff",3.8692415508713554
+C2,prob,"UXf(i,j)|quart",3.1134575474020805
+C2,prob,"UXf(i,j)|l1l2",5.00042801998264
+C2,prob,"UXf(i,j)|soft",7.863203650826569
+C2,prob,UUoff-f(i<k)|neff,2.3905965781799132
+C2,prob,UUoff-f(i<k)|quart,2.3787900197160856
+C2,prob,UUoff-f(i<k)|l1l2,2.3730144300798157
+C2,prob,UUoff-f(i<k)|soft,2.1929438298555004
+C2,prob,"UUoff-f(i,k,c)|neff",2.3906166299053773
+C2,prob,"UUoff-f(i,k,c)|quart",2.3787856095670867
+C2,prob,"UUoff-f(i,k,c)|l1l2",2.3730381554032136
+C2,prob,"UUoff-f(i,k,c)|soft",2.1909766243830204
+C2,prob,UUdiag-f(i)|neff,2.7726159610834293
+C2,prob,UUdiag-f(i)|quart,1.8720359864942218
+C2,prob,UUdiag-f(i)|l1l2,3.4607862355433414
+C2,prob,UUdiag-f(i)|soft,6.621064635161455
+C2,prob,joint-f UX+UU|neff,3.8782861147870245
+C2,prob,joint-f UX+UU|quart,3.115768421339703
+C2,prob,joint-f UX+UU|l1l2,5.039300602984985
+C2,prob,joint-f UX+UU|soft,7.540255735170834
+C2,prob,share-f:UUdiag/UU,2.199194805253715
+C2,prob,"Gfloor(i,c)|neff",4.861831482181187
+C2,prob,"Gfloor(i,c)|quart",4.704466436773778
+C2,prob,"Gfloor(i,c)|l1l2",5.460715970383417
+C2,prob,"Gfloor(i,c)|soft",5.47161001197537
+C2,prob,colLogU1 G floor,4.473938899227735
+C2,prob,colLogU1 G raw,4.486681443034607
+C2,prob,colLogU2 G floor,5.42176708514894
+C2,prob,colLogU2 G raw,5.398103362228483
+C2,prob,colLogU3 G floor,6.045101461275971
+C2,prob,colLogU3 G raw,5.946972960933534
+C2,prob,colLogU4 G floor,6.191348942417345
+C2,prob,colLogU4 G raw,6.061757956605923
+C2,prob,colLog1  G raw,4.805352772338914
+C2,prob,colLog1  G floor,4.805539738287455
+C2,prob,"colLog1  UX(i,c) raw",2.9809675250967764
+C2,prob,colLog2  G raw,5.866654684268544
+C2,prob,colLog2  G floor,5.868285676963621
+C2,prob,"colLog2  UX(i,c) raw",3.4833051125064056
+C2,prob,colLog3  G raw,6.603175719512087
+C2,prob,colLog3  G floor,6.6076523604477035
+C2,prob,"colLog3  UX(i,c) raw",3.649892343849353
+C2,prob,share:UUdiag/UU,2.161153207279915
+C2,prob,share:UUoff/UU,-2.161150345501272
+C2,prob,share:UU/(UX+UU),1.177971468998876
+C3,logit,"UX(i,j)|neff",6.98293554679728
+C3,logit,"UX(i,j)|quart",6.515206989525941
+C3,logit,"UX(i,j)|l1l2",8.556539758727885
+C3,logit,"UX(i,j)|soft",24.544447917445225
+C3,logit,"UX(i,j,c)|neff",6.98293554679728
+C3,logit,"UX(i,j,c)|quart",6.515206989525941
+C3,logit,"UX(i,j,c)|l1l2",8.556539758727885
+C3,logit,"UX(i,j,c)|soft",24.544447917445225
+C3,logit,"G(i,c)|neff",9.852792945193999
+C3,logit,"G(i,c)|quart",10.565773006923221
+C3,logit,"G(i,c)|l1l2",10.537555773074189
+C3,logit,"G(i,c)|soft",14.554194218899422
+C3,logit,UUoff(i<k)|neff,4.573151550554393
+C3,logit,UUoff(i<k)|quart,4.057281702258969
+C3,logit,UUoff(i<k)|l1l2,5.081386411414966
+C3,logit,UUoff(i<k)|soft,8.071481680345054
+C3,logit,UUdiag(i)|neff,4.2783320117177395
+C3,logit,UUdiag(i)|quart,4.553022598213395
+C3,logit,UUdiag(i)|l1l2,4.16726065007938
+C3,logit,UUdiag(i)|soft,3.7888622570515236
+C3,logit,"UU(i,k,c)|neff",2.779392728633576
+C3,logit,"UU(i,k,c)|quart",2.840320838846761
+C3,logit,"UU(i,k,c)|l1l2",3.0826345726810276
+C3,logit,"UU(i,k,c)|soft",5.80746434636877
+C3,logit,"UUdiag(i,c)|neff",4.2783320117177395
+C3,logit,"UUdiag(i,c)|quart",4.553022598213395
+C3,logit,"UUdiag(i,c)|l1l2",4.16726065007938
+C3,logit,"UUdiag(i,c)|soft",3.7888622570515236
+C3,logit,joint UX+UUall|neff,6.980872748863621
+C3,logit,joint UX+UUall|quart,6.513888202570117
+C3,logit,joint UX+UUall|l1l2,8.520143322823154
+C3,logit,joint UX+UUall|soft,8.005086029424024
+C3,logit,"UXf(i,j,c)|neff",7.044141908996663
+C3,logit,"UXf(i,j,c)|quart",6.512725982075705
+C3,logit,"UXf(i,j,c)|l1l2",8.920204517007772
+C3,logit,"UXf(i,j,c)|soft",30.495674845373372
+C3,logit,"UXf(i,j)|neff",7.044141908996663
+C3,logit,"UXf(i,j)|quart",6.512725982075705
+C3,logit,"UXf(i,j)|l1l2",8.920204517007772
+C3,logit,"UXf(i,j)|soft",30.495674845373372
+C3,logit,UUoff-f(i<k)|neff,4.86122071433002
+C3,logit,UUoff-f(i<k)|quart,3.731915127870791
+C3,logit,UUoff-f(i<k)|l1l2,7.532558331132192
+C3,logit,UUoff-f(i<k)|soft,77.27535562164394
+C3,logit,"UUoff-f(i,k,c)|neff",4.861223388989994
+C3,logit,"UUoff-f(i,k,c)|quart",3.7319138734453254
+C3,logit,"UUoff-f(i,k,c)|l1l2",7.532550065950262
+C3,logit,"UUoff-f(i,k,c)|soft",91.5488358761841
+C3,logit,UUdiag-f(i)|neff,4.463269979989075
+C3,logit,UUdiag-f(i)|quart,4.708657656334329
+C3,logit,UUdiag-f(i)|l1l2,4.368437767173184
+C3,logit,UUdiag-f(i)|soft,3.951239761608607
+C3,logit,joint-f UX+UU|neff,7.040483626202748
+C3,logit,joint-f UX+UU|quart,6.510062575354222
+C3,logit,joint-f UX+UU|l1l2,8.952216943783455
+C3,logit,joint-f UX+UU|soft,9.311119822827983
+C3,logit,share-f:UUdiag/UU,0.6372759900718177
+C3,logit,"Gfloor(i,c)|neff",9.852984111959168
+C3,logit,"Gfloor(i,c)|quart",10.565728285316947
+C3,logit,"Gfloor(i,c)|l1l2",10.539747505297129
+C3,logit,"Gfloor(i,c)|soft",14.524449766587583
+C3,logit,colLogU1 G floor,9.404518161617757
+C3,logit,colLogU1 G raw,9.419368089666944
+C3,logit,colLogU2 G floor,10.588659877798376
+C3,logit,colLogU2 G raw,10.606522695395062
+C3,logit,colLogU3 G floor,11.740976572190274
+C3,logit,colLogU3 G raw,11.767837941107393
+C3,logit,colLogU4 G floor,12.092509525586076
+C3,logit,colLogU4 G raw,12.122039050119696
+C3,logit,colLog1  G raw,9.293386436705086
+C3,logit,colLog1  G floor,9.293396240022467
+C3,logit,"colLog1  UX(i,c) raw",5.572556143789692
+C3,logit,colLog2  G raw,10.592392421633626
+C3,logit,colLog2  G floor,10.592984229951695
+C3,logit,"colLog2  UX(i,c) raw",7.117708308553577
+C3,logit,colLog3  G raw,11.846703592367152
+C3,logit,colLog3  G floor,11.849144448346912
+C3,logit,"colLog3  UX(i,c) raw",9.202049016488766
+C3,logit,share:UUdiag/UU,0.49106462819236774
+C3,logit,share:UUoff/UU,-0.49106098270338516
+C3,logit,share:UU/(UX+UU),-0.78012638631099
+C3,prob,"UX(i,j)|neff",6.685465800894405
+C3,prob,"UX(i,j)|quart",6.594101025857525
+C3,prob,"UX(i,j)|l1l2",7.079494303298123
+C3,prob,"UX(i,j)|soft",9.766135388583091
+C3,prob,"UX(i,j,c)|neff",6.685465800894405
+C3,prob,"UX(i,j,c)|quart",6.594101025857525
+C3,prob,"UX(i,j,c)|l1l2",7.079494303298123
+C3,prob,"UX(i,j,c)|soft",9.766135388583091
+C3,prob,"G(i,c)|neff",9.916323488001265
+C3,prob,"G(i,c)|quart",10.713197798658827
+C3,prob,"G(i,c)|l1l2",10.299011507355047
+C3,prob,"G(i,c)|soft",9.712706384550762
+C3,prob,UUoff(i<k)|neff,3.601863124589039
+C3,prob,UUoff(i<k)|quart,3.4351672161965925
+C3,prob,UUoff(i<k)|l1l2,3.6826529892767432
+C3,prob,UUoff(i<k)|soft,3.8929175863731182
+C3,prob,UUdiag(i)|neff,2.148876282213206
+C3,prob,UUdiag(i)|quart,1.4025247799152332
+C3,prob,UUdiag(i)|l1l2,2.6399503025792717
+C3,prob,UUdiag(i)|soft,4.279077425231144
+C3,prob,"UU(i,k,c)|neff",0.041416914002846014
+C3,prob,"UU(i,k,c)|quart",-0.6269204135911548
+C3,prob,"UU(i,k,c)|l1l2",0.4785685277494742
+C3,prob,"UU(i,k,c)|soft",1.8283946872420342
+C3,prob,"UUdiag(i,c)|neff",2.148876282213206
+C3,prob,"UUdiag(i,c)|quart",1.4025247799152332
+C3,prob,"UUdiag(i,c)|l1l2",2.6399503025792717
+C3,prob,"UUdiag(i,c)|soft",4.279077425231144
+C3,prob,joint UX+UUall|neff,6.617853862501943
+C3,prob,joint UX+UUall|quart,6.570306380173794
+C3,prob,joint UX+UUall|l1l2,6.864133894614017
+C3,prob,joint UX+UUall|soft,2.177394490277515
+C3,prob,"UXf(i,j,c)|neff",6.946759489932946
+C3,prob,"UXf(i,j,c)|quart",6.528720883075958
+C3,prob,"UXf(i,j,c)|l1l2",8.112689464413073
+C3,prob,"UXf(i,j,c)|soft",18.032890645682862
+C3,prob,"UXf(i,j)|neff",6.946759489932946
+C3,prob,"UXf(i,j)|quart",6.528720883075958
+C3,prob,"UXf(i,j)|l1l2",8.112689464413073
+C3,prob,"UXf(i,j)|soft",18.032890645682862
+C3,prob,UUoff-f(i<k)|neff,3.158834748522328
+C3,prob,UUoff-f(i<k)|quart,3.014683312822525
+C3,prob,UUoff-f(i<k)|l1l2,3.204072364869357
+C3,prob,UUoff-f(i<k)|soft,3.1405805038150554
+C3,prob,"UUoff-f(i,k,c)|neff",3.158830190043007
+C3,prob,"UUoff-f(i,k,c)|quart",3.0146838808070537
+C3,prob,"UUoff-f(i,k,c)|l1l2",3.2040601680748186
+C3,prob,"UUoff-f(i,k,c)|soft",3.1388073802632728
+C3,prob,UUdiag-f(i)|neff,2.3798120821941118
+C3,prob,UUdiag-f(i)|quart,1.4625740433419667
+C3,prob,UUdiag-f(i)|l1l2,3.0664679120705225
+C3,prob,UUdiag-f(i)|soft,5.406087820869317
+C3,prob,joint-f UX+UU|neff,6.88739580438252
+C3,prob,joint-f UX+UU|quart,6.504919837489292
+C3,prob,joint-f UX+UU|l1l2,7.904625354261821
+C3,prob,joint-f UX+UU|soft,4.673195823519398
+C3,prob,share-f:UUdiag/UU,3.1661782358250194
+C3,prob,"Gfloor(i,c)|neff",9.918474886766031
+C3,prob,"Gfloor(i,c)|quart",10.712678983566175
+C3,prob,"Gfloor(i,c)|l1l2",10.312502303446562
+C3,prob,"Gfloor(i,c)|soft",9.567098730449063
+C3,prob,colLogU1 G floor,9.435160103463097
+C3,prob,colLogU1 G raw,9.451667115725893
+C3,prob,colLogU2 G floor,10.383755493605845
+C3,prob,colLogU2 G raw,10.393095390664381
+C3,prob,colLogU3 G floor,11.070336720014529
+C3,prob,colLogU3 G raw,11.070835871470031
+C3,prob,colLogU4 G floor,11.192384993598784
+C3,prob,colLogU4 G raw,11.191066173435015
+C3,prob,colLog1  G raw,9.428972689459458
+C3,prob,colLog1  G floor,9.429284230725134
+C3,prob,"colLog1  UX(i,c) raw",5.327327130793694
+C3,prob,colLog2  G raw,10.518016021388526
+C3,prob,colLog2  G floor,10.528476916162957
+C3,prob,"colLog2  UX(i,c) raw",5.965377154681738
+C3,prob,colLog3  G raw,11.285291650432475
+C3,prob,colLog3  G floor,11.31092126571595
+C3,prob,"colLog3  UX(i,c) raw",6.219123191819651
+C3,prob,share:UUdiag/UU,3.0584459915837217
+C3,prob,share:UUoff/UU,-3.058445988345262
+C3,prob,share:UU/(UX+UU),-0.4537218643726038

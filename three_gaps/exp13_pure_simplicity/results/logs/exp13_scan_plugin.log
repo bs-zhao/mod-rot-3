@@ -1,0 +1,59 @@
+model                  CR3          min  mean
+channel              logit plugin            
+loss                                         
+share:UUdiag/UU       0.88   1.95  0.88  1.23
+colLog3  G floor      0.51   1.48  0.51  0.83
+colLog2  G floor      0.38   0.84  0.38  0.54
+Gfloor(i,c)|quart     0.34   0.40  0.34  0.36
+colLog3  G raw        0.33   1.48  0.33  0.72
+G(i,c)|quart          0.31   0.40  0.31  0.34
+Gfloor(i,c)|l1l2      0.30   0.83  0.30  0.47
+colLogU4 G floor      0.29   2.46  0.29  1.02
+Gfloor(i,c)|neff      0.29   0.48  0.29  0.35
+colLog2  G raw        0.29   0.84  0.29  0.47
+colLogU3 G floor      0.28   2.12  0.28  0.89
+Gfloor(i,c)|soft      0.27   5.52  0.27  2.02
+G(i,c)|neff           0.25   0.48  0.25  0.33
+colLog1  G floor      0.24   0.46  0.24  0.31
+G(i,c)|l1l2           0.22   0.83  0.22  0.42
+colLog1  G raw        0.21   0.46  0.21  0.29
+colLogU2 G floor      0.19   1.40  0.19  0.59
+colLogU4 G raw        0.17   2.46  0.17  0.93
+G(i,c)|soft           0.17   5.52  0.17  1.95
+colLogU3 G raw        0.16   2.12  0.16  0.81
+colLogU1 G floor      0.15   0.85  0.15  0.38
+colLogU2 G raw        0.12   1.40  0.12  0.55
+colLogU1 G raw        0.09   0.85  0.09  0.34
+colLog3  UX(i,c) raw -0.46   0.15 -0.46 -0.26
+colLog2  UX(i,c) raw -0.48   0.03 -0.48 -0.31
+UX(i,j,c)|l1l2       -0.51  -0.01 -0.51 -0.34
+colLog1  UX(i,c) raw -0.57  -0.29 -0.57 -0.48
+UUoff(i<k)|quart     -0.59   2.16 -0.59  0.32
+UX(i,j)|l1l2         -0.60  -0.10 -0.60 -0.44
+UX(i,j,c)|neff       -0.60  -0.39 -0.60 -0.53
+UUdiag(i,c)|l1l2     -0.62  -0.43 -0.62 -0.56
+UX(i,j)|neff         -0.62  -0.37 -0.62 -0.54
+joint UX+UUall|neff  -0.65  -0.37 -0.65 -0.56
+UU(i,k,c)|quart      -0.67   2.20 -0.67  0.28
+UUdiag(i,c)|soft     -0.67   2.19 -0.67  0.28
+UUoff(i<k)|neff      -0.67   2.00 -0.67  0.22
+joint UX+UUall|l1l2  -0.69   0.01 -0.69 -0.46
+UUoff(i<k)|l1l2      -0.71   2.14 -0.71  0.24
+joint UX+UUall|quart -0.71  -0.64 -0.71 -0.69
+UX(i,j)|quart        -0.71  -0.64 -0.71 -0.69
+UU(i,k,c)|neff       -0.72   2.45 -0.72  0.34
+UU(i,k,c)|l1l2       -0.73   3.05 -0.73  0.53
+UU(i,k,c)|soft       -0.74   7.79 -0.74  2.10
+UX(i,j,c)|soft       -0.76   5.29 -0.76  1.25
+UUoff(i<k)|soft      -0.77   7.81 -0.77  2.09
+UX(i,j,c)|quart      -0.77  -0.66 -0.77 -0.73
+UUdiag(i)|soft       -0.79  -0.65 -0.79 -0.74
+UUdiag(i,c)|neff     -0.60  -0.80 -0.80 -0.73
+UUdiag(i,c)|quart    -0.56  -0.85 -0.85 -0.76
+joint UX+UUall|soft  -0.90   1.69 -0.90 -0.04
+UX(i,j)|soft         -0.91   1.09 -0.91 -0.24
+UUdiag(i)|quart      -0.48  -0.96 -0.96 -0.80
+UUdiag(i)|neff       -0.53  -1.06 -1.06 -0.88
+UUdiag(i)|l1l2       -0.59  -1.06 -1.06 -0.90
+share:UU/(UX+UU)      0.35  -1.64 -1.64 -0.98
+share:UUoff/UU       -0.88  -1.95 -1.95 -1.59
