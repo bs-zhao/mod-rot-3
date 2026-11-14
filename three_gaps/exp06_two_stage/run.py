@@ -54,6 +54,9 @@ def main():
     ap.add_argument("--steps", type=int, default=300)
     ap.add_argument("--reps", type=int, default=1, help="Bernoulli draws per (U,X) for the binary channel (Y = mean)")
     ap.add_argument("--tag", default="v1")
+    ap.add_argument("--save-q", action="store_true",
+                    help="also save the found rotation Q for every (source, channel, variant, loss) as Q/*.npy "
+                         "(output only; does not change the search)")
     a = ap.parse_args()
     dev = io.pick_device(a.device)
     rng = np.random.default_rng(a.seed)
@@ -139,6 +142,9 @@ def main():
                     else:
                         r.update(angle_to_oracle=axis_error(Q @ R_or.T)[0])
                         U = V[te] @ Q.T
+                    if a.save_q:
+                        (out / "Q").mkdir(exist_ok=True)
+                        np.save(out / "Q" / f"{src}_{ch}_{var}_{loss}.npy", np.asarray(Q))
                     rep_t = match_report(U, Tst[te])  # post-hoc only
                     r.update(test_mcc=rep_t["mcc"], test_worst=rep_t["worst"], test_off_max=rep_t["off_max"],
                              oracle_mcc=oracle_mcc if not controlled else 1.0, identity_mcc=ident_mcc)

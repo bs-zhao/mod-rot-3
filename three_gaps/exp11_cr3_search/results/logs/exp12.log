@@ -1,0 +1,21 @@
+residual sd per param [0.486 0.416 0.544 0.501]  R2 per param [0.764 0.827 0.704 0.749]
+
+Q1: decoder logit vs analytic variants (TEST subjects x all trials)
+  true T           corr 0.9753  slope 0.931  rel RMSE after affine 0.221
+  plug-in A V      corr 0.9889  slope 0.957  rel RMSE after affine 0.148
+  smoothed s=0.5   corr 0.9888  slope 0.949  rel RMSE after affine 0.149
+  smoothed s=1.0   corr 0.9887  slope 0.943  rel RMSE after affine 0.150
+  smoothed s=1.5   corr 0.9886  slope 0.940  rel RMSE after affine 0.151
+  sd of eta over trials/subjects: decoder 1.380 | true 1.446 | plug-in 1.425 | smoothed1 1.446
+
+oracle TEST mcc/leak/max 0.872 0.089 0.227
+decoder (NN)       stageA axes 1 absL1: mcc 0.803 leak 0.177/0.46  quartimax: mcc 0.833 leak 0.151/0.37
+analytic smoothed s=0.0 stageA axes 1 absL1: mcc 0.860 leak 0.115/0.34  quartimax: mcc 0.848 leak 0.136/0.34
+   (101s)
+analytic smoothed s=0.5 stageA axes 1 absL1: mcc 0.861 leak 0.115/0.34  quartimax: mcc 0.848 leak 0.136/0.34
+   (97s)
+analytic smoothed s=1.0 stageA axes 1 absL1: mcc 0.861 leak 0.115/0.33  quartimax: mcc 0.849 leak 0.135/0.33
+   (101s)
+analytic smoothed s=1.5 stageA axes 1 absL1: mcc 0.862 leak 0.114/0.33  quartimax: mcc 0.849 leak 0.134/0.33
+   (97s)
+done

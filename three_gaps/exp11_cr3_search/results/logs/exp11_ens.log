@@ -1,0 +1,4 @@
+CR3 rep1 ensemble ['quartimax', 'rowNeff'] x [logit,prob]: oracle 0.872/0.089/0.227 | found TEST mcc/leak/max 0.817 0.161 0.405 (208s)
+CR3 rep1 ensemble ['absL1', 'quartimax', 'rowNeff'] x [logit,prob]: oracle 0.872/0.089/0.227 | found TEST mcc/leak/max 0.745 0.199 0.627 (316s)
+CR3 rep1 ensemble ['quartimax'] x [logit,prob]: oracle 0.872/0.089/0.227 | found TEST mcc/leak/max 0.801 0.174 0.485 (96s)
+done

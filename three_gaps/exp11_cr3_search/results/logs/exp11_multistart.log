@@ -1,0 +1,7 @@
+CR3 logit rep1 GCat quartimax  starts 48: best-L TEST mcc/leak/max 0.833 0.151 0.374 | L_oracle-L_best -0.1265 | top5 mcc [0.833 0.833 0.833 0.833 0.833] | frac starts within 1e-3 of best 1.00 (215s)
+CR3 logit rep1 GCat rowNeff    starts 48: best-L TEST mcc/leak/max 0.816 0.166 0.374 | L_oracle-L_best -0.0112 | top5 mcc [0.816 0.816 0.816 0.816 0.816] | frac starts within 1e-3 of best 1.00 (224s)
+CR3 logit rep1 GCat cellNeff   starts 48: best-L TEST mcc/leak/max 0.798 0.184 0.468 | L_oracle-L_best -0.0263 | top5 mcc [0.798 0.798 0.798 0.798 0.798] | frac starts within 1e-3 of best 1.00 (227s)
+CR3 prob rep1 GCat quartimax  starts 48: best-L TEST mcc/leak/max 0.791 0.177 0.535 | L_oracle-L_best -0.1020 | top5 mcc [0.791 0.791 0.791 0.791 0.791] | frac starts within 1e-3 of best 1.00 (204s)
+CR3 prob rep1 GCat rowNeff    starts 48: best-L TEST mcc/leak/max 0.816 0.160 0.414 | L_oracle-L_best -0.0045 | top5 mcc [0.816 0.816 0.816 0.816 0.816] | frac starts within 1e-3 of best 1.00 (206s)
+CR3 prob rep1 GCat cellNeff   starts 48: best-L TEST mcc/leak/max 0.756 0.193 0.615 | L_oracle-L_best -0.0323 | top5 mcc [0.756 0.756 0.756 0.756 0.756] | frac starts within 1e-3 of best 1.00 (207s)
+done

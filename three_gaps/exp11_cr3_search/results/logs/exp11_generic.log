@@ -1,0 +1,25 @@
+== CR3 logit rep1: oracle 0.872/0.089/0.227
+   gain: minimax e1 0.302  next 0.754  accepted True  axis corr with T [0.09 0.07 0.05 0.86]
+   shift: minimax e1 0.984  next 0.995  accepted False  axis corr with T [-0.7   0.17 -0.4   0.06]
+   colLog3    minimax-A + floor: TEST mcc/leak/max 0.787 0.179 0.464
+   quartimax  minimax-A + floor: TEST mcc/leak/max 0.794 0.176 0.432
+   rowNeff    minimax-A + floor: TEST mcc/leak/max 0.731 0.220 0.634
+== CR3 prob rep1: oracle 0.872/0.089/0.227
+   gain: minimax e1 0.437  next 0.874  accepted True  axis corr with T [-0.03 -0.14  0.03 -0.86]
+   shift: minimax e1 0.976  next 0.992  accepted False  axis corr with T [-0.72  0.16 -0.38 -0.03]
+   colLog3    minimax-A + floor: TEST mcc/leak/max 0.783 0.186 0.463
+   quartimax  minimax-A + floor: TEST mcc/leak/max 0.776 0.197 0.461
+   rowNeff    minimax-A + floor: TEST mcc/leak/max 0.712 0.223 0.695
+== CR3 logit rep2: oracle 0.869/0.105/0.223
+   gain: minimax e1 0.299  next 0.848  accepted True  axis corr with T [0.16 0.03 0.08 0.84]
+   shift: minimax e1 0.974  next 0.994  accepted False  axis corr with T [-0.63  0.02 -0.49 -0.2 ]
+   colLog3    minimax-A + floor: TEST mcc/leak/max 0.794 0.170 0.483
+   quartimax  minimax-A + floor: TEST mcc/leak/max 0.818 0.159 0.379
+   rowNeff    minimax-A + floor: TEST mcc/leak/max 0.719 0.226 0.645
+== CR3 prob rep2: oracle 0.869/0.105/0.223
+   gain: minimax e1 0.413  next 0.900  accepted True  axis corr with T [-0.11 -0.08 -0.02 -0.86]
+   shift: minimax e1 0.969  next 0.992  accepted False  axis corr with T [-0.7   0.05 -0.29 -0.38]
+   colLog3    minimax-A + floor: TEST mcc/leak/max 0.795 0.169 0.492
+   quartimax  minimax-A + floor: TEST mcc/leak/max 0.795 0.181 0.436
+   rowNeff    minimax-A + floor: TEST mcc/leak/max 0.713 0.222 0.698
+done

@@ -1,0 +1,21 @@
+== CR3 logit rep1: oracle 0.872/0.089/0.227
+CR3 logit rep1 quartimax mu=0.3  active=['gain'] TEST mcc/leak/max 0.726 0.223 0.556 (61s)
+CR3 logit rep1 quartimax mu=1    active=['gain'] TEST mcc/leak/max 0.734 0.200 0.713 (58s)
+CR3 logit rep1 quartimax mu=3    active=['gain'] TEST mcc/leak/max 0.843 0.144 0.292 (57s)
+CR3 logit rep1 rowNeff   mu=0.3  active=['gain'] TEST mcc/leak/max 0.802 0.176 0.381 (57s)
+CR3 logit rep1 rowNeff   mu=1    active=['gain'] TEST mcc/leak/max 0.811 0.170 0.378 (61s)
+CR3 logit rep1 rowNeff   mu=3    active=['gain'] TEST mcc/leak/max 0.816 0.164 0.374 (61s)
+CR3 logit rep1 absL1     mu=0.3  active=['gain'] TEST mcc/leak/max 0.594 0.301 0.656 (63s)
+CR3 logit rep1 absL1     mu=1    active=['gain'] TEST mcc/leak/max 0.633 0.279 0.709 (62s)
+CR3 logit rep1 absL1     mu=3    active=['gain'] TEST mcc/leak/max 0.782 0.200 0.468 (65s)
+== CR3 prob rep1: oracle 0.872/0.089/0.227
+CR3 prob rep1 quartimax mu=0.3  active=['gain'] TEST mcc/leak/max 0.801 0.168 0.448 (60s)
+CR3 prob rep1 quartimax mu=1    active=['gain'] TEST mcc/leak/max 0.816 0.154 0.450 (60s)
+CR3 prob rep1 quartimax mu=3    active=['gain'] TEST mcc/leak/max 0.806 0.170 0.509 (61s)
+CR3 prob rep1 rowNeff   mu=0.3  active=['gain'] TEST mcc/leak/max 0.792 0.184 0.442 (62s)
+CR3 prob rep1 rowNeff   mu=1    active=['gain'] TEST mcc/leak/max 0.806 0.172 0.430 (62s)
+CR3 prob rep1 rowNeff   mu=3    active=['gain'] TEST mcc/leak/max 0.813 0.162 0.420 (58s)
+CR3 prob rep1 absL1     mu=0.3  active=['gain'] TEST mcc/leak/max 0.646 0.289 0.558 (64s)
+CR3 prob rep1 absL1     mu=1    active=['gain'] TEST mcc/leak/max 0.765 0.205 0.543 (67s)
+CR3 prob rep1 absL1     mu=3    active=['gain'] TEST mcc/leak/max 0.783 0.183 0.531 (66s)
+done

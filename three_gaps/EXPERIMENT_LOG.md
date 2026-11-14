@@ -130,3 +130,16 @@ Gap 1/2 不依赖 NP（在真 Tstd 坐标中），只重跑 decoder 来源。判
    decoder-WY→sieve 与 decoder autodiff 几乎一致 ⇒ 瓶颈是 **decoder 函数失真（Gap 3）**，不是 M2 估计。
 3. ~~不是独立验证~~ → **EXP08 已在新训练的 NP（repeat 2）上原样复现**：C1–C3 全部 PASS，CR3 同样 ≈0.80 失败。
    仍然共享同一个生成数据集（S1）与 train/test 划分；未在新数据集上复现。
+
+## EXP10–EXP12 — CR3 的 decoder 失真与扣噪声底方法（2026-11-14）
+
+完整总结见 [`readmes/rotation_research/03_cr3_decoder_noise_floor_summary.md`](../readmes/rotation_research/03_cr3_decoder_noise_floor_summary.md)；
+结果表、热图、日志在 `three_gaps/exp11_cr3_search/results/`。
+
+- **EXP10**：三鸿沟 U–T 热图（`--save-q` 保存旋转）。CR3 Gap3 泄漏 .175（Oracle .089），混合集中在 α↔λ、γ↔τ。
+- **EXP12**：后验平滑（s=0–1.5）不改变冻结方法的输出（.860→.862）⇒ 后验平均不是 CR3 失败主因。
+  decoder 梯度 ≈ 0.86×真梯度 + 约 0.007–0.01 的各向同性噪声底，落在解析为零的格子（λ@只有收益，γ@概率0.5）。
+- **EXP11**：扣噪声底的能量矩阵损失 colLog3 + minimax 增益轴（对每个上下文都等变的 τ 轴；池化轴被 λ 污染，corr .37）。
+  CR3 TEST MCC .853/.856（rep1 logit/p）、.829/.856（rep2，未调参的新 NP）；Oracle .872/.869；C1–C3 保持 Oracle 水平。
+  未采纳：GL(d)、软阶段 A、通道×损失组合、ICA 非高斯项（用户明确不要）。
+- 已知限制：CR3 损失格子仍用设计类别；minimax 比例门槛 0.5→0.6 为事后改动；未在新数据集复现。

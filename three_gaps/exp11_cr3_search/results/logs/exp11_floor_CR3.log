@@ -1,0 +1,25 @@
+== CR3 logit rep1 frac=1.0: oracle TEST mcc/leak/max 0.872 0.089 0.227
+   per-cell lambda_min(E_c): [0.00141 0.00272 0.00247 0.014  ]  floor sigma^2 = 0.00141 ; mean cell trace 0.0904
+   quartimax  hardA  TEST mcc/leak/max 0.834 0.149 0.374 (6s)
+   quartimax  noA    TEST mcc/leak/max 0.740 0.228 0.520 (6s)
+   rowNeff    hardA  TEST mcc/leak/max 0.817 0.164 0.374 (6s)
+   rowNeff    noA    TEST mcc/leak/max 0.763 0.219 0.416 (6s)
+   cellNeff   hardA  TEST mcc/leak/max 0.800 0.183 0.464 (5s)
+   cellNeff   noA    TEST mcc/leak/max 0.692 0.257 0.547 (6s)
+   colLog3    hardA  TEST mcc/leak/max 0.845 0.131 0.374 (5s)
+   colLog3    noA    TEST mcc/leak/max 0.624 0.289 0.532 (6s)
+   softL0_10  hardA  TEST mcc/leak/max 0.689 0.245 0.590 (5s)
+   softL0_10  noA    TEST mcc/leak/max 0.632 0.289 0.593 (6s)
+== CR3 prob rep1 frac=1.0: oracle TEST mcc/leak/max 0.872 0.089 0.227
+   per-cell lambda_min(E_c): [8.0e-05 1.3e-04 9.0e-05 4.5e-04]  floor sigma^2 = 0.00008 ; mean cell trace 0.0024
+   quartimax  hardA  TEST mcc/leak/max 0.800 0.173 0.513 (6s)
+   quartimax  noA    TEST mcc/leak/max 0.748 0.229 0.499 (5s)
+   rowNeff    hardA  TEST mcc/leak/max 0.824 0.155 0.375 (6s)
+   rowNeff    noA    TEST mcc/leak/max 0.785 0.191 0.420 (7s)
+   cellNeff   hardA  TEST mcc/leak/max 0.760 0.191 0.610 (7s)
+   cellNeff   noA    TEST mcc/leak/max 0.656 0.270 0.554 (7s)
+   colLog3    hardA  TEST mcc/leak/max 0.860 0.117 0.351 (6s)
+   colLog3    noA    TEST mcc/leak/max 0.657 0.270 0.524 (6s)
+   softL0_10  hardA  TEST mcc/leak/max 0.859 0.119 0.351 (6s)
+   softL0_10  noA    TEST mcc/leak/max 0.634 0.286 0.584 (6s)
+done
