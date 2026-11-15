@@ -1,0 +1,50 @@
+baseline CR3 mcc/leak/lmax: 0.8173 0.1646 0.3677
+candidates keeping C1-C3 MCC within .01 of baseline: 68 of 594
+
+top 20 by CR3 leakage (constrained):
+                                 CR3_mcc  CR3_leak  CR3_lmax  C1_mcc  C2_mcc  C3_mcc  C2_leak  C3_leak
+cand                                                                                                  
+UX:shannon + UU:sqrt_diagshare    0.8176    0.1634    0.3764  0.9688  0.9666  0.9604   0.0509   0.0457
+UX:shannon + UU:diagshare         0.8176    0.1642    0.3819  0.9688  0.9669  0.9606   0.0491   0.0455
+UX:shannon + UU:log_diagshare     0.8174    0.1642    0.3706  0.9688  0.9662  0.9603   0.0526   0.0459
+UX:neff + UU:diagshare            0.8173    0.1646    0.3677  0.9688  0.9645  0.9600   0.0599   0.0464
+UX:neff + UU:sqrt_diagshare       0.8169    0.1657    0.3624  0.9687  0.9641  0.9598   0.0618   0.0471
+UX:colneff + UU:diagshare         0.8163    0.1674    0.3668  0.9688  0.9653  0.9600   0.0570   0.0465
+UX:neff + UU:log_diagshare        0.8163    0.1677    0.3567  0.9687  0.9636  0.9595   0.0637   0.0480
+UX:colneff + UU:sqrt_diagshare    0.8159    0.1680    0.3614  0.9688  0.9648  0.9597   0.0588   0.0470
+UX:colneff + UU:log_diagshare     0.8153    0.1696    0.3571  0.9687  0.9644  0.9595   0.0604   0.0479
+UX:l1l2 + UU:log_diagshare        0.8082    0.1850    0.3545  0.9688  0.9683  0.9611   0.0411   0.0438
+UX:l1l2 + UU:sqrt_diagshare       0.8066    0.1867    0.3578  0.9688  0.9685  0.9612   0.0401   0.0436
+UX:renyi0.5 + UU:log_diagshare    0.8065    0.1869    0.3583  0.9688  0.9687  0.9612   0.0390   0.0436
+UX:varimax + UU:diagshare         0.7921    0.1877    0.4708  0.9688  0.9587  0.9514   0.0779   0.0614
+UX:l1l2 + UU:diagshare            0.8053    0.1881    0.3613  0.9688  0.9687  0.9613   0.0390   0.0434
+UX:renyi0.5 + UU:sqrt_diagshare   0.8050    0.1884    0.3618  0.9688  0.9689  0.9613   0.0381   0.0434
+UX:cf1 + UU:diagshare             0.7911    0.1894    0.4737  0.9688  0.9641  0.9514   0.0613   0.0616
+UX:varimax + UU:sqrt_diagshare    0.7906    0.1896    0.4778  0.9688  0.9580  0.9523   0.0797   0.0600
+UX:renyi0.5 + UU:diagshare        0.8037    0.1896    0.3652  0.9688  0.9691  0.9614   0.0372   0.0432
+UX:cf1 + UU:sqrt_diagshare        0.7895    0.1914    0.4809  0.9688  0.9636  0.9522   0.0632   0.0603
+UX:varimax + UU:log_diagshare     0.7886    0.1919    0.4864  0.9688  0.9574  0.9531   0.0813   0.0586
+
+top 10 by CR3 MCC (constrained):
+                                CR3_mcc  CR3_leak  CR3_lmax  C1_mcc  C2_mcc  C3_mcc  C2_leak  C3_leak
+cand                                                                                                 
+UX:shannon + UU:diagshare        0.8176    0.1642    0.3819  0.9688  0.9669  0.9606   0.0491   0.0455
+UX:shannon + UU:sqrt_diagshare   0.8176    0.1634    0.3764  0.9688  0.9666  0.9604   0.0509   0.0457
+UX:shannon + UU:log_diagshare    0.8174    0.1642    0.3706  0.9688  0.9662  0.9603   0.0526   0.0459
+UX:neff + UU:diagshare           0.8173    0.1646    0.3677  0.9688  0.9645  0.9600   0.0599   0.0464
+UX:neff + UU:sqrt_diagshare      0.8169    0.1657    0.3624  0.9687  0.9641  0.9598   0.0618   0.0471
+UX:colneff + UU:diagshare        0.8163    0.1674    0.3668  0.9688  0.9653  0.9600   0.0570   0.0465
+UX:neff + UU:log_diagshare       0.8163    0.1677    0.3567  0.9687  0.9636  0.9595   0.0637   0.0480
+UX:colneff + UU:sqrt_diagshare   0.8159    0.1680    0.3614  0.9688  0.9648  0.9597   0.0588   0.0470
+UX:colneff + UU:log_diagshare    0.8153    0.1696    0.3571  0.9687  0.9644  0.9595   0.0604   0.0479
+UX:l1l2 + UU:log_diagshare       0.8082    0.1850    0.3545  0.9688  0.9683  0.9611   0.0411   0.0438
+
+best CR3 leak among ALL 594 (unconstrained):
+                                CR3_mcc  CR3_leak  CR3_lmax  C1_mcc  C2_mcc  C3_mcc  C2_leak  C3_leak
+cand                                                                                                 
+UX:shannon + UU:sqrt_diagshare   0.8176    0.1634    0.3764  0.9688  0.9666  0.9604   0.0509   0.0457
+UX:shannon + UU:diagshare        0.8176    0.1642    0.3819  0.9688  0.9669  0.9606   0.0491   0.0455
+UX:shannon + UU:log_diagshare    0.8174    0.1642    0.3706  0.9688  0.9662  0.9603   0.0526   0.0459
+UX:neff + UU:diagshare           0.8173    0.1646    0.3677  0.9688  0.9645  0.9600   0.0599   0.0464
+UX:neff + UU:sqrt_diagshare      0.8169    0.1657    0.3624  0.9687  0.9641  0.9598   0.0618   0.0471
+UX:colneff + UU:diagshare        0.8163    0.1674    0.3668  0.9688  0.9653  0.9600   0.0570   0.0465
