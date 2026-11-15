@@ -1,0 +1,17 @@
+prob  CR3 rep1: mcc 0.817 leak 0.165 | L_oracle-L_found = +2.64 sd | max axis angle 26.2 deg | hess min/max found 1.80/24.9 oracle -6.17/6.5 | |grad| oracle 5.85
+prob  CR3 rep2: mcc 0.812 leak 0.183 | L_oracle-L_found = +2.31 sd | max axis angle 28.9 deg | hess min/max found 1.85/19.2 oracle -6.74/8.2 | |grad| oracle 5.32
+prob  C1  rep1: mcc 0.969 leak 0.021 | L_oracle-L_found = +0.01 sd | max axis angle 1.9 deg | hess min/max found 22.92/37.0 oracle 22.91/36.9 | |grad| oracle 0.94
+prob  C1  rep2: mcc 0.969 leak 0.020 | L_oracle-L_found = +0.02 sd | max axis angle 2.3 deg | hess min/max found 26.84/39.5 oracle 26.85/39.4 | |grad| oracle 1.49
+prob  C2  rep1: mcc 0.965 leak 0.060 | L_oracle-L_found = +0.09 sd | max axis angle 8.0 deg | hess min/max found 5.76/42.8 oracle 5.75/42.5 | |grad| oracle 2.50
+prob  C2  rep2: mcc 0.968 leak 0.043 | L_oracle-L_found = +0.08 sd | max axis angle 5.5 deg | hess min/max found 7.18/43.6 oracle 6.78/42.7 | |grad| oracle 2.71
+prob  C3  rep1: mcc 0.960 leak 0.046 | L_oracle-L_found = +0.12 sd | max axis angle 5.8 deg | hess min/max found 3.96/34.5 oracle 3.94/33.8 | |grad| oracle 2.72
+prob  C3  rep2: mcc 0.962 leak 0.048 | L_oracle-L_found = +0.08 sd | max axis angle 7.1 deg | hess min/max found 2.43/31.5 oracle 2.10/31.3 | |grad| oracle 2.01
+logit CR3 rep1: mcc 0.831 leak 0.160 | L_oracle-L_found = +2.11 sd | max axis angle 20.5 deg | hess min/max found 0.84/31.2 oracle -5.20/11.9 | |grad| oracle 6.90
+logit CR3 rep2: mcc 0.810 leak 0.191 | L_oracle-L_found = +1.79 sd | max axis angle 26.9 deg | hess min/max found 0.91/26.9 oracle -3.24/13.4 | |grad| oracle 6.15
+logit C1  rep1: mcc 0.925 leak 0.132 | L_oracle-L_found = +0.62 sd | max axis angle 22.5 deg | hess min/max found 6.36/33.0 oracle 0.65/31.1 | |grad| oracle 5.09
+logit C1  rep2: mcc 0.947 leak 0.098 | L_oracle-L_found = +0.41 sd | max axis angle 16.5 deg | hess min/max found 6.10/40.6 oracle 7.38/38.6 | |grad| oracle 5.34
+logit C2  rep1: mcc 0.912 leak 0.136 | L_oracle-L_found = +0.56 sd | max axis angle 28.0 deg | hess min/max found 5.02/36.9 oracle 1.39/36.3 | |grad| oracle 3.31
+logit C2  rep2: mcc 0.897 leak 0.141 | L_oracle-L_found = +0.41 sd | max axis angle 31.9 deg | hess min/max found 1.11/41.6 oracle -1.67/37.2 | |grad| oracle 3.39
+logit C3  rep1: mcc 0.919 leak 0.107 | L_oracle-L_found = +0.80 sd | max axis angle 26.0 deg | hess min/max found 1.33/35.7 oracle -1.18/31.7 | |grad| oracle 4.30
+logit C3  rep2: mcc 0.827 leak 0.161 | L_oracle-L_found = +1.36 sd | max axis angle 51.9 deg | hess min/max found 1.97/38.7 oracle -7.10/38.7 | |grad| oracle 3.80
+done
