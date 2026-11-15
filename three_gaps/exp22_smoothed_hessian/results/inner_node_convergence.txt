@@ -1,0 +1,4 @@
+sigma=0.25 SX_s: rel diff to n_in=32  n8 0.0227  n16 0.0290
+sigma=0.25 T4_s: rel diff to n_in=32  n8 0.0796  n16 0.1014
+sigma=0.5 SX_s: rel diff to n_in=32  n8 0.0684  n16 0.0708
+sigma=0.5 T4_s: rel diff to n_in=32  n8 0.1908  n16 0.1639
