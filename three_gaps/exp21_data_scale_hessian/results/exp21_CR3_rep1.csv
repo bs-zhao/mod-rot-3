@@ -1,0 +1,2 @@
+model,rep,config,mcc,leak,leak_max,oracle_angle_max,oracle_angle_mean,loss,secs,starts,steps,spearman_vs_autograd,coverage_mean,coverage_min
+CR3,1,autograd_matched,0.8232097644035066,0.16813244332411084,0.39560944455532876,21.35500850100596,19.69542589729183,26.418638229370117,4.224144697189331,8,120,1.0,,

@@ -41,7 +41,7 @@ def smoothed_subject_moments(st, ch, ids, sigma, kernel, C_ref, n_in, bs=16, chu
     nj = len(delta)
     h = st.h(ch)
     X_ = st.X.to(X.DEV)
-    out = dict(SX_s=[], T4_s=[], SX_e=[], T4_e=[], dp=[], p0=[])
+    out = dict(SX_s=[], T4_s=[], SX_e=[], T4_e=[], p0=[])
     for i in range(0, len(ids), bs):
         V0 = torch.tensor(st.V[ids[i:i + bs]], dtype=torch.float64, device=X.DEV)
         B, K = len(V0), len(X_)

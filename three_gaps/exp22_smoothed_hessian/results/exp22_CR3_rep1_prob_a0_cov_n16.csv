@@ -1,0 +1,2 @@
+model,rep,channel,subjects,kernel,n_in,sigma,agg,mcc,leak,leak_max,loss,spearman_vs_sigma0,angle_to_sigma0_deg,oracle_angle_deg,sUX,sUU,mean_abs_dp,rel_SX_change,rel_T4_change
+CR3,1,prob,a0,cov,16,0.0,smooth_then_square,0.8151995039648109,0.16317832532271595,0.39885539470020925,29.178861618041992,1.0,0.0,27.394493996767164,0.5420282943259681,0.032187374657632765,0.0,0.0,0.0
