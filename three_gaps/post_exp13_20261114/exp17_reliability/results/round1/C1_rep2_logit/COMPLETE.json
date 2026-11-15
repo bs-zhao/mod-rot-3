@@ -1,0 +1,18 @@
+{
+  "methods": [
+    "equal",
+    "subjects2_rho",
+    "subjects2_meanSD",
+    "subjects4_rho",
+    "subjects4_meanSD",
+    "subjects8_rho",
+    "subjects8_meanSD",
+    "trials2_rho",
+    "trials2_meanSD",
+    "trials4_rho",
+    "trials4_meanSD",
+    "trials8_rho",
+    "trials8_meanSD"
+  ],
+  "rows": 13
+}

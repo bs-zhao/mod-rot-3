@@ -1,0 +1,154 @@
+{
+  "reference": "original frozen NP decoder",
+  "choice_caveat": null,
+  "timing": "post-fit/post-search; no feedback to selection or training",
+  "methods": {
+    "polynomial": {
+      "gradient": {
+        "rmse": 0.11143377031363437,
+        "relative_frobenius": 0.7856441020833373,
+        "reference_rms": 0.14183746815910547
+      },
+      "UU": {
+        "rmse": 0.041473133408311054,
+        "relative_frobenius": 2.29236545188807,
+        "reference_rms": 0.01809185065764814
+      },
+      "UX": {
+        "rmse": 0.1940160941668502,
+        "relative_frobenius": 2.5477174535852165,
+        "reference_rms": 0.0761529085157483
+      },
+      "landscape_correlation": [
+        0.8411980874602757,
+        -0.13153588763309
+      ]
+    },
+    "kernel_ridge": {
+      "gradient": {
+        "rmse": 0.0926676181954048,
+        "relative_frobenius": 0.6533366634227802,
+        "reference_rms": 0.14183746815910547
+      },
+      "UU": {
+        "rmse": 0.029676955090497496,
+        "relative_frobenius": 1.6403493292131435,
+        "reference_rms": 0.01809185065764814
+      },
+      "UX": {
+        "rmse": 0.18930516768233693,
+        "relative_frobenius": 2.4858560411148174,
+        "reference_rms": 0.0761529085157483
+      },
+      "landscape_correlation": [
+        0.5717925458492596,
+        -0.1450495154383953
+      ]
+    },
+    "GP384": {
+      "gradient": {
+        "rmse": 0.15326899443940348,
+        "relative_frobenius": 1.0805959555586169,
+        "reference_rms": 0.14183746815910547
+      },
+      "UU": {
+        "rmse": 0.05213415602420081,
+        "relative_frobenius": 2.8816375400579397,
+        "reference_rms": 0.01809185065764814
+      },
+      "UX": {
+        "rmse": 0.18942403979929254,
+        "relative_frobenius": 2.487417007324414,
+        "reference_rms": 0.0761529085157483
+      },
+      "landscape_correlation": [
+        0.743505318580362,
+        0.08632081937603192
+      ]
+    },
+    "mlp31": {
+      "gradient": {
+        "rmse": 0.07178914934676443,
+        "relative_frobenius": 0.5061367089987485,
+        "reference_rms": 0.14183746815910547
+      },
+      "UU": {
+        "rmse": 0.024645895607221312,
+        "relative_frobenius": 1.3622650370929588,
+        "reference_rms": 0.01809185065764814
+      },
+      "UX": {
+        "rmse": 0.18140209872021176,
+        "relative_frobenius": 2.382077090104813,
+        "reference_rms": 0.0761529085157483
+      },
+      "landscape_correlation": [
+        0.8174859351643876,
+        0.4947449339644061
+      ]
+    },
+    "mlp32": {
+      "gradient": {
+        "rmse": 0.07054938109103019,
+        "relative_frobenius": 0.49739594203621695,
+        "reference_rms": 0.14183746815910547
+      },
+      "UU": {
+        "rmse": 0.02357410235066655,
+        "relative_frobenius": 1.3030232670365784,
+        "reference_rms": 0.01809185065764814
+      },
+      "UX": {
+        "rmse": 0.18063439047345028,
+        "relative_frobenius": 2.371995948599854,
+        "reference_rms": 0.0761529085157483
+      },
+      "landscape_correlation": [
+        0.7977668378274699,
+        0.6253872798007676
+      ]
+    },
+    "mlp33": {
+      "gradient": {
+        "rmse": 0.06824587540504663,
+        "relative_frobenius": 0.48115548233342803,
+        "reference_rms": 0.14183746815910547
+      },
+      "UU": {
+        "rmse": 0.02208604972269561,
+        "relative_frobenius": 1.220773382481961,
+        "reference_rms": 0.01809185065764814
+      },
+      "UX": {
+        "rmse": 0.17436762108792742,
+        "relative_frobenius": 2.289704024264135,
+        "reference_rms": 0.0761529085157483
+      },
+      "landscape_correlation": [
+        0.8408459415807458,
+        0.63707723666113
+      ]
+    },
+    "smooth_mlp": {
+      "gradient": {
+        "rmse": 0.06918260908412281,
+        "relative_frobenius": 0.48775975757348944,
+        "reference_rms": 0.14183746815910547
+      },
+      "UU": {
+        "rmse": 0.023296174208813594,
+        "relative_frobenius": 1.2876612044641977,
+        "reference_rms": 0.01809185065764814
+      },
+      "UX": {
+        "rmse": 0.18294641426558605,
+        "relative_frobenius": 2.402356230789964,
+        "reference_rms": 0.0761529085157483
+      },
+      "landscape_correlation": [
+        0.7961880561827224,
+        0.38001822287928433
+      ]
+    }
+  }
+}

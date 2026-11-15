@@ -12,6 +12,29 @@ import surrogates as S
 from common.decoder import decoder_eta
 from common.analytic import ETA
 
+def matrix_coordinates(model,repeat,channel,subjects,trials):
+    """Rebuild only the frozen coordinates/grid; never open a derivative cache."""
+    d=6 if model=='C3' else 4
+    data,truth=C.io.load_all(model,5e-5 if model=='CR3' else .0005,d,0,repeat)
+    rng=np.random.default_rng(20261108)
+    ids=np.sort(rng.choice(data['train_ids'],300,replace=False))
+    if model=='CR3': X=C.tensor(data['x'][data['subject_index']==0])
+    else:
+        x0=rng.uniform(-1,1,(200,data['x'].shape[1])); X=C.tensor(np.concatenate([x0,-x0]))
+    if subjects:
+        si=np.sort(np.random.default_rng(2301).choice(len(ids),min(subjects,len(ids)),replace=False)); ids=ids[si]
+    if trials:
+        ki=np.sort(np.random.default_rng(2302).choice(len(X),min(trials,len(X)),replace=False)); X=X[ki]
+    meta=C.ROOT/'outputs/three_gaps/post_exp13_20261114/matrix_metadata'; meta.mkdir(parents=True,exist_ok=True)
+    path=meta/f'{model}_rep{repeat}.pt'
+    if not path.exists(): torch.save(dict(V=data['V'],Tst=truth.std(),te=data['test_ids'],tr=data['train_ids']),path)
+    return dict(model=model,repeat=repeat,channel=channel,V=data['V'],Vtrain=C.tensor(data['V'][ids]),
+                ids=ids,X=X,cache_path=str(path),
+                preprocessing=dict(mu_z=data['mu_z'],C=data['C'],Minv=data['Minv'],
+                    train_ids=data['train_ids'],validation_ids=data['val_ids'],test_ids=data['test_ids'],
+                    checkpoint_sha256=C.io.sha256(data['paths']['checkpoint']),
+                    latent_sha256=C.io.sha256(data['paths']['latent']),dataset_sha256=C.io.sha256(data['paths']['dataset'])))
+
 def acquire(c,source,channel,train_subjects,rows_per_subject):
     d=c['Vtrain'].shape[1]
     data,truth=C.io.load_all(c['model'],5e-5 if c['model']=='CR3' else .0005,d,0,c['repeat'])
@@ -41,9 +64,9 @@ def acquire(c,source,channel,train_subjects,rows_per_subject):
     del net,data,truth
     return c,arrays
 
-def main(a):
+def _main(a):
     channel='prob' if a.y_source=='choice' else a.channel
-    c=C.load(a.model,a.repeat,channel,a.subjects,a.trials)
+    c=matrix_coordinates(a.model,a.repeat,channel,a.subjects,a.trials)
     c,mat=acquire(c,a.y_source,channel,a.fit_subjects,a.rows_per_subject)
     out=C.result_dir('exp18_matrix_only',a.tag,a.model,a.repeat,channel+'_'+a.y_source)
     big=C.ROOT/'outputs/three_gaps/post_exp13_20261114/matrices'; big.mkdir(parents=True,exist_ok=True)
@@ -97,7 +120,9 @@ def main(a):
     for name,m in models.items():
         with (modeldir/(name+'.pkl')).open('wb') as f: pickle.dump(m,f)
     C.run_methods(c,out,methods,a,dict(evidence='strict matrix-only '+a.y_source,
+                   defer_complete=True,
                    matrix_path=matrix_path,matrix_sha256=C.io.sha256(matrix_path),
+                   preprocessing=c['preprocessing'],metadata_acquisition='coordinates/grid only; original derivative cache is never opened',
                    selection='held-out subjects Y-MSE only; no T/derivatives in fit or model choice',
                    train_subjects=np.unique(mat['train_subject_ids']),validation_subjects=np.unique(mat['validation_subject_ids']),
                    derivative_points='first 16 selected TRAIN subjects x first 16 fixed stimuli',
@@ -107,6 +132,16 @@ def main(a):
     if a.stage not in ('cache','selftest'):
         from audit import evaluate_fields
         C.dump(out/'postfit_structure_audit.json',evaluate_fields(c,points,derivatives,a.y_source,channel))
+        C.dump(out/'COMPLETE.json',dict(methods=list(methods),rows=len(methods),postfit_audit_complete=True))
+
+def main(a):
+    if C.selftest_stage(a): return
+    channel='prob' if a.y_source=='choice' else a.channel
+    out=C.result_dir('exp18_matrix_only',a.tag,a.model,a.repeat,channel+'_'+a.y_source)
+    with C.exclusive_run(out):
+        if a.stage=='all' and (out/'COMPLETE.json').exists() and (out/'postfit_structure_audit.json').exists():
+            print('Already completed and audited:',out,flush=True); return
+        _main(a)
 
 if __name__=='__main__':
     p=C.parser(__doc__); p.set_defaults(subjects=64,trials=64)

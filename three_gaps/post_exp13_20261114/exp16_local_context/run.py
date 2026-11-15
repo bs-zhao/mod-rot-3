@@ -10,6 +10,7 @@ from sklearn.cluster import KMeans
 from sklearn.neighbors import NearestNeighbors
 
 def main(a):
+    if C.selftest_stage(a): return
     c=C.load(a.model,a.repeat,a.channel,a.subjects,a.trials); c,b=F.get(c,a.source)
     cs=F.components(b); tx,tt=cs['p' if a.channel=='prob' else 'eta']
     out=C.result_dir('exp16_local_context',a.tag,a.model,a.repeat,a.channel+'_'+a.source)
@@ -31,21 +32,28 @@ def main(a):
     pointx=tx.reshape(n,*tx.shape[-2:])[idx]; pointu=tt.reshape(n,*tt.shape[-2:])[idx]
     active=pointx.square().sum((-2,-1))>1e-20
     pointx=pointx[active]; pointu=pointu[active]
-    def stats(A):
-        ux,uu=C.energies(A,moments)
-        px=torch.einsum('...ia,naj->...nij',A,pointx).square()
-        en=px.sum((-2,-1)); nn=C.neff(px)
-        local=nn.mean(-1); weighted=(en*nn).sum(-1)/(en.sum(-1)+C.EPS)
-        off=uu*(1-torch.eye(uu.shape[-1],dtype=uu.dtype))
-        values=[C.neff(ux),C.share(uu),local,weighted,C.neff(off)]
-        for name in ('cluster','quantile','knn','Vregion'):
-            values.append(torch.stack([C.neff(C.energies(A,m)[0]) for m in groups[name]],-1).mean(-1))
-        # First-order gradient context energy, kept separate from Hessian local sparsity.
-        g=b['g'] if a.channel=='logit' else b['h'].sigmoid()[...,None]*(1-b['h'].sigmoid()[...,None])*b['g']
-        gm=torch.stack([g[:,clusters==j].mean(1) for j in range(4)],1)
-        ge=torch.einsum('...ia,sca->...sci',A,gm).square().mean(-3)
-        values.append(C.neff(ge))
-        return torch.stack(values,-1)
+    g=b['g'] if a.channel=='logit' else b['h'].sigmoid()[...,None]*(1-b['h'].sigmoid()[...,None])*b['g']
+    gm=torch.stack([g[:,clusters==j].mean(1) for j in range(4)],1)
+    def stats(A,selected=tuple(range(10))):
+        wanted=set(selected); values={}
+        if wanted.intersection((0,1,4)):
+            ux,uu=C.energies(A,moments)
+            if 0 in wanted: values[0]=C.neff(ux)
+            if 1 in wanted: values[1]=C.share(uu)
+            if 4 in wanted: values[4]=C.neff(uu*(1-torch.eye(uu.shape[-1],dtype=uu.dtype)))
+        if wanted.intersection((2,3)):
+            px=torch.einsum('...ia,naj->...nij',A,pointx).square()
+            en=px.sum((-2,-1)); nn=C.neff(px)
+            if 2 in wanted: values[2]=nn.mean(-1)
+            if 3 in wanted: values[3]=(en*nn).sum(-1)/(en.sum(-1)+C.EPS)
+        for index,name in enumerate(('cluster','quantile','knn','Vregion'),5):
+            if index in wanted:
+                es=[torch.einsum('...ia,jab,...ib->...ij',A,m[0],A).clamp_min(0) for m in groups[name]]
+                values[index]=torch.stack([C.neff(e) for e in es],-1).mean(-1)
+        if 9 in wanted:
+            ge=torch.einsum('...ia,sca->...sci',A,gm).square().mean(-3)
+            values[9]=C.neff(ge)
+        return torch.stack([values[i] for i in selected],-1)
     definitions={'global_baseline':{0:1,1:1},'pointwise_UX':{2:1},'energy_weighted_UX':{3:1},
                  'pointwise_plus_share':{2:1,1:1},'weighted_plus_share':{3:1,1:1},
                  'cluster_plus_share':{5:1,1:1},'quantile_plus_share':{6:1,1:1},
@@ -53,9 +61,16 @@ def main(a):
                  'cluster_plus_offdiag':{5:1,4:1},'gradient_context':{9:1}}
     methods={}
     for name,weights in definitions.items():
-        w=torch.zeros(10,dtype=torch.float64)
-        for k,v in weights.items(): w[k]=v
-        methods[name]=C.Objective(c['Vtrain'],stats,w)
+        selected=tuple(sorted(weights)); w=C.tensor([weights[k] for k in selected])
+        fn=lambda A,selected=selected:stats(A,selected)
+        methods[name]=C.Objective(c['Vtrain'],fn,w)
+    # Selected computation must equal zero-weighting the complete statistic vector.
+    checkA=C.effective(C.rotations(c['Vtrain'].shape[1],3,1611),C.cov(c['Vtrain']))
+    with torch.no_grad():
+        full=stats(checkA)
+        for name,obj in methods.items():
+            selected=tuple(sorted(definitions[name]))
+            torch.testing.assert_close(obj.fn(checkA),full[:,selected],rtol=1e-10,atol=1e-10)
     if a.only: methods={k:methods[k] for k in a.only.split(',')}
     C.run_methods(c,out,methods,a,dict(source=a.source,cluster=clusters,quantile=quantiles,knn=neighbors,
                    Vregion=vi,local_flat_indices=idx,local_skipped_fraction=float(1-active.double().mean()),

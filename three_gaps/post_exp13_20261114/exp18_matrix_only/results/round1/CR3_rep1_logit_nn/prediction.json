@@ -1,0 +1,657 @@
+{
+  "polynomial": {
+    "validation_mse": 0.040394771792485754,
+    "seconds": 1.5108170000021346,
+    "probability_outside_fraction": null,
+    "candidates": [
+      {
+        "degree": 2,
+        "alpha": 0.001,
+        "validation_mse": 0.14230323116248766
+      },
+      {
+        "degree": 2,
+        "alpha": 0.1,
+        "validation_mse": 0.14232168070871798
+      },
+      {
+        "degree": 2,
+        "alpha": 10.0,
+        "validation_mse": 0.14443575947131135
+      },
+      {
+        "degree": 3,
+        "alpha": 0.001,
+        "validation_mse": 0.04040280807944781
+      },
+      {
+        "degree": 3,
+        "alpha": 0.1,
+        "validation_mse": 0.040394771792485754
+      },
+      {
+        "degree": 3,
+        "alpha": 10.0,
+        "validation_mse": 0.04291818879910962
+      },
+      {
+        "degree": 4,
+        "alpha": 0.001,
+        "validation_mse": 0.3026721738216269
+      },
+      {
+        "degree": 4,
+        "alpha": 0.1,
+        "validation_mse": 0.3079732496758031
+      },
+      {
+        "degree": 4,
+        "alpha": 10.0,
+        "validation_mse": 0.09492759520940448
+      }
+    ]
+  },
+  "kernel_ridge": {
+    "validation_mse": 0.09237383705687924,
+    "seconds": 4.42124750000221,
+    "probability_outside_fraction": null,
+    "candidates": [
+      {
+        "lengthscale": 1.0,
+        "alpha": 0.001,
+        "validation_mse": 1.0659025096173615
+      },
+      {
+        "lengthscale": 1.0,
+        "alpha": 0.1,
+        "validation_mse": 1.0782074174112126
+      },
+      {
+        "lengthscale": 1.0,
+        "alpha": 10.0,
+        "validation_mse": 1.4145476438284752
+      },
+      {
+        "lengthscale": 2.0,
+        "alpha": 0.001,
+        "validation_mse": 0.2650388677498674
+      },
+      {
+        "lengthscale": 2.0,
+        "alpha": 0.1,
+        "validation_mse": 0.3131714114449461
+      },
+      {
+        "lengthscale": 2.0,
+        "alpha": 10.0,
+        "validation_mse": 0.6671282913061746
+      },
+      {
+        "lengthscale": 4.0,
+        "alpha": 0.001,
+        "validation_mse": 0.09237383705687924
+      },
+      {
+        "lengthscale": 4.0,
+        "alpha": 0.1,
+        "validation_mse": 0.20095685483365847
+      },
+      {
+        "lengthscale": 4.0,
+        "alpha": 10.0,
+        "validation_mse": 0.7105013740700217
+      }
+    ]
+  },
+  "GP384": {
+    "validation_mse": 0.1744378330577507,
+    "seconds": 0.6063107999943895,
+    "probability_outside_fraction": null,
+    "candidates": [
+      {
+        "lengthscale": 1.0,
+        "alpha": 0.001,
+        "validation_mse": 1.227922001911772,
+        "training_rows": 384
+      },
+      {
+        "lengthscale": 1.0,
+        "alpha": 0.1,
+        "validation_mse": 1.2556741478326772,
+        "training_rows": 384
+      },
+      {
+        "lengthscale": 2.0,
+        "alpha": 0.001,
+        "validation_mse": 0.41741854566466285,
+        "training_rows": 384
+      },
+      {
+        "lengthscale": 2.0,
+        "alpha": 0.1,
+        "validation_mse": 0.47637791730255574,
+        "training_rows": 384
+      },
+      {
+        "lengthscale": 4.0,
+        "alpha": 0.001,
+        "validation_mse": 0.17443783305775168,
+        "training_rows": 384
+      },
+      {
+        "lengthscale": 4.0,
+        "alpha": 0.1,
+        "validation_mse": 0.29085777077699093,
+        "training_rows": 384
+      }
+    ]
+  },
+  "mlp31": {
+    "validation_mse": 0.05047864124210624,
+    "seconds": 6.2447281000058865,
+    "probability_outside_fraction": null,
+    "candidates": [
+      {
+        "step": 50,
+        "validation_mse": 0.8694239258766174,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 100,
+        "validation_mse": 0.6821849346160889,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 150,
+        "validation_mse": 0.3730705678462982,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 200,
+        "validation_mse": 0.22785541415214539,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 250,
+        "validation_mse": 0.16032999753952026,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 300,
+        "validation_mse": 0.12536604702472687,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 350,
+        "validation_mse": 0.10537134855985641,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 400,
+        "validation_mse": 0.093048095703125,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 450,
+        "validation_mse": 0.08368153870105743,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 500,
+        "validation_mse": 0.07612550258636475,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 550,
+        "validation_mse": 0.07466352730989456,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 600,
+        "validation_mse": 0.06742925941944122,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 650,
+        "validation_mse": 0.06547047942876816,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 700,
+        "validation_mse": 0.0633782148361206,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 750,
+        "validation_mse": 0.061441730707883835,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 800,
+        "validation_mse": 0.05853325501084328,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 850,
+        "validation_mse": 0.05797850340604782,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 900,
+        "validation_mse": 0.053750865161418915,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 950,
+        "validation_mse": 0.05088047310709953,
+        "penalty": 0,
+        "seed": 31
+      },
+      {
+        "step": 1000,
+        "validation_mse": 0.05047863721847534,
+        "penalty": 0,
+        "seed": 31
+      }
+    ]
+  },
+  "mlp32": {
+    "validation_mse": 0.053305318865920784,
+    "seconds": 3.8606724999990547,
+    "probability_outside_fraction": null,
+    "candidates": [
+      {
+        "step": 50,
+        "validation_mse": 0.8805607557296753,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 100,
+        "validation_mse": 0.7263973951339722,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 150,
+        "validation_mse": 0.4300405979156494,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 200,
+        "validation_mse": 0.24431923031806946,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 250,
+        "validation_mse": 0.18453453481197357,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 300,
+        "validation_mse": 0.1438477635383606,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 350,
+        "validation_mse": 0.11992663145065308,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 400,
+        "validation_mse": 0.10653234273195267,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 450,
+        "validation_mse": 0.09514462202787399,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 500,
+        "validation_mse": 0.08368906378746033,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 550,
+        "validation_mse": 0.08023802936077118,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 600,
+        "validation_mse": 0.07763561606407166,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 650,
+        "validation_mse": 0.06771053373813629,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 700,
+        "validation_mse": 0.0684039443731308,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 750,
+        "validation_mse": 0.06116833537817001,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 800,
+        "validation_mse": 0.0590057410299778,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 850,
+        "validation_mse": 0.06408567726612091,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 900,
+        "validation_mse": 0.05633053928613663,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 950,
+        "validation_mse": 0.05330531671643257,
+        "penalty": 0,
+        "seed": 32
+      },
+      {
+        "step": 1000,
+        "validation_mse": 0.054782845079898834,
+        "penalty": 0,
+        "seed": 32
+      }
+    ]
+  },
+  "mlp33": {
+    "validation_mse": 0.054240794733800314,
+    "seconds": 3.8102685999983805,
+    "probability_outside_fraction": null,
+    "candidates": [
+      {
+        "step": 50,
+        "validation_mse": 0.8815377950668335,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 100,
+        "validation_mse": 0.6883525848388672,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 150,
+        "validation_mse": 0.37802502512931824,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 200,
+        "validation_mse": 0.20118564367294312,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 250,
+        "validation_mse": 0.1435908079147339,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 300,
+        "validation_mse": 0.11154024302959442,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 350,
+        "validation_mse": 0.09548112004995346,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 400,
+        "validation_mse": 0.08698650449514389,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 450,
+        "validation_mse": 0.07864312827587128,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 500,
+        "validation_mse": 0.07171683013439178,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 550,
+        "validation_mse": 0.06971652805805206,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 600,
+        "validation_mse": 0.0702287033200264,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 650,
+        "validation_mse": 0.06359659135341644,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 700,
+        "validation_mse": 0.06361508369445801,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 750,
+        "validation_mse": 0.05998213216662407,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 800,
+        "validation_mse": 0.061433203518390656,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 850,
+        "validation_mse": 0.05688636004924774,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 900,
+        "validation_mse": 0.054240792989730835,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 950,
+        "validation_mse": 0.05591024458408356,
+        "penalty": 0,
+        "seed": 33
+      },
+      {
+        "step": 1000,
+        "validation_mse": 0.05618434399366379,
+        "penalty": 0,
+        "seed": 33
+      }
+    ]
+  },
+  "smooth_mlp": {
+    "validation_mse": 0.04917369628733019,
+    "seconds": 15.567280199997185,
+    "probability_outside_fraction": null,
+    "candidates": [
+      {
+        "step": 50,
+        "validation_mse": 0.8992003798484802,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 100,
+        "validation_mse": 0.680560290813446,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 150,
+        "validation_mse": 0.3832637667655945,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 200,
+        "validation_mse": 0.23885679244995117,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 250,
+        "validation_mse": 0.17058221995830536,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 300,
+        "validation_mse": 0.12865035235881805,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 350,
+        "validation_mse": 0.10940179228782654,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 400,
+        "validation_mse": 0.095279261469841,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 450,
+        "validation_mse": 0.08385959267616272,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 500,
+        "validation_mse": 0.07927773147821426,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 550,
+        "validation_mse": 0.07576596736907959,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 600,
+        "validation_mse": 0.06557421386241913,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 650,
+        "validation_mse": 0.06345656514167786,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 700,
+        "validation_mse": 0.06005413457751274,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 750,
+        "validation_mse": 0.061249442398548126,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 800,
+        "validation_mse": 0.05369690805673599,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 850,
+        "validation_mse": 0.051735393702983856,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 900,
+        "validation_mse": 0.057748593389987946,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 950,
+        "validation_mse": 0.0517752468585968,
+        "penalty": 0.01,
+        "seed": 31
+      },
+      {
+        "step": 1000,
+        "validation_mse": 0.04917369782924652,
+        "penalty": 0.01,
+        "seed": 31
+      }
+    ]
+  }
+}

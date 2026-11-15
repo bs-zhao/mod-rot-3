@@ -12,6 +12,8 @@ import platform
 import subprocess
 import sys
 import time
+import os
+from contextlib import contextmanager
 from pathlib import Path
 import numpy as np
 import pandas as pd
@@ -125,7 +127,40 @@ def dump(path,obj):
         if isinstance(x,np.ndarray): return x.tolist()
         if isinstance(x,np.generic): return x.item()
         raise TypeError(type(x).__name__)
-    path.write_text(json.dumps(obj,ensure_ascii=False,indent=2,default=default,allow_nan=False)+'\n',encoding='utf8')
+    temporary=path.with_name(path.name+f'.{os.getpid()}.tmp')
+    temporary.write_text(json.dumps(obj,ensure_ascii=False,indent=2,default=default,allow_nan=False)+'\n',encoding='utf8')
+    temporary.replace(path)
+
+def process_alive(pid):
+    if os.name=='nt':
+        import ctypes
+        handle=ctypes.windll.kernel32.OpenProcess(0x1000,False,int(pid))
+        if not handle: return False
+        code=ctypes.c_ulong()
+        ok=ctypes.windll.kernel32.GetExitCodeProcess(handle,ctypes.byref(code))
+        ctypes.windll.kernel32.CloseHandle(handle)
+        return bool(ok and code.value==259)
+    try: os.kill(pid,0); return True
+    except ProcessLookupError: return False
+
+@contextmanager
+def exclusive_run(out):
+    """Prevent two resumable campaign drivers from writing the same experiment."""
+    lock=Path(out)/'RUNNING.lock'
+    while True:
+        try:
+            with lock.open('x',encoding='utf8') as f: f.write(str(os.getpid()))
+            break
+        except FileExistsError:
+            try:
+                pid=int(lock.read_text(encoding='utf8'))
+                if not process_alive(pid):
+                    dump(Path(out)/'stale_lock.json',dict(previous_pid=pid,recovered_by=os.getpid()))
+                    lock.unlink(missing_ok=True)
+            except (ValueError,FileNotFoundError): pass
+            time.sleep(2)
+    try: yield
+    finally: lock.unlink(missing_ok=True)
 
 def environment():
     return dict(python=sys.version,executable=sys.executable,torch=torch.__version__,numpy=np.__version__,
@@ -168,6 +203,7 @@ def heatmap(c, methods, path):
     fig.tight_layout(); fig.savefig(path,dpi=140); plt.close(fig)
 
 def baseline_rotation(c):
+    if 'baseline_rotation_override' in c: return c['baseline_rotation_override']
     if c.get('source') in ('analytic','matrix_analytic'): return np.eye(c['Vtrain'].shape[1])
     p=HERE/'baseline/results'/f"{c['model']}_rep{c['repeat']}_prob"/'rotations.npz'
     if p.exists(): return np.load(p)['R'][0]
@@ -225,8 +261,8 @@ def run_methods(c,out,methods,args,extra=None):
                     'raw_best_terms':obj.raw(tensor(rr[0])).detach().numpy()}
         plane.extend({**p,'method':name} for p in pp)
         losses[name]=rv; allRs[name]=rr[0]
-        row=dict(model=c['model'],repeat=c['repeat'],channel=c['channel'],beta=5e-5 if c['model']=='CR3' else .0005,
-                 zdim=len(rr[0]),pca=0,method=name,seed=args.seed,starts=args.starts,steps=args.steps,
+        row=dict(model=c['model'],repeat=c['repeat'],channel=c['channel'],beta=c.get('beta',5e-5 if c['model']=='CR3' else .0005),
+                 zdim=len(rr[0]),pca=c.get('pca',0),method=name,seed=args.seed,starts=args.starts,steps=args.steps,
                  loss=float(ll[0]),seconds=time.perf_counter()-t,oracle_mcc=evaluate(c,oracle(c))['mcc'],
                  **{k:met[k] for k in ('mcc','leakage','max_leakage')})
         rows.append(row); pd.DataFrame(rows).to_csv(out/'metrics.csv',index=False)
@@ -236,10 +272,11 @@ def run_methods(c,out,methods,args,extra=None):
     np.savez_compressed(out/'random_landscapes.npz',**losses)
     # Keep one fixed main candidate in the overview; every candidate has raw C in diagnostics.
     first=next(iter(allRs))
-    baseline_label='Gap2 identity' if c.get('source')=='matrix_analytic' else 'EXP13 p'
+    baseline_label=c.get('baseline_label','Gap2 identity' if c.get('source')=='matrix_analytic' else 'EXP13 p')
     heatmap(c,{'Identity':np.eye(c['Vtrain'].shape[1]),baseline_label:baseline_rotation(c),
                first:allRs[first],'Oracle':oracle(c)},out/'UT_heatmaps.png')
-    dump(out/'COMPLETE.json',dict(methods=list(allRs),rows=len(rows)))
+    marker='SEARCH_COMPLETE.json' if (extra or {}).get('defer_complete') else 'COMPLETE.json'
+    dump(out/marker,dict(methods=list(allRs),rows=len(rows)))
     return rows
 
 def parser(description):
@@ -252,3 +289,9 @@ def parser(description):
     p.add_argument('--random-n',type=int,default=1000); p.add_argument('--subjects',type=int,default=64)
     p.add_argument('--trials',type=int,default=64)
     return p
+
+def selftest_stage(args):
+    if getattr(args,'stage',None)!='selftest': return False
+    for name in ('test_core.py','test_surrogates.py'):
+        subprocess.run([sys.executable,str(HERE/name)],check=True)
+    return True

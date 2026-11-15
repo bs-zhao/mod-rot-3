@@ -33,8 +33,17 @@ class Algebra(unittest.TestCase):
         vals=C.terms(A,C.moments(tx,tt)); vals2=C.terms(perm@A,C.moments(tx,tt))
         torch.testing.assert_close(vals,vals2)
     def test_no_truth_in_optimization_data(self):
+        path=C.ROOT/'outputs/three_gaps/exp13'/f"cache2_C1_{C.condition('C1',1)}_prob.pt"
+        if not path.exists(): self.skipTest('Local archived-cache integration check')
         c=C.load('C1',1,'prob',8,8)
         self.assertFalse(any(k in c for k in ('Tst','T','te','truth','oracle')))
+    def test_X_standardization_cancels_unit_changes(self):
+        path=C.ROOT/'outputs/three_gaps/exp13'/f"cache2_C1_{C.condition('C1',1)}_prob.pt"
+        if not path.exists(): self.skipTest('Local archived-cache integration check')
+        c=C.load('C1',1,'prob',8,8); factors=C.tensor([100.,.01,7.])
+        original=C.moments(c['Htx']*c['X'].std(0),c['Htt'])
+        rescaled=C.moments((c['Htx']/factors)*(c['X']*factors).std(0),c['Htt'])
+        for a,b in zip(original,rescaled): torch.testing.assert_close(a,b,rtol=1e-10,atol=1e-12)
     def test_batched_objective_gradient_and_zero(self):
         z=torch.zeros(4,4,dtype=torch.float64)
         self.assertTrue(torch.isfinite(C.neff(z))); self.assertEqual(float(C.share(z)),0)
@@ -56,5 +65,8 @@ class Algebra(unittest.TestCase):
         rr=C.rotations(4,3); batched=f.raw(rr)
         scalar=torch.stack([f.raw_one(r) for r in rr])
         torch.testing.assert_close(batched,scalar,rtol=1e-9,atol=1e-9)
+        f.active_scales=[1]; selected=f.raw(rr)
+        torch.testing.assert_close(selected[:,4:8],batched[:,4:8],rtol=1e-9,atol=1e-9)
+        self.assertEqual(float(selected[:,:4].abs().sum()+selected[:,8:].abs().sum()),0.)
 
 if __name__=='__main__': unittest.main()

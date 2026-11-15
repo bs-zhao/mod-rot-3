@@ -1,0 +1,20 @@
+{
+  "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+  "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+  "torch": "2.9.1+cu130",
+  "numpy": "2.2.6",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "cuda": true,
+  "device": "NVIDIA GeForce RTX 5060 Laptop GPU",
+  "commit": "9bc67ccd21bc19e58c2b548b7d0f5bd992f832ec",
+  "packages": {
+    "scipy": "1.16.1",
+    "pandas": "2.3.3",
+    "scikit-learn": "1.6.1",
+    "matplotlib": "3.10.5"
+  },
+  "conda_env": "py11",
+  "date_in_user_timezone": "2026-11-14",
+  "freeze_tag": "exp13-frozen-doc05-20261114",
+  "frozen_source_commit": "bfda311d4baaf3669d774ee336a58ddb100da43d"
+}

@@ -9,7 +9,8 @@ EXPS=['exp14_probability','exp15_finite_scale','exp16_local_context','exp17_reli
 
 def mdtable(df):
     if len(df)==0: return '尚无已完成的正式批次。\n'
-    cols=list(df.columns); rows=['| '+' | '.join(cols)+' |','|'+'|'.join(['---']*len(cols))+'|']
+    cols=[' '.join(str(v) for v in x if str(v)) if isinstance(x,tuple) else str(x) for x in df.columns]
+    rows=['| '+' | '.join(cols)+' |','|'+'|'.join(['---']*len(cols))+'|']
     for _,row in df.iterrows():
         vals=[]
         for val in row:
@@ -35,18 +36,39 @@ def main():
         frames=[]; complete=0; partial=0
         for f in (C.HERE/exp/'results').glob('**/metrics.csv'):
             if 'pilot' in f.relative_to(C.HERE).parts: continue
-            df=pd.read_csv(f)
+            tag=f.relative_to(C.HERE/exp/'results').parts[0]
+            if (C.HERE/exp/'results'/tag/'ABORTED.json').exists(): continue
+            try: df=pd.read_csv(f)
+            except pd.errors.EmptyDataError: continue
             df['result_path']=str(f.relative_to(C.HERE)).replace('\\','/')
             df['experiment']=exp; df['complete']=(f.parent/'COMPLETE.json').exists()
-            df['tag']=f.relative_to(C.HERE/exp/'results').parts[0]
+            df['tag']=tag
             if df['complete'].iloc[0]: complete+=1
             else: partial+=1
             frames.append(df)
         if frames:
             df=pd.concat(frames,ignore_index=True); allframes.append(df); byexp[exp]=df
-            counts.append(dict(experiment=exp,completed_configs=complete,in_progress_configs=partial,candidate_rows=len(df)))
-        else: counts.append(dict(experiment=exp,completed_configs=0,in_progress_configs=0,candidate_rows=0))
+            for tag,dd in df.groupby('tag'):
+                cc=dd.groupby('result_path').complete.first()
+                counts.append(dict(experiment=exp,tag=tag,completed_configs=int(cc.sum()),
+                                   in_progress_configs=int((~cc).sum()),candidate_rows=len(dd)))
+        else: counts.append(dict(experiment=exp,tag='-',completed_configs=0,in_progress_configs=0,candidate_rows=0))
     text.append(mdtable(pd.DataFrame(counts)))
+    # Separate exploratory baseline tuning and unit/PCA/beta sensitivity from new losses.
+    for prefix,label in [('tuning_','完整 tuning 网格（探索性，不按 TEST 选最终方案）'),
+                         ('robustness_','可用 checkpoint 的 beta / PCA / X 单位敏感性')]:
+        tables=[]
+        for f in (C.HERE/'baseline/results').glob(prefix+'*/**/metrics.csv'):
+            try: dd=pd.read_csv(f)
+            except pd.errors.EmptyDataError: continue
+            dd['scenario']=f.parent.name; dd['complete']=(f.parent/'COMPLETE.json').exists()
+            tables.append(dd)
+        if tables:
+            dd=pd.concat(tables,ignore_index=True); dd.to_csv(C.HERE/('baseline_'+prefix.strip('_')+'_metrics.csv'),index=False)
+            text += ['', '## '+label,'',
+                     mdtable(dd.groupby(['model','repeat','channel']).agg(candidates=('method','count'),
+                                  completed=('complete','all'),mcc_min=('mcc','min'),mcc_max=('mcc','max')).reset_index()),
+                     'MCC 范围描述全部预设候选，不是无监督选择规则；完整逐项结果见对应 baseline CSV。']
     for exp in EXPS:
         text+=['',f'## {exp}','']
         if exp not in byexp:
@@ -54,6 +76,10 @@ def main():
         df=byexp[exp]; df=df[df.complete]
         if exp=='exp19_model_library':
             for tag,dd in df.groupby('tag'):
+                if 'model' in dd and dd.model.notna().any():
+                    text += [f'批次 `{tag}`：冻结 synthetic score 迁移到原 NP，未在 benchmark T 上重新训练。',
+                             mdtable(dd[['model','repeat','channel','method','mcc','leakage','max_leakage']])]
+                    continue
                 text += [f'批次 `{tag}`：测试函数族与训练/validation 分离；负对照单列，不能平均成成功率。',
                          mdtable(dd.groupby(['split','family','method'],dropna=False)[['mcc','leakage','axis_error','abstain']].mean().reset_index())]
             continue
@@ -70,7 +96,7 @@ def main():
            '- 可靠性共识不能证明正确；独立 surrogate 仍共享原 NP 表示，可能保留系统偏差。',
            '- EXP18 按 validation 被试的 Y-MSE 选超参；post-fit teacher 导数只用于审计。choice 的 NP 导数参考不是真实条件均值的导数。',
            '- EXP19 使用合成监督和一个小型固定 grammar；不宣称通用 learned simplicity。径向反例应拒绝唯一恢复；满响应 Jacobian 秩的反例仍可能偏好另一套轴。',
-           '- 尚未完成：新 S1 数据、NP repeat 3–5、beta/PCA 大网格、更大有限扰动预算、有限差分的局部张量、新固定/连续刺激设计的 NP 重训与大规模 grammar。',
+           '- 已补充可用 CR3 beta checkpoint、保留全部维数的 PCA 和 X 单位敏感性；仍未完成新 S1 数据、NP repeat 3–5、更高维 PCA/残差协议、更大有限扰动预算、有限差分局部张量、新刺激设计 NP 重训与大规模 grammar。',
            '', '完整逐候选机器可读结果：[all_metrics.csv](all_metrics.csv)。每个结果子目录含 config、rotations、diagnostics、全部平面与 U–T 热图；运行命令和失败栈在 `logs/`。']
     if allframes: pd.concat(allframes,ignore_index=True).to_csv(C.HERE/'all_metrics.csv',index=False)
     (C.HERE/'RESULTS.md').write_text('\n'.join(text)+'\n',encoding='utf8')

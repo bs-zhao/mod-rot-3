@@ -1,0 +1,21 @@
+{
+  "date": "2026-11-14",
+  "scope": "Doc-05 first-round implementations and measured results; longer NP-training extensions remain explicitly separate",
+  "expected": [
+    {"directory": "baseline/results", "tag": "historical reproduction", "configs": 16, "rows": 16},
+    {"directory": "baseline/results/tuning_grid_v1", "configs": 16, "methods": 88, "rows": 1408},
+    {"directory": "baseline/results/robustness_sensitivity_v1", "configs": 52, "methods": 1, "rows": 52},
+    {"directory": "exp14_probability/results/mechanism_v1", "configs": 16, "methods": 34, "rows": 544},
+    {"directory": "exp15_finite_scale/results/round1", "configs": 16, "methods": 5, "rows": 80},
+    {"directory": "exp15_finite_scale/results/matched_limit", "configs": 16, "methods": 4, "rows": 64},
+    {"directory": "exp15_finite_scale/results/scan64_v1", "configs": 2, "methods": 5, "rows": 10},
+    {"directory": "exp16_local_context/results/round1", "configs": 16, "methods": 11, "rows": 176},
+    {"directory": "exp16_local_context/results/context_full_v2", "configs": 32, "methods": 11, "rows": 352},
+    {"directory": "exp17_reliability/results/round1", "configs": 16, "methods": 13, "rows": 208},
+    {"directory": "exp18_matrix_only/results/round1", "configs": 40, "methods_min": 8, "methods_max": 9},
+    {"directory": "exp19_model_library/results/grammar_v1", "configs": 1, "rows": 30},
+    {"directory": "exp19_model_library/results/frozen_holdout_v2", "configs": 1, "rows": 24},
+    {"directory": "exp19_model_library/results/np_transfer_v1", "configs": 16, "rows": 16}
+  ],
+  "not_completed_by_first_round": ["NP repeats 3-5", "new S1 seed", "higher-dimensional PCA residual protocol", "128x128/full-grid FD optimization", "FD local tensors", "new fixed-vs-continuous X NP training", "splines", "large grammar/meta-library", "direct R prediction alternative"]
+}

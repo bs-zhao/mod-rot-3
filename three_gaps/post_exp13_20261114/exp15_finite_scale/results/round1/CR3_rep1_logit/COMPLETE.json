@@ -1,0 +1,11 @@
+{
+  "methods": [
+    "h0.1_combo",
+    "h0.25_combo",
+    "h0.5_combo",
+    "h1.0_combo",
+    "multiscale_equal"
+  ],
+  "seconds": 306.2816060999976,
+  "query_rows": 131994624
+}

@@ -1,0 +1,15 @@
+{
+  "methods": [
+    "polynomial",
+    "kernel_ridge",
+    "GP384",
+    "mlp31",
+    "mlp32",
+    "mlp33",
+    "smooth_mlp",
+    "mlp_ensemble",
+    "ensemble_reliability"
+  ],
+  "rows": 9,
+  "postfit_audit_complete": true
+}

@@ -127,7 +127,7 @@ def invariant_test(item):
     torch.testing.assert_close(f,f2,rtol=1e-7,atol=1e-8)
     return float((f-f2).abs().max())
 
-def main(a):
+def _main(a):
     out=Path(__file__).parent/'results'/a.tag; out.mkdir(parents=True,exist_ok=True); start=time.perf_counter()
     items=[]
     for split,families in FAMILIES.items():
@@ -177,6 +177,13 @@ def main(a):
     C.dump(out/'model_manifest.json',[{k:v for k,v in item.items() if k not in ('mm','s2','V','features','target')}
                                       for item in items])
     C.dump(out/'COMPLETE.json',dict(rows=len(rows),seconds=time.perf_counter()-start))
+
+def main(a):
+    out=Path(__file__).parent/'results'/a.tag; out.mkdir(parents=True,exist_ok=True)
+    with C.exclusive_run(out):
+        if (out/'COMPLETE.json').exists():
+            print('Already completed:',out,flush=True); return
+        _main(a)
 
 if __name__=='__main__':
     p=argparse.ArgumentParser(description=__doc__); p.add_argument('--tag',default='round1')

@@ -28,7 +28,7 @@ def main(a):
                     cmd=[sys.executable,'-u',str(C.HERE/DIRS[exp]/'run.py'),'--model',model,'--repeat',str(rep),
                          '--channel',channel,'--tag',a.tag]
                     if exp in (14,17): cmd+=['--subjects','300','--trials','500']
-                    if exp==16: cmd+=['--subjects','64','--trials','64','--local-points','128']
+                    if exp==16: cmd+=['--subjects',str(a.field_subjects),'--trials',str(a.field_trials),'--local-points','128']
                     if exp==15: cmd+=['--subjects','8','--trials','8','--starts','24','--steps','250','--random-n','200']
                     if source: cmd+=['--y-source' if exp==18 else '--source',source]
                     jobs.append((exp,label,cmd))
@@ -54,4 +54,6 @@ if __name__=='__main__':
     p.add_argument('--models',nargs='+',choices=list(C.COND),default=list(C.COND))
     p.add_argument('--repeats',nargs='+',type=int,default=[1,2]); p.add_argument('--channels',nargs='+',default=['prob','logit'])
     p.add_argument('--analytic',action='store_true'); p.add_argument('--tag',default='round1')
+    p.add_argument('--field-subjects',type=int,default=64,help='EXP16 field subject budget')
+    p.add_argument('--field-trials',type=int,default=64,help='EXP16 field stimulus budget')
     p.add_argument('--rerun',action='store_true'); main(p.parse_args())

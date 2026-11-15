@@ -43,7 +43,7 @@ python three_gaps/post_exp13_20261114/exp19_model_library/run.py --tag grammar_v
 - 冻结 EXP13：p、未标准化 X、200 Haar（seed 1）、24 起点（seed 7）、Adam 250 步、lr .05；原始 float32 入口复现，新增 moment 实验使用 float64 的向量化独立 Adam。复现表单独保存，不能以新实现代替历史核对。
 - T 与 Oracle 不进入盲优化、可靠性权重或 surrogate 选择。搜索结果先保存，再加载 T 评价。取最低 loss，保存全部起点终点；不取最高 MCC。
 - 所有已用过的四模型 TEST 均属于探索性重复评价，不能称新的独立测试。Rep2 也已在 EXP13 使用。最终还需要新 S1 seed、独立 NP repeat 3–5 和新的函数族。
-- EXP14/17 的正式批次复用全部 300 TRAIN 被试和全部冻结刺激。EXP15 首轮仅 8×8 中心点，EXP16 64×64、逐点部分固定 128 点，EXP18 使用 64 TRAIN 被试×64 真实试次拟合；这些不冒充与全量基线统计预算相同。
+- EXP14/17 的正式批次复用全部 300 TRAIN 被试和全部冻结刺激。EXP15 首轮仅 8×8 中心点；EXP16 `round1` 为 64×64，`context_full_v2` 为全量 300×全部刺激，逐点部分均固定 128 点。EXP18 使用 64 TRAIN 被试×64 真实试次拟合；这些不冒充同一统计预算。
 - EXP15 每个 R 的有限差分都重新查询；优化采用固定共同随机 Givens 提案，24 起点×250 步。它的优化器和查询成本不同于基线 Adam，不能据此把差异全部归因于尺度。X 配对是支持域内方向响应，**不是**完整环境 UX Hessian。
 - EXP18 fitting 模块仅接收 W,Y、validation W,Y；采集后训练和旋转不访问原 decoder。单独的 post-fit audit 才访问 teacher 导数作诊断。choice 不取 logit；GP 明确限制 384 个观测，kernel 用 384 个基函数。
 - EXP19 learned score 的监督来自合成 T/Q，编码训练函数族先验。测试公式族不参与 score 训练/早停。径向模型不可恢复真轴；满 Jacobian 秩也不保证生成坐标是最简坐标。
@@ -54,4 +54,6 @@ python three_gaps/post_exp13_20261114/exp19_model_library/run.py --tag grammar_v
 
 冻结归档：`D:\Projects\rotation\mod-rot-3\outputs\three_gaps\post_exp13_20261114\frozen_exp13\manifest.json`，92 个历史产物约 0.69 GB，SHA256 逐文件核对。源码 zip 是实验开始时 HEAD 的 `three_gaps` 与 `np/src` 快照；manifest 同时记录历史参考提交 a515a45。复现时补存的全起点旋转、尺度、U–T 原始矩阵位于 `baseline/results/`。
 
-尚未将以下长期拓展当成首轮已完成：额外 NP repeat 3–5 / 新 S1 数据训练、beta/PCA 全网格、64×64→128×128→全量有限差分、有限差分局部张量、原 NP 新刺激设计训练、splines、大规模自动 grammar 和直接预测 R 的另一条路线。已有代码和首轮结果仅按实际覆盖范围报告。
+独立 `baseline/batch_tune.py` 完成预设 88 个不重复配置×四模型×两重复×两通道；进度以 CSV 为准。`baseline/robustness.py` 另做 48 个全维 PCA/X 单位变体和 4 个可用 CR3 beta/channel 设置。均不替换冻结推荐配置。
+
+尚未将以下长期拓展当成首轮已完成：额外 NP repeat 3–5 / 新 S1 数据训练、更高维 PCA/残差协议与更广 beta 网格、64×64→128×128→全量有限差分、有限差分局部张量、原 NP 新刺激设计训练、splines、大规模自动 grammar 和直接预测 R 的另一条路线。已有代码和首轮结果仅按实际覆盖范围报告。

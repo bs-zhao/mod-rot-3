@@ -1,0 +1,10 @@
+{
+  "rho": [
+    0.9072448614530834,
+    0.454815778365038
+  ],
+  "shared_encoder": true,
+  "shared_Z": true,
+  "original_NP_queries_during_fit": 0,
+  "limitation": "Different initializations and 80% TRAIN-subject subsamples; overlapping data"
+}

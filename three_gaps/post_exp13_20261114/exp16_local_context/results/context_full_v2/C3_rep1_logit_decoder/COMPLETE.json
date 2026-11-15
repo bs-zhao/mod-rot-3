@@ -1,0 +1,16 @@
+{
+  "methods": [
+    "global_baseline",
+    "pointwise_UX",
+    "energy_weighted_UX",
+    "pointwise_plus_share",
+    "weighted_plus_share",
+    "cluster_plus_share",
+    "quantile_plus_share",
+    "knn_plus_share",
+    "Vregion_plus_share",
+    "cluster_plus_offdiag",
+    "gradient_context"
+  ],
+  "rows": 11
+}

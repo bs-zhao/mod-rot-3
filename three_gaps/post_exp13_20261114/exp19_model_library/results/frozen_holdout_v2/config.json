@@ -1,0 +1,28 @@
+{
+  "tag": "frozen_holdout_v2",
+  "frozen_tag": "grammar_v1",
+  "formulas_per_family": 3,
+  "fit_rows": 4096,
+  "starts": 24,
+  "steps": 250,
+  "environment": {
+    "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+    "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+    "torch": "2.9.1+cu130",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "cuda": true,
+    "device": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "commit": "9bc67ccd21bc19e58c2b548b7d0f5bd992f832ec"
+  },
+  "frozen_checkpoint_sha256": "b80e0137eeee80931ca43d66cad12e231d55a4acad4b5af4a672b25402d58975",
+  "formula_families": [
+    "rational",
+    "softplus_mix",
+    "sine_product",
+    "radial_two_blocks"
+  ],
+  "meta_model_refit": false,
+  "development_caveat": "grammar_v1 test families were inspected in pilot; this extra holdout uses frozen weights and new formulas",
+  "surrogate_selection": "held-out Y only"
+}

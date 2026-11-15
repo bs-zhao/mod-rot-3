@@ -8,6 +8,7 @@ import core as C
 import fields as F
 
 def main(a):
+    if C.selftest_stage(a): return
     c=C.load(a.model,a.repeat,a.channel,a.subjects,a.trials); c,b=F.get(c,a.source)
     out=C.result_dir('exp14_probability',a.tag,a.model,a.repeat,a.source)
     cs=F.components(b); ms={k:C.moments(*v) for k,v in cs.items()}

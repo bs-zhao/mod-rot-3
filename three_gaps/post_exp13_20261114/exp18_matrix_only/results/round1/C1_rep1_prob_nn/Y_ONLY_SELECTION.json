@@ -1,0 +1,18 @@
+{
+  "rule": "lowest held-out-subject Y-MSE across individually fitted candidates; lexical tie-break",
+  "chosen": "kernel_ridge",
+  "validation_mse": 0.00033895810091138536,
+  "all_validation_mse": {
+    "polynomial": 0.0003565522506729464,
+    "kernel_ridge": 0.00033895810091138536,
+    "GP384": 0.0004913140956983434,
+    "mlp31": 0.0011672743102215124,
+    "mlp32": 0.0010089617301297122,
+    "mlp33": 0.0014001141548621349,
+    "smooth_mlp": 0.0009284956729817487
+  },
+  "prediction_sha256": "83b7bc7a609800d91ebf7d0e38320af0bb7ebfa9b642ddbc1c6c92e4dd237248",
+  "T_used_in_selection": false,
+  "exclusion": "ensembles have no separate entry in the original prediction.json; not silently added",
+  "status": "Exploratory benchmark; rule is Y-only, but introduced during implementation after pilot"
+}

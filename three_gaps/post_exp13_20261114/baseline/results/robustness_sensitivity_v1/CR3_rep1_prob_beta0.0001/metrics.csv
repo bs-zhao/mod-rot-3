@@ -1,0 +1,2 @@
+model,repeat,channel,beta,zdim,pca,method,seed,starts,steps,loss,seconds,oracle_mcc,mcc,leakage,max_leakage
+CR3,1,prob,0.0001,4,0,frozen_rule,7,24,250,14.32422643329469,1.4859202000006917,0.7727006899311957,0.7143042795858257,0.2806569319470877,0.5697951465249547

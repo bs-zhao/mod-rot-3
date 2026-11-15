@@ -15,6 +15,7 @@ def distance(a,b):
     return float(np.sqrt(max(0,2*len(a)-2*cost[i,j].sum())))
 
 def main(a):
+    if C.selftest_stage(a): return
     c=C.load(a.model,a.repeat,a.channel,a.subjects,a.trials)
     out=C.result_dir('exp17_reliability',a.tag,a.model,a.repeat,a.channel)
     S,K=c['Htt'].shape[:2]; d=c['Vtrain'].shape[1]

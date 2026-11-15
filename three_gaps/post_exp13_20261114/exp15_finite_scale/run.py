@@ -98,7 +98,11 @@ class Finite:
             x=self.x[None].expand(S,K,-1).reshape(N,-1)
             xp=self.x[self.pair][None].expand(S,K,-1).reshape(N,-1)
             f0=self.query(v,x); allvalues=[]
-            for h in self.scales:
+            for scale_index,h in enumerate(self.scales):
+                active=getattr(self,'active_scales',None)
+                if active is not None and scale_index not in active:
+                    allvalues.extend([torch.zeros(B,dtype=torch.float64,device=self.dev)]*4)
+                    continue
                 offsets=h*A
                 sh=[torch.zeros_like(A[:,0])]+[s*offsets[:,i] for i in range(self.d) for s in (1,-1)]
                 for i,j in itertools.combinations(range(self.d),2):
@@ -132,6 +136,7 @@ class Finite:
 
 def search(fd,scales,weights,starts,steps,seed):
     rng=np.random.default_rng(seed); rs=C.rotations(fd.d,starts,seed)
+    fd.active_scales=sorted(set((torch.nonzero(weights).flatten()//4).tolist()))
     def fun(rr): return ((fd.raw(rr)/scales)*weights).sum(-1)
     vals=fun(rs); history=[]
     pairs=list(itertools.combinations(range(fd.d),2))
@@ -144,9 +149,11 @@ def search(fd,scales,weights,starts,steps,seed):
         rs[take]=proposal[take]; vals[take]=vv[take]
         history.append(float(vals.min()))
     order=torch.argsort(vals)
+    fd.active_scales=None
     return vals[order].numpy(),rs[order].numpy(),history
 
 def main(a):
+    if C.selftest_stage(a): return
     c=C.load(a.model,a.repeat,a.channel,a.subjects,a.trials)
     out=C.result_dir('exp15_finite_scale',a.tag,a.model,a.repeat,a.channel)
     fd=Finite(c); t=time.perf_counter()
