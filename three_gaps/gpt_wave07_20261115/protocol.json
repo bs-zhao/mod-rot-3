@@ -1,0 +1,15 @@
+{
+  "date": "2026-11-15",
+  "fresh_execution": true,
+  "reuse_previous_exp20_23": false,
+  "search": {"output": "prob", "loss": ["UX_neff", "UUd_share"], "haar": 200, "haar_seed": 1, "starts": 24, "start_seed": 7, "steps": 250, "lr": 0.05, "selection": "lowest_loss"},
+  "numerical": {"decoder": "float32", "moment_accumulation": "float64", "search": "float32", "reproduction_metric_tolerance": 0.0001},
+  "exp20A": {"sizes": [100,300,500,1000,2000,"TRAIN"], "subset_seeds": [1000,1001,1002,1003,1004], "covariances": ["native","fixed_full_TRAIN"], "transductive": false},
+  "exp20B": {"measures": ["P0","P1","P3"], "mc_seeds": 5, "qmc_scrambles": 4, "budgets": [256,512,1024,2048,4096,8192], "GH_d4": [3,5,7,9], "GH_d6": [3,5], "relative_moment_threshold": 0.01, "landscape_spearman_threshold": 0.99},
+  "exp22": {"pilot": [64,64], "sigma": [0,0.05,0.1,0.25,0.5,1], "nested_inner": [8,16,32,64,128], "kernel": "fixed_TRAIN_covariance", "averaging": ["signed_then_square","square_then_mean"], "promotion": "moments_and_landscape_convergence_not_MCC", "quadrature_cap_failure": "record_unresolved"},
+  "exp21": {"centres": [64,64], "h_U": [0.05,0.1,0.25,0.5,1], "X_halfwidth": "0.5,1,2,4 times median positive marginal gap; SD and kNN separately audited", "UX": ["ambient","hybrid","bank_chord_reconstruction"], "matched_baseline": true},
+  "exp23": {"scale_set": [0.1,0.25,0.5], "weights": [0.3333333333333333,0.3333333333333333,0.3333333333333333], "aggregations": ["A_signed_field","B_energy","C_loss"], "joint_scale": 0.25},
+  "report": ["MCC","worst_matched","nonmatched_mean","nonmatched_max","signed_UT_matrix","matched_UT_matrix","per_axis_angle_to_oracle","per_axis_angle_to_EXP13","all_start_endpoints","all_pair_planes","common_Haar1000"],
+  "truth": "separate_evaluation_process_only_after_rotations_saved",
+  "claim_success": "CR3 both repeats improve vs frozen p baseline; target MCC>=.85,leak<=.12; C1-C3 MCC drop<=.01 and no material max leakage degradation; freeze candidate before fresh S1/repeat3-5"
+}
