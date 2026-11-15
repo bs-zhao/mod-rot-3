@@ -20,4 +20,7 @@ An existing completed run requires `--resume`; configuration hashes must match.
 The research loss is unchanged. Gaussian sampling is only an integration
 measure, never ICA. Higher-dimensional PCA without a residual protocol fails.
 
-Status: implementation in progress; no new numerical result claimed yet.
+Status: all eight probability EXP13 settings independently reproduced; CR3
+EXP20A/B, converged EXP22 through1024 inner nodes, data-scale EXP21, ABC and
+joint128 pilots executed. C1–C3 confirmation is running. Actual results and
+remaining coverage are tracked in [RESULTS.md](RESULTS.md) and [RUN_STATE.md](RUN_STATE.md).

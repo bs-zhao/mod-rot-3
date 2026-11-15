@@ -11,15 +11,18 @@ from pathlib import Path
 import core as c
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('stage',choices=['baseline_cr3','20a_cr3','20b_cr3','22pilot_cr3','22full_cr3','baseline_c','20a_c','20b_c','20bconfirm_c','22pilot_c'])
+    p=argparse.ArgumentParser();p.add_argument('stage',choices=['baseline_cr3','20a_cr3','20b_cr3','22pilot_cr3','22refine_cr3','22verify_cr3','22full_cr3','22fullsmall_cr3','baseline_c','20a_c','20b_c','20bconfirm_c','22pilot_c'])
     p.add_argument('--channel',choices=['prob','logit'],default='prob');p.add_argument('--run-name')
     a=p.parse_args();models=['CR3'] if a.stage.endswith('cr3') else ['C1','C2','C3']
-    scripts={'baseline':'exp13_reproduce/run.py','20a':'exp20A/run.py','20b':'exp20B/run.py','20bconfirm':'exp20B/confirm.py','22pilot':'exp22/run.py','22full':'exp22/run.py'}
+    scripts={'baseline':'exp13_reproduce/run.py','20a':'exp20A/run.py','20b':'exp20B/run.py','20bconfirm':'exp20B/confirm.py','22pilot':'exp22/run.py','22refine':'exp22/run.py','22verify':'exp22/run.py','22full':'exp22/run.py','22fullsmall':'exp22/run.py'}
     phase=a.stage.rsplit('_',1)[0];jobs=[]
     for model in models:
         for rep in (1,2):
             base=['--model',model,'--beta','.00005' if model=='CR3' else '.0005','--zdim','6' if model=='C3' else '4','--pca','0','--repeat',str(rep),'--channel',a.channel,'--resume']
             extra=['--stage','pilot'] if phase=='22pilot' else ['--stage','full','--inner-nodes','64'] if phase=='22full' else []
+            if phase=='22refine':extra=['--stage','pilot','--inner-cap','512','--sigmas','0,.1,.25,.5,1','--tag','refined512']
+            if phase=='22verify':extra=['--stage','pilot','--inner-cap','1024','--sigmas','0,.1,.25,.5,1','--offset-batch','4','--tag','verified1024']
+            if phase=='22fullsmall':extra=['--stage','full','--inner-nodes','64','--sigmas','0,.1']
             if phase=='baseline' and a.run_name:extra+=['--run-name',a.run_name]
             jobs.append([sys.executable,str(c.HERE/scripts[phase]),*base,*extra])
     logdir=c.OUT/'logs';logdir.mkdir(exist_ok=True)

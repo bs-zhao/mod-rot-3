@@ -62,6 +62,7 @@ def args(description):
     p.add_argument('--channel', choices=['prob','logit'], default='prob')
     p.add_argument('--device', default='auto'); p.add_argument('--chunk', type=int, default=2048)
     p.add_argument('--tag', default='independent_v1'); p.add_argument('--resume', action='store_true')
+    p.add_argument('--baseline-tag',default='independent_v1',help='own frozen EXP13 namespace for diagnostics / fixed scales')
     p.add_argument('--starts', type=int, default=24); p.add_argument('--steps', type=int, default=250)
     return p
 
@@ -213,7 +214,9 @@ def run_loss(st,name,sx,t4,C=None,scales=None,serial=False,extra=None,experiment
             raise ValueError('completed run configuration mismatch')
         with np.load(local/'moments.npz') as z:
             if not np.array_equal(z['SX'],sx) or not np.array_equal(z['T4'],t4): raise ValueError('completed moments differ')
-        return json.loads((small/'diagnostics.json').read_text())
+        diag=json.loads((small/'diagnostics.json').read_text())
+        if scales is not None and not np.allclose(np.asarray(diag['haar_scales']),scales,rtol=1e-12,atol=1e-12):raise ValueError('completed Haar scales differ')
+        return diag
     local.mkdir(parents=True,exist_ok=True);small.mkdir(parents=True,exist_ok=True)
     cfg=st.config();cfg.update(name=name,C_ref=C,extra=extra or {},starts=st.a.starts,steps=st.a.steps)
     dump(small/'config.json',cfg);save_npz(local/'moments.npz',SX=sx,T4=t4,C=C)

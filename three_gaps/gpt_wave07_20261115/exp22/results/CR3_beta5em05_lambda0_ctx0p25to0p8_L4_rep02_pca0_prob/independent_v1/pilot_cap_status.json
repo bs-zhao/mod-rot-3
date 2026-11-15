@@ -1,0 +1,90 @@
+{
+  "source": "D:\\Projects\\rotation\\mod-rot-3\\three_gaps\\gpt_wave07_20261115\\exp22\\results\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0_prob\\independent_v1\\pilot_convergence.json",
+  "source_sha256": "725f6b46fec68b68a7747b7b576e501a8074a9662a0378b73fcc43a2fb70fcaa",
+  "rows": [
+    {
+      "key": "0.05_smooth_then_square",
+      "inner": 128,
+      "SX_relative": 4.405988520271993e-05,
+      "T4_relative": 0.00034389789026899006,
+      "spearman": 0.999998475998476,
+      "cap_converged": true
+    },
+    {
+      "key": "0.05_square_then_average",
+      "inner": 128,
+      "SX_relative": 1.0419498761042646e-05,
+      "T4_relative": 9.796244195226064e-05,
+      "spearman": 0.9999993729993711,
+      "cap_converged": true
+    },
+    {
+      "key": "0.1_smooth_then_square",
+      "inner": 128,
+      "SX_relative": 0.00016643185829989343,
+      "T4_relative": 0.0011140166947119778,
+      "spearman": 0.9999926259925819,
+      "cap_converged": true
+    },
+    {
+      "key": "0.1_square_then_average",
+      "inner": 128,
+      "SX_relative": 3.8074296114902226e-05,
+      "T4_relative": 0.00024007519852480797,
+      "spearman": 0.9999989439989442,
+      "cap_converged": true
+    },
+    {
+      "key": "0.25_smooth_then_square",
+      "inner": 128,
+      "SX_relative": 0.0007734554732966441,
+      "T4_relative": 0.0031046965605535013,
+      "spearman": 0.9999728169727355,
+      "cap_converged": true
+    },
+    {
+      "key": "0.25_square_then_average",
+      "inner": 128,
+      "SX_relative": 0.00025007648364602845,
+      "T4_relative": 0.0011221962548393395,
+      "spearman": 0.9999807609807034,
+      "cap_converged": true
+    },
+    {
+      "key": "0.5_smooth_then_square",
+      "inner": 128,
+      "SX_relative": 0.002093863521566657,
+      "T4_relative": 0.01046769902265576,
+      "spearman": 0.9998009768003798,
+      "cap_converged": false
+    },
+    {
+      "key": "0.5_square_then_average",
+      "inner": 128,
+      "SX_relative": 0.0012095143222647054,
+      "T4_relative": 0.003103404562815276,
+      "spearman": 0.9999484329482784,
+      "cap_converged": true
+    },
+    {
+      "key": "1_smooth_then_square",
+      "inner": 128,
+      "SX_relative": 0.011864307430730244,
+      "T4_relative": 0.016809684032659637,
+      "spearman": 0.9994536394536396,
+      "cap_converged": false
+    },
+    {
+      "key": "1_square_then_average",
+      "inner": 128,
+      "SX_relative": 0.004696979396836216,
+      "T4_relative": 0.0051700880538128255,
+      "spearman": 0.9998066318066318,
+      "cap_converged": true
+    }
+  ],
+  "unresolved": [
+    "0.5_smooth_then_square",
+    "1_smooth_then_square"
+  ]
+}

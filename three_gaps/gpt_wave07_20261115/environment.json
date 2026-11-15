@@ -16,5 +16,12 @@
     "readmes\\rotation_research\\05_next_steps_after_exp13.md": "a5860ea2c7c51729fd93b8be2436f1cd78ea8deed7f9c54d645e16b6529248f8",
     "readmes\\rotation_research\\06_complementary_ideas_and_experiment_cards.md": "c74817fd26f6bf320a487c208902470e8571507016ef7a88adab512feaf5c9d3",
     "readmes\\rotation_research\\07_latent_integration_and_multiscale_hessian.md": "6b847affc07322998d91d053acf22961030fb99fda2a0ee71d5233383bbb57a3"
-  }
+  },
+  "memory": {
+    "total_ram_bytes": 33777467392,
+    "available_ram_bytes_at_capture": 11590512640,
+    "captured_local": "2026-11-15T04:47:32.1448067-05:00",
+    "note": "Hardware capacity and snapshot; not a retrospective process peak measurement."
+  },
+  "gpu_total_memory_bytes": 8546484224
 }

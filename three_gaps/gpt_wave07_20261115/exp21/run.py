@@ -16,7 +16,7 @@ def main(a):
     xi=np.sort(rng.choice(len(st.X),a.trials,False));X=st.X[xi];V=st.V[ids]
     small=c.HERE/'exp21/results'/st.key/a.tag;small.mkdir(parents=True,exist_ok=True)
     r=resolution(st.X);c.dump(small/'resolution.json',r)
-    fd=Field(st,V,X,torch.float64 if a.decoder_dtype=='float64' else torch.float32)
+    fd=Field(st,V,X,torch.float64 if a.decoder_dtype=='float64' else torch.float32,engine=a.engine)
     # Explicit float64 audit copy; production defaults to the original dtype.
     fd64=Field(st,V,X,torch.float64)
     from common.derivs import base_derivatives
@@ -43,8 +43,9 @@ def main(a):
             if a.resume:continue
             raise FileExistsError(d)
         cfg=st.config();cfg.update(mode=mode,h_U_halfwidth=h,h_X_halfwidth=hX,end_to_end_X=None if hX is None else 2*hX,
-            decoder=a.decoder_dtype,subjects=ids.tolist(),X_indices=xi.tolist(),matched_budget=dict(starts=a.starts,steps=a.steps))
+            decoder=a.decoder_dtype,engine=a.engine,loss_accum_dtype='float64',rotation_param_dtype='float32',subjects=ids.tolist(),X_indices=xi.tolist(),matched_budget=dict(starts=a.starts,steps=a.steps))
         c.dump(d/'config.json',cfg);t=time.perf_counter();before=fd.query_rows
+        calls0,grad_rows0,grad_calls0=fd.forward_calls,fd.gradX_rows,fd.gradX_evaluations
         fl=FDLoss(fd,h,mode,hX)
         # Every trial R changes physical query points; no precomputed finite tensor.
         R,L,Q0,trace=c.search(fl,a.starts,a.steps,serial=True);best=int(L.argmin())
@@ -67,6 +68,7 @@ def main(a):
         Vq=np.concatenate([V+sg*h*A[i] for i in range(st.d) for sg in [-1,1]])
         invC=np.linalg.inv(st.C);trainR=np.einsum('na,ab,nb->n',st.V[st.tr],invC,st.V[st.tr]);queryR=np.einsum('na,ab,nb->n',Vq,invC,Vq)
         diag=dict(seconds=time.perf_counter()-t,forward_query_rows=fd.query_rows-before,haar_scales=fl.scales,
+            finite_stencil_forward_calls=fd.forward_calls-calls0,gradX_query_rows=fd.gradX_rows-grad_rows0,gradX_evaluations=fd.gradX_evaluations-grad_calls0,
             landscape_spearman=float(spearmanr(Lc,La).statistic),support=None if hX is None else support(st.X,hX),
             U_axial_within_train_mahalanobis99=float((queryR<=np.quantile(trainR,.99)).mean()),
             U_query_mahalanobis_quantiles=np.quantile(queryR,[.5,.9,.99]),
@@ -78,4 +80,5 @@ def main(a):
 if __name__=='__main__':
     p=c.args(__doc__);p.set_defaults(starts=8,steps=120)
     p.add_argument('--decoder-dtype',choices=['float32','float64'],default='float32')
+    p.add_argument('--engine',choices=['scalar','vectorized'],default='scalar')
     p.add_argument('--subjects',type=int,default=64);p.add_argument('--trials',type=int,default=64);main(p.parse_args())

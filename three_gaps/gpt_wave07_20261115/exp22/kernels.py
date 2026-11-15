@@ -7,7 +7,23 @@ import nodes
 import numpy as np
 import torch
 
-def smooth(st,V,X,sigmas,inner,dest,seed=20261115,kernel='cov',weights=None):
+def offset_fields(st,V,X,delta,query_batch=1):
+    """Batch identical physical nodes for throughput; never mix their Hessians."""
+    if query_batch<1:raise ValueError('query_batch must be positive')
+    for start in range(0,len(delta),query_batch):
+        shifts=delta[start:start+query_batch]
+        if len(shifts)==1:
+            yield c.fields(st,V+shifts[0],X)
+        else:
+            B,G,K=len(V),len(shifts),len(X)
+            grid=(V[:,None,:]+shifts[None,:,:]).reshape(B*G,st.d)
+            f=c.fields(st,grid,X)
+            tt=f['Htt'].reshape(B,G,K,st.d,st.d)
+            tx=f['Htx'].reshape(B,G,K,st.d,st.p)
+            hh=f['h'].reshape(B,G,K)
+            for j in range(G):yield dict(Htt=tt[:,j],Htx=tx[:,j],h=hh[:,j])
+
+def smooth(st,V,X,sigmas,inner,dest,seed=20261115,kernel='cov',weights=None,query_batch=1):
     """Compute all scale fields on each block before release, including cross terms.
 
     Snapshots at nested inner budgets permit quadrature convergence checks.
@@ -20,6 +36,7 @@ def smooth(st,V,X,sigmas,inner,dest,seed=20261115,kernel='cov',weights=None):
         weights={s:1/len(mixture) for s in mixture} if mixture else {s:1/len([v for v in sigmas if v>0]) for s in sigmas if s>0}
     cfg=dict(V=c.arrsha(V),X=c.arrsha(X),sigmas=list(sigmas),inner=list(inner),seed=seed,kernel=kernel,source=st.source,
         mixture_weights={str(k):v for k,v in weights.items()})
+    if query_batch!=1:cfg['query_batch']=query_batch
     cp=dest/'config.json'
     if cp.exists():
         import json
@@ -40,8 +57,8 @@ def smooth(st,V,X,sigmas,inner,dest,seed=20261115,kernel='cov',weights=None):
             for sigma in sigmas:
                 ts=torch.zeros_like(ztt);xs=torch.zeros_like(ztx)
                 se=np.zeros_like(zsx);te=np.zeros_like(zt4);ps=torch.zeros_like(zero['h'],dtype=torch.float64)
-                for j in range(max(inner) if sigma>0 else 1):
-                    f=c.fields(st,v+sigma*delta[j],X) if sigma else zero
+                iterator=offset_fields(st,v,X,sigma*delta,query_batch) if sigma else iter([zero])
+                for j,f in enumerate(iterator):
                     tt,tx=f['Htt'].double(),f['Htx'].double();ts+=tt;xs+=tx;ps+=f['h'].double()
                     s,t=c.moments(tt,tx);se+=s;te+=t
                     n=j+1

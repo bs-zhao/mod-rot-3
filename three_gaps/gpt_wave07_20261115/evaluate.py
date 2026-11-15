@@ -28,20 +28,26 @@ def main(a):
     with np.load(st.paths['latent'],allow_pickle=False) as z:T=z['theta_true']
     oracle=c.ROOT/'outputs/three_gaps/exp00'/f'{a.model}_{st.cond}_pca0'/'R_oracle_raw.npy'
     Q=np.load(oracle)@st.Minv if oracle.exists() else None
-    historical=c.HERE/'exp13_reproduce/results'/st.key/a.tag/'A0/rotations.npz'
+    historical=c.HERE/'exp13_reproduce/results'/st.key/a.baseline_tag/'A0_strict/rotations.npz'
+    if not historical.exists():historical=historical.parent.parent/'A0/rotations.npz'
     R0=None
     if historical.exists():
         with np.load(historical) as z:R0=z['R'][int(z['best_index'])]
+    fullpath=c.HERE/'exp20A/results'/st.key/a.baseline_tag/'full_train/rotations.npz'
+    Rfull=None
+    if fullpath.exists():
+        with np.load(fullpath) as z:Rfull=z['R'][int(z['best_index'])]
     rows=[]
     for d,z in loaded:
         R=z['R'];loss=z['loss'];best=int(z['best_index']);metrics=[]
         for k,q in enumerate(R):
             m=match_report(st.V[st.te]@q.T,T[st.te]);ao=angles(q,Q) if Q is not None else np.full(st.d,np.nan)
             ab=angles(q,R0) if R0 is not None else np.full(st.d,np.nan)
+            af=angles(q,Rfull) if Rfull is not None else np.full(st.d,np.nan)
             r=dict(experiment=d.parents[3].name,model=a.model,repeat=a.repeat,channel=a.channel,name=d.name,
                 start=k,selected=k==best,loss=float(loss[k]),mcc=m['mcc'],worst_matched=m['worst'],leakage=m['off_mean'],
                 max_leakage=m['off_max'],oracle_angle_max=float(ao.max()),oracle_angle_mean=float(ao.mean()),baseline_angle_max=float(ab.max()),
-                baseline_angle_mean=float(ab.mean()))
+                baseline_angle_mean=float(ab.mean()),full_train_angle_max=float(af.max()),full_train_angle_mean=float(af.mean()))
             metrics.append(r)
         pd.DataFrame(metrics).to_csv(d/'metrics.csv',index=False);rows.append(metrics[best])
         raw=corr_matrix(st.V[st.te]@R[best].T,T[st.te]);rr,cc=linear_sum_assignment(-abs(raw));matched=raw[:,cc]
@@ -90,7 +96,7 @@ def main(a):
     pd.DataFrame(rows).to_csv(out/f'{st.key}_{a.tag}.csv',index=False)
     hist=pd.read_csv(c.ROOT/'three_gaps/post_exp13_20261114/baseline/results/metrics_all.csv')
     h=hist[(hist.model==a.model)&(hist.repeat==a.repeat)&(hist.channel==a.channel)].iloc[0]
-    bas=[r for r in rows if r['name']=='A0']
+    bas=[r for r in rows if r['name']=='A0_strict'] or [r for r in rows if r['name']=='A0']
     if bas:
         delta={k:bas[0][k]-float(h[k]) for k in ['mcc','leakage','max_leakage']}
         c.dump(out/f'{st.key}_reproduction.json',dict(deltas=delta,tolerance=1e-4,passed=max(abs(v) for v in delta.values())<1e-4))

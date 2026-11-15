@@ -1,0 +1,181 @@
+{
+  "rotations_sha256": "8b5caf68ddafad1fcdf114006e48898d87fa067c5b647cdcd39cbe0cb30ce76f",
+  "seconds": 95.41540990000067,
+  "forward_query_rows": 1206300672,
+  "haar_scales": [
+    0.39057319402123114,
+    0.02856349868113571
+  ],
+  "finite_stencil_forward_calls": 4566,
+  "gradX_query_rows": 0,
+  "gradX_evaluations": 0,
+  "landscape_spearman": 0.9935037304842418,
+  "support": [
+    {
+      "column": 0,
+      "sign": -1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.64,
+      "knn_distance_quantiles": [
+        0.29140792579657304,
+        0.29140792579657315,
+        0.29140792579657315
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 0,
+      "sign": 1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.896,
+      "knn_distance_quantiles": [
+        0.29140792579657293,
+        0.29140792579657304,
+        0.29140792579657304
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 1,
+      "sign": -1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.6,
+      "knn_distance_quantiles": [
+        0.29275221472713153,
+        0.29275221472713164,
+        0.29275221472713164
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 1,
+      "sign": 1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.916,
+      "knn_distance_quantiles": [
+        0.29275221472713153,
+        0.2927522147271316,
+        0.29275221472713175
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 2,
+      "sign": -1,
+      "halfwidth": 0.09999999999999999,
+      "end_to_end": 0.19999999999999998,
+      "range_coverage": 0.884,
+      "knn_distance_quantiles": [
+        0.3206097321263197,
+        0.3206097321263198,
+        0.32060973212631994
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 2,
+      "sign": 1,
+      "halfwidth": 0.09999999999999999,
+      "end_to_end": 0.19999999999999998,
+      "range_coverage": 0.884,
+      "knn_distance_quantiles": [
+        0.3206097321263197,
+        0.32060973212632016,
+        0.32060973212632016
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 3,
+      "sign": -1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.622,
+      "knn_distance_quantiles": [
+        0.2783210016470973,
+        0.2783210016470976,
+        0.2783210016470976
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 3,
+      "sign": 1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.888,
+      "knn_distance_quantiles": [
+        0.27832100164709733,
+        0.2783210016470974,
+        0.2783210016470974
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 4,
+      "sign": -1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.658,
+      "knn_distance_quantiles": [
+        0.3000327882495629,
+        0.30003278824956303,
+        0.30003278824956314
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 4,
+      "sign": 1,
+      "halfwidth": 20.0,
+      "end_to_end": 40.0,
+      "range_coverage": 0.918,
+      "knn_distance_quantiles": [
+        0.3000327882495629,
+        0.3000327882495629,
+        0.30003278824956303
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 5,
+      "sign": -1,
+      "halfwidth": 0.09999999999999999,
+      "end_to_end": 0.19999999999999998,
+      "range_coverage": 0.828,
+      "knn_distance_quantiles": [
+        0.3135956554363457,
+        0.3135956554363458,
+        0.31359565543634593
+      ],
+      "within_observed_nn95": 1.0
+    },
+    {
+      "column": 5,
+      "sign": 1,
+      "halfwidth": 0.09999999999999999,
+      "end_to_end": 0.19999999999999998,
+      "range_coverage": 0.902,
+      "knn_distance_quantiles": [
+        0.3135956554363457,
+        0.31359565543634593,
+        0.31359565543634615
+      ],
+      "within_observed_nn95": 1.0
+    }
+  ],
+  "U_axial_within_train_mahalanobis99": 0.974609375,
+  "U_query_mahalanobis_quantiles": [
+    2.7253498123250184,
+    9.206825812741206,
+    20.841370008750353
+  ],
+  "chord_relative_residual": null,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "peak_cuda_allocated_bytes": 1214411264
+}

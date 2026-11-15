@@ -1,0 +1,28 @@
+{
+  "name": "pilot_n1024_A_signed",
+  "lowest_loss": 25.065589904785156,
+  "haar_scales": [
+    0.593592643737793,
+    0.03647492825984955
+  ],
+  "seconds": 2.5582056999992346,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "a24093466c4374b076d0e9b8c274925685ec49b91bb05cc35106a3f6d13c249f",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp23\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0_prob\\verified1024\\pilot_n1024_A_signed\\random_landscapes.npz",
+  "aggregation": "A_signed",
+  "scales": [
+    0.1,
+    0.25,
+    0.5
+  ],
+  "weights": [
+    0.3333333333333333,
+    0.3333333333333333,
+    0.3333333333333333
+  ],
+  "field_source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp22\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0_prob\\verified1024\\pilot\\moments.npz",
+  "field_sha256": "34a3d554b70168b72a40e33394145fab1f36ac37cb6b6f37cd05ac6a1474ab81",
+  "inner": 1024,
+  "outer": "pilot"
+}

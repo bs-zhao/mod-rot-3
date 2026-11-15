@@ -1,0 +1,63 @@
+{
+  "passed": true,
+  "device": "cpu",
+  "subjects": 4,
+  "X_points": 8,
+  "rows": [
+    {
+      "mode": "hybrid",
+      "h": 0.05,
+      "UX_relative": 9.117957851846738e-15,
+      "UU_relative": 2.4835829681914004e-12,
+      "gradient_relative": 0.0,
+      "scalar_seconds": 1.257888100008131,
+      "vectorized_seconds": 0.032574000011663884
+    },
+    {
+      "mode": "hybrid",
+      "h": 0.25,
+      "UX_relative": 5.970327153302934e-15,
+      "UU_relative": 1.3198879256045335e-13,
+      "gradient_relative": 0.0,
+      "scalar_seconds": 0.12845789999119006,
+      "vectorized_seconds": 0.033965900001931004
+    },
+    {
+      "mode": "hybrid",
+      "h": 0.5,
+      "UX_relative": 3.0206210765034217e-15,
+      "UU_relative": 1.764698172059782e-14,
+      "gradient_relative": 0.0,
+      "scalar_seconds": 0.11101510000298731,
+      "vectorized_seconds": 0.027900400004000403
+    },
+    {
+      "mode": "ambient",
+      "h": 0.05,
+      "UX_relative": 2.56718973722552e-13,
+      "UU_relative": 2.4835829681914004e-12,
+      "gradient_relative": 0.0,
+      "scalar_seconds": 0.1947537999949418,
+      "vectorized_seconds": 0.048165999993216246
+    },
+    {
+      "mode": "ambient",
+      "h": 0.25,
+      "UX_relative": 8.564666499804896e-14,
+      "UU_relative": 1.3198879256045335e-13,
+      "gradient_relative": 0.0,
+      "scalar_seconds": 0.19376999999803957,
+      "vectorized_seconds": 0.05552769999485463
+    },
+    {
+      "mode": "ambient",
+      "h": 0.5,
+      "UX_relative": 1.8603176821344143e-14,
+      "UU_relative": 1.764698172059782e-14,
+      "gradient_relative": 0.0,
+      "scalar_seconds": 0.19638360000681132,
+      "vectorized_seconds": 0.046538099995814264
+    }
+  ],
+  "peak_cuda_allocated_bytes": null
+}

@@ -7,4 +7,5 @@ CR3 p 两 repeat、100→3500 TRAIN、5个嵌套种子、native/fixed 两种轴�
 
 每个大小、种子和起点都保留；样本数曲线在 ../reports/exp20A_CR3.png。
 详细逐候选、最差轴、完整有符号相关矩阵、基线角度变化见本目录 results 和
-../reports。C1–C3 与 logit 控制尚未运行；结果不会混入其他 wave。
+../reports。C1–C3也已完成独立计算与全部子集搜索，评价汇总进行中；
+logit控制待运行。结果不混入其他wave。

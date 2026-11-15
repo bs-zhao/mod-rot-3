@@ -36,7 +36,7 @@ def main(a):
     summaries=[]; refs={}
     # At least five MC seeds and four independent QMC scrambles; nested prefixes.
     for method in ['qmc','gh','mc']:
-        maxn=8192 if a.model=='CR3' else 4096
+        maxn=8192  # common numerical cap; no model-name-based stopping rule
         seeds=range(4) if method=='qmc' else range(5) if method=='mc' else [0]
         orders=[3,5,7,9] if st.d==4 else [3,5]  # no huge C3 tensor grid
         for seed in seeds:
@@ -80,7 +80,7 @@ def main(a):
         s,t=c.stream(st,V,out/f'P3_qmc_{seed}');p3.append((s.mean(0),t.mean(0)))
     c.run_loss(st,'P3_QMC_4scramble_mean',np.mean([v[0] for v in p3],0),np.mean([v[1] for v in p3],0),experiment='exp20B')
     c.run_loss(st,'P3_QMC_native_cov',np.mean([v[0] for v in p3],0),np.mean([v[1] for v in p3],0),C=np.eye(st.d),experiment='exp20B',extra=dict(C_mode='measure_native'))
-    hp=c.HERE/'exp13_reproduce/results'/st.key/a.tag/'A0/diagnostics.json'
+    hp=c.HERE/'exp13_reproduce/results'/st.key/a.baseline_tag/'A0/diagnostics.json'
     import json
     hs=json.loads(hp.read_text())['haar_scales']
     c.run_loss(st,'P1_QMC_histSD',ss,tt,scales=hs,experiment='exp20B',extra=dict(fixed_historical_scales=True))

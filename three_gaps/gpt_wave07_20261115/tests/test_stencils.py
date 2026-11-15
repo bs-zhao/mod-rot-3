@@ -19,9 +19,11 @@ def test_quadratic():
         R=torch.tensor([[np.cos(theta),-np.sin(theta)],[np.sin(theta),np.cos(theta)]],dtype=torch.float64)
         u0,t0=field.energies(R,0,'autograd')
         for h in [.1,.25,.5]:
-            u,t=field.energies(R,h,'ambient',np.array([.2,.3]))
-            torch.testing.assert_close(u,u0,atol=1e-12,rtol=1e-12)
-            torch.testing.assert_close(t,t0,atol=1e-12,rtol=1e-12)
+            for engine in ['scalar','vectorized']:
+                field.engine=engine
+                u,t=field.energies(R,h,'ambient',np.array([.2,.3]))
+                torch.testing.assert_close(u,u0,atol=1e-12,rtol=1e-12)
+                torch.testing.assert_close(t,t0,atol=1e-12,rtol=1e-12)
     try:chord_design(np.array([[0.,0],[1.,1],[2.,2],[3.,3]]),k=2)
     except ValueError:pass
     else:raise AssertionError('rank-deficient chord must be rejected')

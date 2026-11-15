@@ -1,0 +1,21 @@
+{
+  "rotations_sha256": "a7de4ffd150af6b641af9d61e78166d2b380a2703625dc28fd2d2b7deb563984",
+  "name": "pilot_sigma1_n1024_s_histSD",
+  "lowest_loss": 17.66907501220703,
+  "haar_scales": [
+    0.714726448059082,
+    0.057223666459321976
+  ],
+  "seconds": 1.0525061999942409,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "8a63fd0b9d196aec92ac22aac9f74ab13fd34fa89136c907b64029354645eba5",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp22\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0_prob\\verified1024\\pilot_sigma1_n1024_s_histSD\\random_landscapes.npz",
+  "sigma": 1,
+  "inner": 1024,
+  "order": "s",
+  "stage": "pilot",
+  "fixed_historical_scales": true,
+  "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp22\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0_prob\\verified1024\\pilot\\moments.npz",
+  "source_sha256": "34a3d554b70168b72a40e33394145fab1f36ac37cb6b6f37cd05ac6a1474ab81"
+}

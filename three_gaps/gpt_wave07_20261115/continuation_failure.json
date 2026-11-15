@@ -1,0 +1,27 @@
+{
+  "argv": [
+    "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+    "D:\\Projects\\rotation\\mod-rot-3\\three_gaps\\gpt_wave07_20261115\\exp21\\run.py",
+    "--model",
+    "CR3",
+    "--beta",
+    ".00005",
+    "--zdim",
+    "4",
+    "--pca",
+    "0",
+    "--repeat",
+    "1",
+    "--channel",
+    "prob",
+    "--tag",
+    "independent_v1",
+    "--resume"
+  ],
+  "returncode": 4294967295,
+  "seconds": 908.7097778320312,
+  "log": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\logs\\continuation\\rest_003.log",
+  "log_sha256": "81eff11c704b947fe6a72ce9da7df8eb15859792771d0807630f9be64811c921",
+  "reason": "Own scalar FD worker intentionally stopped for equivalent-stencil query batching after three completed configurations; no numerical invalidation",
+  "resolution": "Retain old rest logs/results; run remaining segment in a new fd_vectorized namespace after full-grid energy/gradient tests passed"
+}

@@ -1,0 +1,39 @@
+{
+  "rotations_sha256": "3e3d2f5e3981fb79037888957f1fe65f63c3e9b75855d1da82b84c5f4ddca9ab",
+  "name": "pilot_n1024_C_loss",
+  "lowest_loss": 37.42118453979492,
+  "haar_scales": [
+    [
+      0.4503788352012634,
+      0.028527701273560524
+    ],
+    [
+      0.4469032287597656,
+      0.02487707883119583
+    ],
+    [
+      0.44236046075820923,
+      0.019219016656279564
+    ]
+  ],
+  "seconds": 2.2078900000051362,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "564f0544f318ce9cc054a77af065a4c7e30d497c4bc2ed5dc805ba87f4ae359e",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp23\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0_prob\\verified1024\\pilot_n1024_C_loss\\random_landscapes.npz",
+  "aggregation": "C_loss",
+  "scales": [
+    0.1,
+    0.25,
+    0.5
+  ],
+  "weights": [
+    0.3333333333333333,
+    0.3333333333333333,
+    0.3333333333333333
+  ],
+  "field_source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp22\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0_prob\\verified1024\\pilot\\moments.npz",
+  "field_sha256": "82f337840ca1cd0f57892c007f11dfada424566845e04c1a0e094b9c50cefeef",
+  "inner": 1024,
+  "outer": "pilot"
+}

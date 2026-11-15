@@ -1,0 +1,6 @@
+{
+  "hybrid_forward_backward_passed": true,
+  "ambient_forward_backward_passed": true,
+  "device": "cuda",
+  "dtype": "original_float32_decoder"
+}

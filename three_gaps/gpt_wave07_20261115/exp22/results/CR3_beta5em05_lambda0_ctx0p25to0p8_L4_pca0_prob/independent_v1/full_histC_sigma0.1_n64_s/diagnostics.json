@@ -1,0 +1,21 @@
+{
+  "name": "full_histC_sigma0.1_n64_s",
+  "lowest_loss": 23.657752990722656,
+  "haar_scales": [
+    0.6576100587844849,
+    0.039875179529190063
+  ],
+  "seconds": 1.195188900004723,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "fcc9467fe02c0c4ebc69b91b0452b9e80aada15263005f10fc37bf7e0bac4bc7",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp22\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0_prob\\independent_v1\\full_histC_sigma0.1_n64_s\\random_landscapes.npz",
+  "sigma": 0.1,
+  "inner": 64,
+  "order": "s",
+  "stage": "full",
+  "axis_covariance": "historical300",
+  "kernel_covariance": "full_TRAIN",
+  "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp22\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0_prob\\independent_v1\\full\\moments.npz",
+  "source_sha256": "bf93583ca2b9b95e3833566bedb186bb889e734ce3732b80a5c23ae4a2e30420"
+}

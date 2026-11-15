@@ -1,0 +1,24 @@
+{
+  "rotations_sha256": "2009a3412dd5f8e5e232a2560c3229436b8515b5c2febb44ac51f7b466bfb87e",
+  "seconds": 51.31492230000731,
+  "forward_query_rows": 308588544,
+  "haar_scales": [
+    0.6134948743521333,
+    0.04275052779025371
+  ],
+  "finite_stencil_forward_calls": 2283,
+  "gradX_query_rows": 74809344,
+  "gradX_evaluations": 2283,
+  "landscape_spearman": 0.9999960279960279,
+  "support": null,
+  "U_axial_within_train_mahalanobis99": 0.984375,
+  "U_query_mahalanobis_quantiles": [
+    2.766056397143057,
+    8.794714979264173,
+    19.57919483915319
+  ],
+  "chord_relative_residual": null,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "peak_cuda_allocated_bytes": 534101504
+}
