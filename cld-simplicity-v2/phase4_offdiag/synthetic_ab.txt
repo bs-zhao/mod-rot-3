@@ -1,0 +1,3 @@
+axes (u1^2-u2^2)           UUd_share 1.000  offshare 0.000  off_neff nan
+rotated 45deg (2 u1 u2)    UUd_share 0.000  offshare 1.000  off_neff 1.000
+=> the diagonal-share term prefers the rotated (mixed) coordinates here; the off-diagonal terms prefer the axes. In CR3 / C1-C3 adding an off-diagonal term as a third part made every model worse (phase1_ctx results, kind=ux+uu+off).
