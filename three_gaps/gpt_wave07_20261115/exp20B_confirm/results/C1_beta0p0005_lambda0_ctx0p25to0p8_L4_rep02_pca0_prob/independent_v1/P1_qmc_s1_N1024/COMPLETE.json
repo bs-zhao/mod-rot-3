@@ -1,0 +1,18 @@
+{
+  "rotations_sha256": "6cfaf6df199887706f8ce0895a06d8478536af03389d735353ae65af7838f1bc",
+  "name": "P1_qmc_s1_N1024",
+  "lowest_loss": 13.392974853515625,
+  "haar_scales": [
+    1.1360763311386108,
+    0.03045373409986496
+  ],
+  "seconds": 1.0505752000026405,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "eaf0f1da72dd7b3394fc07462a3114b7d470cd401b1d97e9ea8173f736f70f94",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp20B_confirm\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0_prob\\independent_v1\\P1_qmc_s1_N1024\\random_landscapes.npz",
+  "N": 1024,
+  "scramble": 1,
+  "measure": "P1",
+  "convergence_vs_previous": null
+}

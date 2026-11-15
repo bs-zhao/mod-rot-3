@@ -20,7 +20,17 @@ An existing completed run requires `--resume`; configuration hashes must match.
 The research loss is unchanged. Gaussian sampling is only an integration
 measure, never ICA. Higher-dimensional PCA without a residual protocol fails.
 
-Status: all eight probability EXP13 settings independently reproduced; CR3
+All eight probability EXP13 settings were independently reproduced. CR3
 EXP20A/B, converged EXP22 through1024 inner nodes, data-scale EXP21, ABC and
-joint128 pilots executed. C1–C3 confirmation is running. Actual results and
-remaining coverage are tracked in [RESULTS.md](RESULTS.md) and [RUN_STATE.md](RUN_STATE.md).
+joint128 pilots were executed, followed by four-model TRAIN/Gaussian/smoothing
+confirmation and CR3 logit controls. Early failed quadrature caps are retained;
+additional confirmation budgets follow numerical criteria only.
+
+There are individual improvements in CR3, but no new method met the promotion
+rule across both repeats and models. The frozen EXP13 method remains intact.
+Read [RESULTS.md](RESULTS.md) for improvements, negative results and unrun grids,
+[REPRODUCE.md](REPRODUCE.md) for commands, and [RUN_STATE.md](RUN_STATE.md) for
+the final execution state. Reports include per-axis leakage/angles and runtime.
+The user's final criterion is an absolute0.03 reduction in maximum nonmatching
+correlation versus frozen EXP13 p; see user_criterion.json and the per-candidate
+pass flags in reports/user_003_criterion.csv. No method passes both CR3 repeats.

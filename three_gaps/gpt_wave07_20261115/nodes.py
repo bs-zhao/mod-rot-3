@@ -14,11 +14,17 @@ def gaussian(n,d,seed,method='qmc',order=3):
     else:raise ValueError(method)
     return e,w,dict(clipped=clipped,nodes=len(e),method=method,seed=seed,order=order)
 
-def physical(e,C,mu,measure='P1'):
+def physical(e,C,mu,measure='P1',basis=None):
     eig=np.linalg.eigvalsh(C)
     if eig.min()<1e-10*eig.max():raise ValueError(f'near singular covariance {eig}; no silent jitter')
     if measure=='P1':return e@np.linalg.cholesky(C).T
-    if measure=='P3':return e-mu  # N(0,I) in original Z, not V.
+    if measure=='P3':
+        # Working V=(Z-mu)@basis. Orthogonal PCA leaves prior covariance I,
+        # but its nonzero working-coordinate mean must also be transformed.
+        if basis is not None:
+            if not np.allclose(basis.T@basis,np.eye(len(mu)),atol=1e-10):raise ValueError('P3 requires an orthogonal full-dimensional basis')
+            mu=mu@basis
+        return e-mu
     raise ValueError(measure)
 
 def antithetic(n,d,seed):

@@ -75,7 +75,7 @@ def main(a):
     c.run_loss(st,'P1_QMC_4scramble_mean',ss,tt,experiment='exp20B')
     p3=[]
     for seed in range(4):
-        e,w,_=nodes.gaussian(maxn,st.d,seed+20261115,'qmc');V=nodes.physical(e,st.C,st.mu,'P3')
+        e,w,_=nodes.gaussian(maxn,st.d,seed+20261115,'qmc');V=nodes.physical(e,st.C,st.mu,'P3',basis=st.Minv)
         c.save_npz(out/f'P3_qmc_{seed}'/'nodes.npz',epsilon=e,V=V,weights=w)
         s,t=c.stream(st,V,out/f'P3_qmc_{seed}');p3.append((s.mean(0),t.mean(0)))
     c.run_loss(st,'P3_QMC_4scramble_mean',np.mean([v[0] for v in p3],0),np.mean([v[1] for v in p3],0),experiment='exp20B')

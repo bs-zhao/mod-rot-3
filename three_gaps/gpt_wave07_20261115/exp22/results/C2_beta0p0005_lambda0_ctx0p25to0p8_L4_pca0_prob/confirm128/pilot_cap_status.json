@@ -1,0 +1,41 @@
+{
+  "source": "D:\\Projects\\rotation\\mod-rot-3\\three_gaps\\gpt_wave07_20261115\\exp22\\results\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0_prob\\confirm128\\pilot_convergence.json",
+  "source_sha256": "4b4020cdc4ef80e0c7092e5354b1192fd3a030749e2a6015c186deecc7200f4c",
+  "rows": [
+    {
+      "key": "0.1_smooth_then_square",
+      "inner": 128,
+      "SX_relative": 0.0007492853800505351,
+      "T4_relative": 0.002826798101540406,
+      "spearman": 0.999994662994647,
+      "cap_converged": true
+    },
+    {
+      "key": "0.1_square_then_average",
+      "inner": 128,
+      "SX_relative": 0.0001421753567925098,
+      "T4_relative": 0.00039507014768543064,
+      "spearman": 0.9999983409983361,
+      "cap_converged": true
+    },
+    {
+      "key": "0.25_smooth_then_square",
+      "inner": 128,
+      "SX_relative": 0.003524186319564656,
+      "T4_relative": 0.013824659032318058,
+      "spearman": 0.9999249909247659,
+      "cap_converged": false
+    },
+    {
+      "key": "0.25_square_then_average",
+      "inner": 128,
+      "SX_relative": 0.0008080884329117355,
+      "T4_relative": 0.0019114700375865792,
+      "spearman": 0.9999941799941799,
+      "cap_converged": true
+    }
+  ],
+  "unresolved": [
+    "0.25_smooth_then_square"
+  ]
+}

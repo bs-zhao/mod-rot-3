@@ -17,6 +17,7 @@ def angles(R,Q):
 
 def main(a):
     st=c.Setting(a);paths=list(c.HERE.glob(f'*/results/{st.key}/{a.tag}/*/COMPLETE.json'))
+    if a.experiment:paths=[p for p in paths if p.parents[4].name==a.experiment]
     if not paths:raise RuntimeError('no completed blind rotations; truth access refused')
     # First load every R and verify immutable completion hash, THEN read theta.
     loaded=[]
@@ -93,7 +94,8 @@ def main(a):
             fig.colorbar(im,ax=ax,fraction=.045)
         fig.suptitle(d.name,fontsize=9);fig.tight_layout();fig.savefig(d/'UT_heatmaps.png',dpi=140);plt.close(fig)
     out=c.HERE/'reports';out.mkdir(exist_ok=True)
-    pd.DataFrame(rows).to_csv(out/f'{st.key}_{a.tag}.csv',index=False)
+    suffix='' if not a.experiment else '_'+a.experiment
+    pd.DataFrame(rows).to_csv(out/f'{st.key}_{a.tag}{suffix}.csv',index=False)
     hist=pd.read_csv(c.ROOT/'three_gaps/post_exp13_20261114/baseline/results/metrics_all.csv')
     h=hist[(hist.model==a.model)&(hist.repeat==a.repeat)&(hist.channel==a.channel)].iloc[0]
     bas=[r for r in rows if r['name']=='A0_strict'] or [r for r in rows if r['name']=='A0']
@@ -102,4 +104,6 @@ def main(a):
         c.dump(out/f'{st.key}_reproduction.json',dict(deltas=delta,tolerance=1e-4,passed=max(abs(v) for v in delta.values())<1e-4))
     print(pd.DataFrame(rows).to_string(index=False),flush=True)
 
-if __name__=='__main__':main(c.args(__doc__).parse_args())
+if __name__=='__main__':
+    p=c.args(__doc__);p.add_argument('--experiment',help='Optional completed experiment folder filter; no candidate selection')
+    main(p.parse_args())

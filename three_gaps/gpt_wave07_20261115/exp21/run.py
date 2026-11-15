@@ -34,7 +34,10 @@ def main(a):
     try:
         _,_,_,rank,cond=chord_design(st.X)
         c.dump(small/'chord_design.json',dict(rank=rank,condition=cond,ridge=0,units='direction and norm in X/SD; reconstructed UX converted to raw X units'))
-        configs += [('chord',.25,None,'chord_h0.25')]
+        # A full-rank design alone does not validate finite-h chord recovery.
+        # No production chord search until a matched chord-autograd baseline,
+        # residual and h->0 checks have been implemented and verified.
+        c.dump(small/'chord_NOT_RUN.json',dict(reason='Design passed, but matched chord recovery protocol is not yet validated',full_UX_claim=False))
     except ValueError as e:
         c.dump(small/'chord_REJECTED.json',dict(reason=str(e),full_UX_claim=False))
     for mode,h,hX,name in configs:

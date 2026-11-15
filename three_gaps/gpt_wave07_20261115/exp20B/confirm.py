@@ -19,7 +19,7 @@ def main(a):
     for measure in ['P1','P3']:
         means=[]
         for seed in range(4):
-            e,_,_=nodes.gaussian(8192,st.d,20261115+seed);V=nodes.physical(e,st.C,st.mu,measure)
+            e,_,_=nodes.gaussian(8192,st.d,20261115+seed);V=nodes.physical(e,st.C,st.mu,measure,basis=st.Minv)
             sx,t4=c.stream(st,V[:4096],out/f'{measure}_s{seed}_prefix4096')
             old=None;err=None
             for n in [1024,2048,4096]:

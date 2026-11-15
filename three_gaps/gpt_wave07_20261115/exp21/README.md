@@ -1,7 +1,7 @@
 # EXP21 — observed resolution and finite halfwidth
 
 ```powershell
-python three_gaps/gpt_wave07_20261115/exp21/run.py --model CR3 --beta .00005 --zdim 4 --pca 0 --repeat 1 --resume
+python three_gaps/gpt_wave07_20261115/exp21/run.py --model CR3 --beta .00005 --zdim 4 --pca 0 --repeat 1 --tag fd_vectorized --engine vectorized --resume
 ```
 
 64x64 shared centres. Matched 8-start/120-step baselines, original float32 and
@@ -17,4 +17,7 @@ Ambient, U-finite/X-autograd hybrid, and chord reconstruction are distinct.
 Chord full UX reconstruction is refused if neighbourhoods are rank deficient
 or have condition >1e5. A refusal is saved as a failure case, not fake evidence.
 This expensive pilot is not equivalent to the full frozen 24x250/300x500 baseline.
-Status: [RESULTS](../RESULTS.md).
+Full-rank chord search is also explicitly deferred until its matched chord
+baseline and finite-h recovery checks are validated; design rank alone is not
+evidence of a valid reconstruction. Both CR3 designs were actually rejected.
+Status: [RESULTS](RESULTS.md).

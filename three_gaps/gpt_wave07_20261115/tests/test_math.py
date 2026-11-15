@@ -27,6 +27,9 @@ def test_gaussian():
     a=nodes.antithetic(32,4,23);np.testing.assert_array_equal(a[:16],nodes.antithetic(16,4,23))
     np.testing.assert_allclose(a.mean(0),0,atol=1e-16)
     v=nodes.physical(e,np.eye(4),np.arange(4.),'P3');np.testing.assert_allclose(v+np.arange(4.),e)
+    Q=c.haar_set(4,1,17)[0].astype(float);Q=np.linalg.qr(Q)[0];mu=np.arange(4.)
+    v=nodes.physical(e,np.eye(4),mu,'P3',basis=Q)
+    np.testing.assert_allclose(v@Q.T+mu,e@Q.T,atol=1e-12)
     w,rate=nodes.truncated(e,np.ones(len(e))/len(e));assert abs(w.sum()-1)<1e-12 and 0<rate<.15
 
 def test_contraction():

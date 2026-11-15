@@ -1,0 +1,10 @@
+{
+  "date": "2026-11-15",
+  "source": "User clarification after the exploratory runs",
+  "baseline": "frozen EXP13 probability, same model and NP repeat",
+  "required_absolute_reduction_in_max_nonmatched_correlation": 0.03,
+  "supersedes_user_typo": 0.3,
+  "interpretation": "A smaller reduction is a numerical improvement, not a genuine improvement under the user's criterion. This necessary condition supplements the original fairness, MCC, mean leakage and cross-repeat/model rules.",
+  "not_preregistered": true,
+  "changes_search_or_selects_hyperparameters": false
+}

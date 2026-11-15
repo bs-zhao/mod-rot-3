@@ -1,0 +1,29 @@
+[
+  {
+    "model": "C2",
+    "repeat": 1,
+    "previous_unresolved": [
+      "0.25_smooth_then_square"
+    ],
+    "next_cap": 512,
+    "rule": "final adjacent SX/T4<1% and landscape rho>.99; no TEST read"
+  },
+  {
+    "model": "C3",
+    "repeat": 1,
+    "previous_unresolved": [
+      "0.25_smooth_then_square"
+    ],
+    "next_cap": 512,
+    "rule": "final adjacent SX/T4<1% and landscape rho>.99; no TEST read"
+  },
+  {
+    "model": "C3",
+    "repeat": 2,
+    "previous_unresolved": [
+      "0.25_smooth_then_square"
+    ],
+    "next_cap": 512,
+    "rule": "final adjacent SX/T4<1% and landscape rho>.99; no TEST read"
+  }
+]

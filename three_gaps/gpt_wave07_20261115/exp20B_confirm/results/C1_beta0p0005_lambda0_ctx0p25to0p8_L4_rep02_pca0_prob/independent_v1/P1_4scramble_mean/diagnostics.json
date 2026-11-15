@@ -1,0 +1,13 @@
+{
+  "name": "P1_4scramble_mean",
+  "lowest_loss": 13.376862525939941,
+  "haar_scales": [
+    1.1370129585266113,
+    0.030460447072982788
+  ],
+  "seconds": 1.1451438999938546,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "366599b3b475e80865064f79ab0cf16e7f12e791e17d0a70ae8f516b7f71b6bf",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp20B_confirm\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0_prob\\independent_v1\\P1_4scramble_mean\\random_landscapes.npz"
+}

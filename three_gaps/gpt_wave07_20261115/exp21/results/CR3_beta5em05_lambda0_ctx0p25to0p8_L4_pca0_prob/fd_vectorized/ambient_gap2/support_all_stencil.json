@@ -1,0 +1,22 @@
+{
+  "truth_loaded": false,
+  "decoder_queried": false,
+  "rotation_sha256": "8b5caf68ddafad1fcdf114006e48898d87fa067c5b647cdcd39cbe0cb30ce76f",
+  "geometry": "equal weight per unique U stencil location and centre, not query-frequency weighted",
+  "U_locations": 2112,
+  "U_in_train_mahalanobis99": 0.9744318181818182,
+  "U_mahalanobis_quantiles": [
+    2.853145137824783,
+    9.222968522596231,
+    20.84137000875035
+  ],
+  "X_locations": 832,
+  "X_in_marginal_box": 0.8076923076923077,
+  "X_within_bank_nn95": 1.0,
+  "X_nearest_distance_quantiles": [
+    0.29275221472713153,
+    0.3206097321263197,
+    0.3206097321263201
+  ],
+  "warning": "These proxies do not establish joint counterfactual identifiability; cross-coordinate UU corners are included."
+}

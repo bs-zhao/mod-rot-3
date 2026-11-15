@@ -1,0 +1,12 @@
+{
+  "rotations_sha256": "152e6f8ca0a8ee5f450119e7ff924b87cf2fa66b3c2c51f12eebe4063d58b2fc",
+  "SX_relative": 1.2692738395234222e-09,
+  "T4_relative": 3.114486138768367e-09,
+  "old_cache_sha256": "c7ad79e85c4da432d1f3ef743bad0f85d0becfcdd1fc5de817ba3e2a42d04f07",
+  "loss_relative": 2.619694043914933e-07,
+  "seconds": 27.074711199995363,
+  "haar_scales": [
+    1.0567255020141602,
+    0.05371890589594841
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "rotations_sha256": "19f710041421baa0945a61bf4f7cebcba2107b8f1bfe997e3125fbbac6b5daa1",
+  "name": "full_train",
+  "lowest_loss": 16.931846618652344,
+  "haar_scales": [
+    0.954093337059021,
+    0.04442792758345604
+  ],
+  "seconds": 1.5350156999920728,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "ab8b6941bce3f156ffb2c6717576a227b0e2762a927dbe8b1fb4e24a96419219",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp20A\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0_logit\\independent_v1\\full_train\\random_landscapes.npz",
+  "N": 3500,
+  "train_only": true
+}

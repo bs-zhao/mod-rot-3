@@ -1,7 +1,8 @@
 experiment,blind_completed,evaluated
-exp13_reproduce,2,2
-exp20A,108,108
-exp20B,40,0
-exp22,0,0
-exp21,0,0
-exp23,0,0
+exp13_reproduce,12,12
+exp20A,540,540
+exp20B,136,136
+exp20B_confirm,162,162
+exp22,680,680
+exp21,27,27
+exp23,6,6

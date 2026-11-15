@@ -1,0 +1,23 @@
+{
+  "source": "D:\\Projects\\rotation\\mod-rot-3\\three_gaps\\gpt_wave07_20261115\\exp22\\results\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0_prob\\joint128\\joint_train_convergence.json",
+  "source_sha256": "862c0bfe39ff18d332396957068ae1c01d41544a7f9de1cd70ec607c74933ee7",
+  "rows": [
+    {
+      "key": "0.25_smooth_then_square",
+      "inner": 512,
+      "SX_relative": 0.002011007304561808,
+      "T4_relative": 0.00598485983806151,
+      "spearman": 0.999953727953728,
+      "cap_converged": true
+    },
+    {
+      "key": "0.25_square_then_average",
+      "inner": 512,
+      "SX_relative": 0.00030005531573367225,
+      "T4_relative": 0.0005937833174326774,
+      "spearman": 0.9999911649911385,
+      "cap_converged": true
+    }
+  ],
+  "unresolved": []
+}

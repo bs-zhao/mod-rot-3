@@ -1,0 +1,12 @@
+{
+  "loss_oracle": 24.150238037109375,
+  "loss_found": 22.38552474975586,
+  "oracle_minus_found_Haar_SD": 2.687922239303589,
+  "oracle_initialization_used": false,
+  "per_axis_angles": [
+    29.8893712485809,
+    33.34054139259622,
+    32.65275657667808,
+    31.490191026545144
+  ]
+}
