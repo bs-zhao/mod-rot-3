@@ -1,0 +1,23 @@
+{
+  "environment": {
+    "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+    "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+    "torch": "2.9.1+cu130",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "cuda": true,
+    "device": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "commit": "bfda311d4baaf3669d774ee336a58ddb100da43d"
+  },
+  "haar_n": 200,
+  "haar_seed": 1,
+  "starts": 24,
+  "steps": 250,
+  "opt_seed": 7,
+  "lr": 0.05,
+  "subjects": 300,
+  "trials": 500,
+  "X_standardized": false,
+  "channel": "logit",
+  "cache_sha256": "52a25434dd97b1b9501ec11cace979c93199debf5a94b77b3df1a05bb65d3c4b"
+}

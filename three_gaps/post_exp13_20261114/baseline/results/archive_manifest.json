@@ -1,0 +1,569 @@
+{
+  "environment": {
+    "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+    "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+    "torch": "2.9.1+cu130",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "cuda": true,
+    "device": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "commit": "bfda311d4baaf3669d774ee336a58ddb100da43d"
+  },
+  "reference_commit": "a515a45a1399d859e586fd8f8cf195f83aa6b51a",
+  "source_archive_sha256": "9491780d51a6bdb00c8efcef7f340fb5f1f0a0d52278328260c9bb8146a90714",
+  "files": [
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C1\\s1_generate\\s1_generate__dataset.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C1\\s1_generate\\s1_generate__dataset.npz",
+      "bytes": 61897341,
+      "sha256": "2765dd0031c983b5bfcdff37808687e60a07eebb51c58bf78399930597338c09"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C1\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C1\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s3_train__checkpoint.pt",
+      "bytes": 5441097,
+      "sha256": "75aa0b84aa642979c6bd8cff56907631aecee828dfd4cf7714077881099fc759"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C1\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C1\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s3_train__checkpoint.pt",
+      "bytes": 5441353,
+      "sha256": "fd5964b54d150fdfecadaf5b68fef9373994474abb785e13f1fc2e0d3230ca62"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C1\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C1\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s4_evaluate__latent.npz",
+      "bytes": 314362,
+      "sha256": "66bbde943aaba33707fadc611f201a5bc0dd2e942607985dd458c859fc106e64"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C1\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C1\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s4_evaluate__latent.npz",
+      "bytes": 314629,
+      "sha256": "9a3f3abb8f3ddf58764cd57289053699ef618d4ab699bfec3a633a73517ee633"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C2\\s1_generate\\s1_generate__dataset.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C2\\s1_generate\\s1_generate__dataset.npz",
+      "bytes": 77203556,
+      "sha256": "c37a6905dd2af3f88c55edd3a621f3cbba21f8370aee21710dbd750416a4fd4d"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C2\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C2\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s3_train__checkpoint.pt",
+      "bytes": 5451273,
+      "sha256": "987433c0da3fc72a59cfb1e1290f39b9aa1b5f5d5d8ae3f8fa7e15237cfb15a7"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C2\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C2\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s3_train__checkpoint.pt",
+      "bytes": 5445961,
+      "sha256": "3520679a934642a94b493aa2a32688018d02da32ebc9b072e1c99a0f3f5da9cb"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C2\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C2\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat01\\s4_evaluate__latent.npz",
+      "bytes": 315328,
+      "sha256": "5fd4097ad7d299a6960b1867cad835170eda890fe2be9524c7fe5c78def38375"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C2\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C2\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L4\\repeat02\\s4_evaluate__latent.npz",
+      "bytes": 315366,
+      "sha256": "a0a71c0b9edfa345227d51117a864c2ebd89247281fb6627a7d56351c178a7a0"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C3\\s1_generate\\s1_generate__dataset.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C3\\s1_generate\\s1_generate__dataset.npz",
+      "bytes": 77298512,
+      "sha256": "21c0c34d69a20167a8a2a651a817c11163ed47e4675c9e7ff7b956fadc9bed18"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C3\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat01\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C3\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat01\\s3_train__checkpoint.pt",
+      "bytes": 5456457,
+      "sha256": "26f3b81ae9d3f8fd301f96c348c81f1c3ad5c8743ebdb634206cf95babf242eb"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C3\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat02\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C3\\s3_train\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat02\\s3_train__checkpoint.pt",
+      "bytes": 5458697,
+      "sha256": "f50207fa8dc75b10f51281125676a81c408140b38ba83f36299523cc0a8bd152"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C3\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat01\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C3\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat01\\s4_evaluate__latent.npz",
+      "bytes": 460868,
+      "sha256": "6e4f3462612df102d61061447728ffe88267fe3ef199f0f05a74c1961738bbc9"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\C3\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat02\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\C3\\s4_evaluate\\beta0p0005_lambda0_ctx0p25to0p8_L6\\repeat02\\s4_evaluate__latent.npz",
+      "bytes": 461297,
+      "sha256": "6cd34740bc7f79428d946c8be40836a247b7250d6cf6d7a2e83d95a7efeebe5e"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\CR3\\s1_generate\\s1_generate__dataset.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\CR3\\s1_generate\\s1_generate__dataset.npz",
+      "bytes": 22938136,
+      "sha256": "6a7b7773300d6052f062b034a0f1733ca4a431b77935c97197a167b993b21b45"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\CR3\\s3_train\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat01\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\CR3\\s3_train\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat01\\s3_train__checkpoint.pt",
+      "bytes": 5475017,
+      "sha256": "943c05afd688127ddec4f4fe8581832e7e4aa7ec27acc2b4ff3d2db3b27784f9"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\CR3\\s3_train\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat02\\s3_train__checkpoint.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\CR3\\s3_train\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat02\\s3_train__checkpoint.pt",
+      "bytes": 5468745,
+      "sha256": "9d92693e3f47bd76aded54631cb88b3181484864d6c70a693895f807d636e3e2"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\CR3\\s4_evaluate\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat01\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\CR3\\s4_evaluate\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat01\\s4_evaluate__latent.npz",
+      "bytes": 307798,
+      "sha256": "5b037c09d86ef5483fc67275673568b37f9002c30209f9e10c64be16fb767434"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\choice\\CR3\\s4_evaluate\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat02\\s4_evaluate__latent.npz",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\choice\\CR3\\s4_evaluate\\beta5em05_lambda0_ctx0p25to0p8_L4\\repeat02\\s4_evaluate__latent.npz",
+      "bytes": 307507,
+      "sha256": "7b7c23228559a91c99c8c250c77cd370160ea345f0c90c8eaa36919d7464556b"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_raw.npy",
+      "bytes": 256,
+      "sha256": "4bc239d4dad09f1e0849775885f57cb6ebd12d740cdef064d3c7bc5e67d21817"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_zca_white.npy",
+      "bytes": 256,
+      "sha256": "4c16e90fbe476b438ef2517831f24e26a8348acc124fd46b6bb94b809ecf6471"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\zca_W.npy",
+      "bytes": 256,
+      "sha256": "02ba2fce055df769673f657e5a2fd87bece4066315b0644db0f3ca0362c4261d"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_raw.npy",
+      "bytes": 256,
+      "sha256": "7aebdab305900b7003a6229a7ce319cd7e992358afe84b0fec807b9ed1217bc1"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_zca_white.npy",
+      "bytes": 256,
+      "sha256": "5c4bd34140e6a5a2a7a0c7f4374c59374cae000bbd4e3dbe73fa8301eb99fd96"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\zca_W.npy",
+      "bytes": 256,
+      "sha256": "6cb1b979ac142c703fdd8fc03948d30ff5107098addded6359597291b58bfc9a"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_raw.npy",
+      "bytes": 256,
+      "sha256": "34986008bfd61df7d28b454a150fa7931d7bc3c1cf5cdd6e2d926f6ba04ef0bc"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_zca_white.npy",
+      "bytes": 256,
+      "sha256": "0e697726d17284b66939358824a4c21d6ad6112296b823cad19d1811d7709699"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_pca0\\zca_W.npy",
+      "bytes": 256,
+      "sha256": "c435b5563eba1d62d8da5586b32c12e4fc98bedb7934578a2d600f940f23886b"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_raw.npy",
+      "bytes": 256,
+      "sha256": "7d8fc7e10efad0814cd29b5d55e5573e0040e4485a5e4373a6ff0984ccb52967"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_zca_white.npy",
+      "bytes": 256,
+      "sha256": "65c6ca752c0aada56f113b96980c9a11b2392b0c1675acd1f0ab12abca220943"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_pca0\\zca_W.npy",
+      "bytes": 256,
+      "sha256": "db8cf8ad162683031a78d6b953f10445fb267441a07786365ac0dee4fae63421"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_pca0\\R_oracle_raw.npy",
+      "bytes": 416,
+      "sha256": "4fb6378ab58baf9d9bf5e137fcdefb67c9b37920c886a103c475a44c9fb2c3f3"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_pca0\\R_oracle_zca_white.npy",
+      "bytes": 416,
+      "sha256": "4bebb3341a1c827b06895fb9a3f6cc301a1b441964bc16b8aeff53502b80770c"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_pca0\\zca_W.npy",
+      "bytes": 416,
+      "sha256": "ad35cd2d3fe56043a69ed442f4302f2ff8fc9e0c118514d7434a76feb37d80c2"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_pca0\\R_oracle_raw.npy",
+      "bytes": 416,
+      "sha256": "3ae2d513eebba85232ef94d983697a7b58d2497c69fdea1a4e001f8802893d6f"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_pca0\\R_oracle_zca_white.npy",
+      "bytes": 416,
+      "sha256": "d91b39e0ad6370759587297280df88dc06ababc6fe8f5f5cdd5f85dd50de6288"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_pca0\\zca_W.npy",
+      "bytes": 416,
+      "sha256": "735aef896c87df32b9e20f47eec5defa07139a2861b3fb7e813c6083d186f669"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_raw.npy",
+      "bytes": 256,
+      "sha256": "4547821a0808b74227d5524046d13e88fa7389fefc0bb44eeb727c61269a3f9f"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0\\R_oracle_zca_white.npy",
+      "bytes": 256,
+      "sha256": "017cb040555feca9544840fe026e60d10be48cb8b4cae34727304e769f6d0049"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0\\zca_W.npy",
+      "bytes": 256,
+      "sha256": "260f37b5dd222c12dabc8806815ddc95742bdd24abc7911926d04ce436d46963"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_raw.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_raw.npy",
+      "bytes": 256,
+      "sha256": "eb068a7646160f5b3809543250c45d4c57aa098073f4dcda01ed2446ebd30480"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_zca_white.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0\\R_oracle_zca_white.npy",
+      "bytes": 256,
+      "sha256": "bf827276e1c58d75f12642176b885094cdf09818ed2d6e3f1637f7d84b908b58"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0\\zca_W.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp00\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_pca0\\zca_W.npy",
+      "bytes": 256,
+      "sha256": "cc3e8698937f7837faa355cde85c021f481f089fca6b28ed799ac7294bea0af3"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_logit.pt",
+      "bytes": 16390130,
+      "sha256": "ca2e8f1f49612b2e5019cdd8bd99e83a64f2326dab106f39efee3ec50ad6991a"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_prob.pt",
+      "bytes": 16390119,
+      "sha256": "9b3d28d3cb9282e5dfad9de3df360cf98de3234a9c03797eccf2ccbfd1c9d77a"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_logit.pt",
+      "bytes": 16389940,
+      "sha256": "7c5906b6ee161947ecdf3685a236d99413295ce46767583d700e640a00338893"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C1_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_prob.pt",
+      "bytes": 16389929,
+      "sha256": "3682dbd82ad306d3f0161cc7adfe74d31df086b80dadbf52173bc204b261a917"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_logit.pt",
+      "bytes": 18313074,
+      "sha256": "5452958c1b5e874988d887d92951fb6e9a8742102ac456f7f28f111003da88ff"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_prob.pt",
+      "bytes": 18313063,
+      "sha256": "6cd4967b52a86b1aa48d3c7bf6ac4d86865157b59ae4b7b43d6f255d50a3536e"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_logit.pt",
+      "bytes": 18307828,
+      "sha256": "f73094cc22b19ced46659705205dfd3667f69e1629c91a8e5df2fc205f99a66d"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C2_beta0p0005_lambda0_ctx0p25to0p8_L4_rep02_prob.pt",
+      "bytes": 18307817,
+      "sha256": "41b529278eb858190fbc3fc1a28c5b6b42bf8ef66a360c8301949c29852ef448"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_logit.pt",
+      "bytes": 32962546,
+      "sha256": "19ccd8b4c59f74074037d3054a7b5454a456bb32877fc921d4cffd8962fb8f76"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_prob.pt",
+      "bytes": 32962535,
+      "sha256": "a09eb0b2c08699dbe3fe90a33116062e87ba6fc206ea6a8483eaacd43591bba6"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_logit.pt",
+      "bytes": 32962420,
+      "sha256": "75079c8ec0106560d6d8d278ea4d3bf02c6ba8b73506c3764a213a3d3ddd9afa"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_C3_beta0p0005_lambda0_ctx0p25to0p8_L6_rep02_prob.pt",
+      "bytes": 32962409,
+      "sha256": "64bcc0a41571f0a0186d1ba68cb3b91c14628c605f350d0670a10301e207d5aa"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_logit.pt",
+      "bytes": 27562226,
+      "sha256": "c7ad79e85c4da432d1f3ef743bad0f85d0becfcdd1fc5de817ba3e2a42d04f07"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_plugin.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_plugin.pt",
+      "bytes": 27562237,
+      "sha256": "4ceb5cc96f3d111ee93e394e71a06cbdbd842763052c08e915cf811125f76076"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_prob.pt",
+      "bytes": 27562215,
+      "sha256": "a2b3bc07e1ea73581b5ad67c7a93b540b7d1d4eb562135b7dae8359d08e57a64"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_logit.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_logit.pt",
+      "bytes": 27560244,
+      "sha256": "52a25434dd97b1b9501ec11cace979c93199debf5a94b77b3df1a05bb65d3c4b"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_prob.pt",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\cache2_CR3_beta5em05_lambda0_ctx0p25to0p8_L4_rep02_prob.pt",
+      "bytes": 27560233,
+      "sha256": "8de18603ee31983f083f0e6cf00833ea84725ed9ce7b8dc3f6458e73c781e751"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\heatmaps_simplicity_logit_rep1.png",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\heatmaps_simplicity_logit_rep1.png",
+      "bytes": 262221,
+      "sha256": "f489fd2ae7aeccc302b646cac048924102ae35c364f5d40a9b050597a033fd84"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\heatmaps_simplicity_prob_rep1.png",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\heatmaps_simplicity_prob_rep1.png",
+      "bytes": 244891,
+      "sha256": "859bc796fc5f4d7b540920f3fa9ae4d8906a35e8ba80b7f56377f65958a69705"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\heatmaps_simplicity_rep1.csv",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\heatmaps_simplicity_rep1.csv",
+      "bytes": 3655,
+      "sha256": "1f77b46023bf6b9bd3b62120754b2558e9f1f0f6d105cf1c2146e90620786973"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\oracle_scan.csv",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\oracle_scan.csv",
+      "bytes": 33805,
+      "sha256": "0d11d47cd9fa4341c734932ca9022a2f4c49d6ea41b6dd999e263f33145dbc35"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C1_rep1_logit_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C1_rep1_logit_UUd_share.npy",
+      "bytes": 192,
+      "sha256": "4800e5d4632dac6da55202cef3fdc7fe55f1dcb6db28adb32825fa28843f421f"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C1_rep1_logit_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C1_rep1_logit_UX_neff+UUd_share.npy",
+      "bytes": 192,
+      "sha256": "e11567a8d6969923319d866cf78fd5f04014a02a312460e2583c945a408d6a41"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C1_rep1_logit_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C1_rep1_logit_UX_neff.npy",
+      "bytes": 192,
+      "sha256": "d89c2f574338013fb883d8f16caea24d7f74d539a1164030e646789a3a469a3b"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C1_rep1_prob_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C1_rep1_prob_UUd_share.npy",
+      "bytes": 192,
+      "sha256": "aa7d5a1d0196e644a9a13ce80f01981eb7529d0844fd19041a7d33b0929e962c"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C1_rep1_prob_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C1_rep1_prob_UX_neff+UUd_share.npy",
+      "bytes": 192,
+      "sha256": "998bbc14ea721890da6bd2676f9c251fb0abe9919ecada8c7a07871f1a9fa146"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C1_rep1_prob_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C1_rep1_prob_UX_neff.npy",
+      "bytes": 192,
+      "sha256": "8792066b751ef074488fd5219cdf76dddc2e874703cf7cf73cd214970766dc20"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C2_rep1_logit_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C2_rep1_logit_UUd_share.npy",
+      "bytes": 192,
+      "sha256": "5603da83e6691fb526cc511316b75a621291b679b0df1ee547b336a10825067c"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C2_rep1_logit_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C2_rep1_logit_UX_neff+UUd_share.npy",
+      "bytes": 192,
+      "sha256": "30915ce911924a1257470a5093703786368537ff388d54c5448dc0537e223d0a"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C2_rep1_logit_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C2_rep1_logit_UX_neff.npy",
+      "bytes": 192,
+      "sha256": "effe30157f49f45f284062afeaf9115fea5929824f54d1e1693f92470936f29e"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C2_rep1_prob_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C2_rep1_prob_UUd_share.npy",
+      "bytes": 192,
+      "sha256": "d51e4f7242be12ed97bf3d891361fe7821e729197ef752d49b2d0fab97a158a1"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C2_rep1_prob_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C2_rep1_prob_UX_neff+UUd_share.npy",
+      "bytes": 192,
+      "sha256": "735f6d0f03df5f52126fb9441979df999c381591d1033d0344f050faa4f43d4a"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C2_rep1_prob_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C2_rep1_prob_UX_neff.npy",
+      "bytes": 192,
+      "sha256": "d73ffc9aac79a26d8ab4737dec5b3d14af90728989a7e48c142af5cc50b67730"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C3_rep1_logit_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C3_rep1_logit_UUd_share.npy",
+      "bytes": 272,
+      "sha256": "f7b0e149a6d0b40bd315efcba436aa47a213a7615379a9e798e68cc157fc44be"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C3_rep1_logit_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C3_rep1_logit_UX_neff+UUd_share.npy",
+      "bytes": 272,
+      "sha256": "8950eee29d181a2d42d545efe7038363f25cacc6af2e6e1f8dfd93fff13ba794"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C3_rep1_logit_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C3_rep1_logit_UX_neff.npy",
+      "bytes": 272,
+      "sha256": "3b8cb280466d367d30041b616c9b12cefba4cb69e704b495edb07e8d572cc385"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C3_rep1_prob_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C3_rep1_prob_UUd_share.npy",
+      "bytes": 272,
+      "sha256": "c9c968a252da603679881fa2c96e740a64fd91b72087aa6a6228bd361296450a"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C3_rep1_prob_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C3_rep1_prob_UX_neff+UUd_share.npy",
+      "bytes": 272,
+      "sha256": "6493d0eb459aa1dbca0098e4d61722309c9cca128c2abe46210bbbd3455e2236"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_C3_rep1_prob_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_C3_rep1_prob_UX_neff.npy",
+      "bytes": 272,
+      "sha256": "6b9cd9d4b3069e4485fdf0f86c0c7f388f7753cc2d220a1939389c7e9ac83c7f"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_logit_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_logit_UUd_share.npy",
+      "bytes": 192,
+      "sha256": "1accb5fdcdc73ea73378082717657731fb84f9b95689d6f1703043da8234c1a1"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_logit_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_logit_UX_neff+UUd_share.npy",
+      "bytes": 192,
+      "sha256": "f883fb0c2622295846e13cbdac4f4cd0db539d6e7967ad876ecb3305cf85854f"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_logit_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_logit_UX_neff.npy",
+      "bytes": 192,
+      "sha256": "5a3e5db3af2a573b84232b8ae467503e9fde049a58fdaa2db8ef7786ce7c81e7"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_prob_UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_prob_UUd_share.npy",
+      "bytes": 192,
+      "sha256": "47f61e433f9a381a37c50d5082936dda585e821b961497dbf806bc2bf858bec6"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_prob_UX_neff+UUd_share.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_prob_UX_neff+UUd_share.npy",
+      "bytes": 192,
+      "sha256": "c08e6f8ab3d82984916f251f0ba6e22d6e9a03398b8f9763dee9fbf87f74b670"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_prob_UX_neff.npy",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\Q_CR3_rep1_prob_UX_neff.npy",
+      "bytes": 192,
+      "sha256": "d3da554c3cb148a5965fce460db5b39aac6e2c8f798544dfb03f7f3b18a2b3ae"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\screen_CR3_logit_rep1.csv",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\screen_CR3_logit_rep1.csv",
+      "bytes": 1097,
+      "sha256": "4627de606221ec7921d52ec42c0277c7ad3c893775645f1271dbe237590fd6a0"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\screen_CR3_prob_rep1.csv",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\screen_CR3_prob_rep1.csv",
+      "bytes": 1080,
+      "sha256": "5db4b03f599cd2205a766edae7897de075e8f28880e5a69748aa052cb72f2245"
+    },
+    {
+      "source": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\exp13\\tune_rep1.csv",
+      "archive": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\post_exp13_20261114\\frozen_exp13\\outputs\\three_gaps\\exp13\\tune_rep1.csv",
+      "bytes": 9088,
+      "sha256": "08cb2a1b7c7d7cc856cdea857c43542939d1135218ec0f742c1376656691df55"
+    }
+  ],
+  "note": "Exact source snapshot plus checkpoint, extracted Z, datasets, derivative caches, existing rotations/figures/logs. Reproduced scales and signed correlations saved separately in baseline/results."
+}

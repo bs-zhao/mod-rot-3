@@ -1,0 +1,41 @@
+{
+  "tag": "grammar_v1",
+  "formulas_per_family": 3,
+  "fit_rows": 4096,
+  "fit_steps": 2000,
+  "starts": 24,
+  "steps": 250,
+  "environment": {
+    "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+    "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+    "torch": "2.9.1+cu130",
+    "numpy": "2.2.6",
+    "platform": "Windows-10-10.0.26200-SP0",
+    "cuda": true,
+    "device": "NVIDIA GeForce RTX 5060 Laptop GPU",
+    "commit": "bfda311d4baaf3669d774ee336a58ddb100da43d"
+  },
+  "family_split": {
+    "train": [
+      "additive",
+      "products",
+      "shared",
+      "sigmoid"
+    ],
+    "validation": [
+      "cubic"
+    ],
+    "test": [
+      "composite",
+      "units",
+      "difference_square",
+      "radial"
+    ]
+  },
+  "grammar": "fixed composition grammar: +, *, powers <=3, sigmoid/tanh, sin, bounded exp",
+  "synthetic_supervision": true,
+  "structure_estimator": "degree2/3/4 ridge selected by held-out Y",
+  "feature_equivariance_max_error": 6.661338147750939e-16,
+  "label": "1 - mean maximum signed-permutation diagonal of R Q",
+  "warning": "Learned score encodes these training formula priors; no universal guarantee"
+}
