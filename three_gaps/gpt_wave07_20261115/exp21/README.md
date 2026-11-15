@@ -5,7 +5,11 @@ python three_gaps/gpt_wave07_20261115/exp21/run.py --model CR3 --beta .00005 --z
 ```
 
 64x64 shared centres. Matched 8-start/120-step baselines, original float32 and
-separate float64 decoder copy; checkpoint itself never modified. U halfwidths
+separate float64 decoder copy; checkpoint itself never modified. Production
+defaults to the frozen float32 decoder (`--decoder-dtype float32`); float64
+is an explicit sensitivity condition and the h→0 numerical reference. The
+actual decoder audit shows severe float32 cancellation at h=.001, while
+h>=.05 has <.2% UU-energy disagreement on the audited small grid. U halfwidths
 .05/.1/.25/.5/1 SD; X halfwidths .5/1/2/4 times median positive observed gaps.
 All mixed differences divide by original X units. Every R changes query points;
 there is no tensor rotation shortcut. Support audits do not remove query points.

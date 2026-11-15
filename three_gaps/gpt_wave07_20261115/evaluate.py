@@ -10,6 +10,7 @@ from common.rotlib import corr_matrix,match_report,givens
 import torch
 
 def angles(R,Q):
+    R=np.asarray(R,dtype=np.float64);Q=np.asarray(Q,dtype=np.float64)
     R=R/np.linalg.norm(R,axis=1,keepdims=True);Q=Q/np.linalg.norm(Q,axis=1,keepdims=True)
     dots=abs(R@Q.T);r,col=linear_sum_assignment(-dots)
     return np.rad2deg(np.arccos(np.clip(dots[r,col],0,1)))
@@ -51,7 +52,8 @@ def main(a):
         mp=c.OUT/experiment/st.key/a.tag/d.name/'moments.npz'
         if experiment=='exp13_reproduce':mp=c.OUT/experiment/st.key/a.tag/'moments.npz'
         if mp.exists() and Q is not None:
-            with np.load(mp) as m:obj=c.Loss(m['SX'],m['T4'],m['C'])
+            diag=json.loads((d/'diagnostics.json').read_text(encoding='utf-8'))
+            with np.load(mp) as m:obj=c.Loss(m['SX'],m['T4'],m['C'],scales=diag.get('haar_scales'))
             if d.name.endswith('C_loss'):
                 sys.path.insert(0,str(c.HERE/'exp23'))
                 from run import AverageLoss
@@ -68,7 +70,10 @@ def main(a):
             curve=pd.DataFrame(curves,columns=['i','j','degrees_from_oracle','loss'])
             curve.to_csv(d/'oracle_plane_curves.csv',index=False)
             curve.loc[curve.groupby(['i','j']).loss.idxmin()].to_csv(d/'oracle_plane_minima.csv',index=False)
-            c.dump(d/'oracle_posthoc.json',dict(loss_oracle=float(obj.total(torch.tensor(Q,dtype=torch.float32))),loss_found=float(obj.total(torch.tensor(R[best]))),
+            with torch.no_grad():
+                Lh=obj.total(torch.tensor(c.haar_set(st.d,1000,11),dtype=torch.float32)).numpy()
+                Lo=float(obj.total(torch.tensor(Q,dtype=torch.float32)));Lf=float(obj.total(torch.tensor(R[best])))
+            c.dump(d/'oracle_posthoc.json',dict(loss_oracle=Lo,loss_found=Lf,oracle_minus_found_Haar_SD=float((Lo-Lf)/Lh.std()),
                 oracle_initialization_used=False,per_axis_angles=angles(R[best],Q)))
         import matplotlib
         matplotlib.use('Agg')

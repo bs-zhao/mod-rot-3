@@ -43,22 +43,29 @@ def main(a):
     audit();st=c.Setting(a)
     dest=c.OUT/'exp13_reproduce'/st.key/a.tag
     sx,t4=c.stream(st,st.V[st.ids0],dest/'fresh300')
-    # Audit process may deserialize the old cache. Nothing from it enters search.
+    # Only the separately invoked audit process may deserialize an old cache
+    # (historical caches also contain truth). The optimizer process never does.
     old=c.ROOT/'outputs/three_gaps/exp13'/f'cache2_{a.model}_{st.cond}_{a.channel}.pt'
-    hist=torch.load(old,weights_only=False,map_location='cpu')
-    assert np.array_equal(hist['ids'],st.ids0)
-    assert np.array_equal(hist['X'].numpy(),st.X)
-    so,to=c.moments(hist['Htt'],hist['Htx'])
-    errors=dict(SX_relative=float(np.linalg.norm(sx-so)/np.linalg.norm(so)),T4_relative=float(np.linalg.norm(t4-to)/np.linalg.norm(to)),old_cache_sha256=c.sha(old))
-    if max(errors['SX_relative'],errors['T4_relative'])>1e-5: raise AssertionError(errors)
-    del hist
+    import json
+    if a.audit_cache_only:
+        hist=torch.load(old,weights_only=False,map_location='cpu')
+        assert np.array_equal(hist['ids'],st.ids0)
+        assert np.array_equal(hist['X'].numpy(),st.X)
+        so,to=c.moments(hist['Htt'],hist['Htx'])
+        errors=dict(SX_relative=float(np.linalg.norm(sx-so)/np.linalg.norm(so)),T4_relative=float(np.linalg.norm(t4-to)/np.linalg.norm(to)),old_cache_sha256=c.sha(old))
+        if max(errors['SX_relative'],errors['T4_relative'])>1e-5:raise AssertionError(errors)
+        c.dump(dest/'cache_agreement.json',errors);return
+    subprocess.run([sys.executable,__file__,*sys.argv[1:],'--audit-cache-only'],cwd=c.ROOT,check=True)
+    errors=json.loads((dest/'cache_agreement.json').read_text())
     # Exact original float32 cast of aggregated moments, Haar, SD and sequential starts.
     ml=HistoricalLoss(sx.mean(0),t4.mean(0),st.V[st.ids0])
-    small=c.HERE/'exp13_reproduce/results'/st.key/a.tag/'A0'
+    small=c.HERE/'exp13_reproduce/results'/st.key/a.tag/a.run_name
     if (small/'COMPLETE.json').exists():
         if a.resume:return
         raise FileExistsError(small)
-    c.dump(small/'config.json',st.config());c.save_npz(dest/'moments.npz',SX=sx.mean(0),T4=t4.mean(0),C=c.cov(st.V[st.ids0]))
+    cfg=st.config();cfg.update(historical_cache_access='separate_audit_process_only',truth_loaded_in_optimizer=False,
+        C_ref=c.cov(st.V[st.ids0]),subject_ids=st.ids0.tolist(),point_count=len(st.ids0)*len(st.X),name=a.run_name)
+    c.dump(small/'config.json',cfg);c.save_npz(dest/'moments.npz',SX=sx.mean(0),T4=t4.mean(0),C=c.cov(st.V[st.ids0]))
     import time
     t=time.perf_counter();R,L,Q0,trace=c.search(ml,a.starts,a.steps,serial=True)
     c.save_npz(small/'rotations.npz',R=R,loss=L,initial_R=Q0,best_index=int(L.argmin()),C_ref=c.cov(st.V[st.ids0]),trace=trace)
@@ -69,4 +76,6 @@ def main(a):
     c.dump(small/'COMPLETE.json',dict(rotations_sha256=c.sha(small/'rotations.npz'),**errors))
     print('FRESH EXP13 COMPLETE',st.key,errors,flush=True)
 
-if __name__=='__main__': main(c.args(__doc__).parse_args())
+if __name__=='__main__':
+    p=c.args(__doc__);p.add_argument('--audit-cache-only',action='store_true');p.add_argument('--run-name',default='A0')
+    main(p.parse_args())

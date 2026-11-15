@@ -1,0 +1,15 @@
+[
+  {
+    "stage": "EXP20B convergence reporting",
+    "status": "fixed; numerical experiments were unaffected",
+    "reason": "The report glob also matched already aggregated candidate moments (SX shape p,d,d), then tried to apply per-node GH weights. NumPy rejected the incompatible shapes.",
+    "fix": "Restrict reporting inputs to exact per-node streaming directory names; do not read aggregate optimization directories.",
+    "exception": "ValueError: operands could not be broadcast together with remapped shapes: weights (81,), aggregate SX (6,4,4)"
+  },
+  {
+    "stage": "EXP21 CR3 neighbourhood pre-audit",
+    "status": "scientific rejection retained",
+    "reason": "Some 12-neighbour standardized X displacement matrices have rank 4 for six input dimensions and infinite condition number. Complete ambient UX reconstruction is unsupported with this direction set.",
+    "action": "Reject full UX reconstruction; record the formal run's chord_REJECTED.json. Do not replace missing directions with projected chord responses."
+  }
+]

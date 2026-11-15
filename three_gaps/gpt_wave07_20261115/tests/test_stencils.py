@@ -26,4 +26,13 @@ def test_quadratic():
     except ValueError:pass
     else:raise AssertionError('rank-deficient chord must be rejected')
 
-if __name__=='__main__':test_quadratic();print('FD quadratic / bilinear / R-dependent steps / chord rank tests PASS')
+def test_high_frequency():
+    eps=.01;omega=20.;x=.3
+    def f(t):return t*t+eps*np.sin(omega*t)
+    for h in [.01,.05,.1,.25,.5,1.]:
+        D=(f(x+h)-2*f(x)+f(x-h))/h**2
+        exact=2-4*eps*np.sin(omega*x)*np.sin(omega*h/2)**2/h**2
+        np.testing.assert_allclose(D,exact,atol=1e-11)
+        assert abs(D-2)<=4*eps/h**2+1e-11
+
+if __name__=='__main__':test_quadratic();test_high_frequency();print('FD quadratic / bilinear / R-dependent steps / high-frequency bound / chord rank tests PASS')

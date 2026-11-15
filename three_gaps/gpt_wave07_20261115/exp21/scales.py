@@ -34,7 +34,7 @@ def chord_design(X,k=12,condition_cap=1e5):
     sd=X.std(0);Z=(X-X.mean(0))/sd;_,idx=cKDTree(Z).query(Z,k=k+1)
     nb=idx[:,1:];D=Z[nb]-Z[:,None,:];length=np.linalg.norm(D,axis=-1)
     unit=D/length[:,:,None];sv=np.linalg.svd(unit,compute_uv=False)
-    rank=(sv>sv[:,0,None]*1e-8).sum(-1);cond=sv[:,0]/sv[:,-1]
+    rank=(sv>sv[:,0,None]*1e-8).sum(-1);cond=np.divide(sv[:,0],sv[:,-1],out=np.full(len(sv),np.inf),where=sv[:,-1]>0)
     if np.any(rank<X.shape[1]) or np.any(cond>condition_cap):
         raise ValueError(f'chord full UX reconstruction rejected: rank min={rank.min()}, condition max={cond.max():.4g}, cap={condition_cap}')
     return nb,length,np.linalg.pinv(unit),rank,cond

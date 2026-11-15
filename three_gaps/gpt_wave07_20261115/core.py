@@ -133,6 +133,13 @@ def stream(st, V, directory, X=None, batch=16):
     cfg=dict(source=st.source, V=arrsha(V), X=arrsha(st.X if X is None else X), batch=batch, chunk=st.a.chunk, channel=st.a.channel)
     cp=directory/'config.json'
     if cp.exists() and json.loads(cp.read_text(encoding='utf-8')) != cfg: raise ValueError('cache configuration mismatch')
+    if (directory/'COMPLETE.json').exists():
+        complete=json.loads((directory/'COMPLETE.json').read_text(encoding='utf-8'))
+        aggregate=directory/'moments.npz'
+        if sha(aggregate)!=complete['sha256']:raise ValueError('completed streaming cache hash mismatch')
+        with np.load(aggregate) as z:
+            if not np.array_equal(z['V'],V):raise ValueError('completed cache centres mismatch')
+            return z['SX'],z['T4']
     dump(cp,cfg); sx=[];t4=[];t0=time.perf_counter()
     for i in range(0,len(V),batch):
         p=directory/f'batch_{i:06d}.npz'

@@ -1,0 +1,29 @@
+{
+  "reason": "The generic config C_ref field held the full TRAIN covariance. Actual historical reproduction used the native 300-subject covariance saved in rotations.npz; no numerical results changed. The separately audited A0_strict repeat records the correct config directly.",
+  "actual_C_ref": [
+    [
+      2.8848591797158383,
+      -0.16563514044647892,
+      -0.5285311846317057,
+      -0.5129859572131954
+    ],
+    [
+      -0.16563514044647892,
+      1.6686665453874756,
+      0.23646514054961423,
+      0.12560244180762187
+    ],
+    [
+      -0.5285311846317057,
+      0.23646514054961423,
+      1.6073463328978126,
+      -0.14140842048122423
+    ],
+    [
+      -0.5129859572131954,
+      0.12560244180762187,
+      -0.14140842048122423,
+      2.0762172165415724
+    ]
+  ]
+}

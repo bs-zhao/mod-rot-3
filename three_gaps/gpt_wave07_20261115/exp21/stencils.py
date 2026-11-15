@@ -9,9 +9,10 @@ import torch
 from scales import chord_design
 
 class Field:
-    def __init__(self,st,V,X):
+    def __init__(self,st,V,X,decoder_dtype=torch.float32):
         self.st=st;self.d=st.d;self.p=st.p;self.C=torch.tensor(st.C,dtype=torch.float64,device=st.dev)
-        self.decoder=copy.deepcopy(st.net.decoder).double()  # independent copy; original checkpoint untouched
+        self.decoder_dtype=decoder_dtype
+        self.decoder=copy.deepcopy(st.net.decoder).to(decoder_dtype)  # original checkpoint untouched
         self.mu=torch.tensor(st.mu,dtype=torch.float64,device=st.dev);self.Minv=torch.tensor(st.Minv,dtype=torch.float64,device=st.dev)
         self.V=torch.tensor(V,dtype=torch.float64,device=st.dev).repeat_interleave(len(X),0)
         self.X=torch.tensor(X,dtype=torch.float64,device=st.dev).repeat(len(V),1)
@@ -20,9 +21,9 @@ class Field:
         self.chord=None;self.last_chord_residual=None
     def f(self,V,X):
         self.query_rows+=len(V)
-        lg=self.decoder(torch.cat([X,self.mu+V@self.Minv.T],-1));return torch.sigmoid(lg[:,1]-lg[:,0])
+        lg=self.decoder(torch.cat([X,self.mu+V@self.Minv.T],-1).to(self.decoder_dtype)).double();return torch.sigmoid(lg[:,1]-lg[:,0])
     def scalar(self,v,x):
-        lg=self.decoder(torch.cat([x,self.mu+self.Minv@v],-1));return torch.sigmoid(lg[1]-lg[0])
+        lg=self.decoder(torch.cat([x,self.mu+self.Minv@v],-1).to(self.decoder_dtype)).double();return torch.sigmoid(lg[1]-lg[0])
     def energies(self,R,h,mode,hX=None):
         R=R.to(self.C);A=c.effective_A(R,self.C);v,x=self.V,self.X
         if mode=='autograd':

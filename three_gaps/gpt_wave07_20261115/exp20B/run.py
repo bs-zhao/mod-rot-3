@@ -45,12 +45,16 @@ def main(a):
             if method!='gh':
                 e,w,meta=nodes.gaussian(maxn,st.d,seed+20261115,method)
                 V=nodes.physical(e,st.C,st.mu)
+                c.save_npz(out/f'P1_{method}_{seed}'/'nodes.npz',epsilon=e,V=V,weights=w)
+                c.dump(out/f'P1_{method}_{seed}'/'integrator.json',meta)
                 sx,t4=c.stream(st,V,out/f'P1_{method}_{seed}')
                 c.dump(out/f'P1_{method}_{seed}'/'support.json',support_diagnostics(st,V,sx,t4,w))
             previous=None
             for budget in budgets:
                 if method=='gh':
                     e,w,meta=nodes.gaussian(0,st.d,0,'gh',order=budget);V=nodes.physical(e,st.C,st.mu)
+                    c.save_npz(out/f'P1_gh_m{budget}'/'nodes.npz',epsilon=e,V=V,weights=w)
+                    c.dump(out/f'P1_gh_m{budget}'/'integrator.json',meta)
                     sx,t4=c.stream(st,V,out/f'P1_gh_m{budget}')
                     c.dump(out/f'P1_gh_m{budget}'/'support.json',support_diagnostics(st,V,sx,t4,w))
                     ss=np.einsum('n,n...->...',w,sx);tt=np.einsum('n,n...->...',w,t4)
@@ -72,6 +76,7 @@ def main(a):
     p3=[]
     for seed in range(4):
         e,w,_=nodes.gaussian(maxn,st.d,seed+20261115,'qmc');V=nodes.physical(e,st.C,st.mu,'P3')
+        c.save_npz(out/f'P3_qmc_{seed}'/'nodes.npz',epsilon=e,V=V,weights=w)
         s,t=c.stream(st,V,out/f'P3_qmc_{seed}');p3.append((s.mean(0),t.mean(0)))
     c.run_loss(st,'P3_QMC_4scramble_mean',np.mean([v[0] for v in p3],0),np.mean([v[1] for v in p3],0),experiment='exp20B')
     c.run_loss(st,'P3_QMC_native_cov',np.mean([v[0] for v in p3],0),np.mean([v[1] for v in p3],0),C=np.eye(st.d),experiment='exp20B',extra=dict(C_mode='measure_native'))

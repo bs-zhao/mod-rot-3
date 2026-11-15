@@ -1,0 +1,20 @@
+{
+  "python": "3.11.13 | packaged by Anaconda, Inc. | (main, Jun  5 2025, 13:03:15) [MSC v.1929 64 bit (AMD64)]",
+  "executable": "D:\\Programs\\anaconda_new\\envs\\py11\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "torch": "2.9.1+cu130",
+  "numpy": "2.2.6",
+  "scipy": "1.16.1",
+  "pandas": "2.3.3",
+  "matplotlib": "3.10.5",
+  "device": "NVIDIA GeForce RTX 5060 Laptop GPU",
+  "docs": {
+    "readmes\\rotation_research\\01_project_overview.md": "53f85e7d417547a93f4e835d4c4453477c189210336602fe05d6c401d5097147",
+    "readmes\\rotation_research\\02_hessian_simplicity_experiment.md": "c397e7ef0e8ee6f3d5dc257b2154cd83660abbde6cdaf1c28c33c61b52715b15",
+    "readmes\\rotation_research\\03_cr3_decoder_noise_floor_summary.md": "80686618def0f45cf4bd3d1b724e97054c70f145390c663878e476703f8c2e98",
+    "readmes\\rotation_research\\04_role_free_simplicity_losses.md": "78f1ea4801fa7379b1847a699ae21859730ba5135ba1673ab02e666908eddecc",
+    "readmes\\rotation_research\\05_next_steps_after_exp13.md": "a5860ea2c7c51729fd93b8be2436f1cd78ea8deed7f9c54d645e16b6529248f8",
+    "readmes\\rotation_research\\06_complementary_ideas_and_experiment_cards.md": "c74817fd26f6bf320a487c208902470e8571507016ef7a88adab512feaf5c9d3",
+    "readmes\\rotation_research\\07_latent_integration_and_multiscale_hessian.md": "6b847affc07322998d91d053acf22961030fb99fda2a0ee71d5233383bbb57a3"
+  }
+}

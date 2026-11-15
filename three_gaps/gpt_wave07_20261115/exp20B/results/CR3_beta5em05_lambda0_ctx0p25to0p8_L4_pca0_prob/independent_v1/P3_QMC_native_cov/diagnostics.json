@@ -1,0 +1,14 @@
+{
+  "name": "P3_QMC_native_cov",
+  "lowest_loss": 48.47122573852539,
+  "haar_scales": [
+    0.3516846299171448,
+    0.017373479902744293
+  ],
+  "seconds": 1.1421645000082208,
+  "selected_by": "lowest_loss",
+  "truth_loaded": false,
+  "moments_sha256": "3a4315a5b00607058c0e55ee87de223ca6f02c2fcf3938af1ee33a130fd1a460",
+  "landscape_path": "D:\\Projects\\rotation\\mod-rot-3\\outputs\\three_gaps\\gpt_wave07_20261115\\exp20B\\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_pca0_prob\\independent_v1\\P3_QMC_native_cov\\random_landscapes.npz",
+  "C_mode": "measure_native"
+}

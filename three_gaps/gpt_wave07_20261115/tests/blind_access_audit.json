@@ -1,0 +1,15 @@
+{
+  "passed": true,
+  "accessed_NPZ_keys": [
+    "checkpoint_sha256",
+    "context_mode",
+    "subject_index",
+    "test_ids",
+    "train_ids",
+    "validation_ids",
+    "x",
+    "z"
+  ],
+  "oracle_opened": false,
+  "truth_opened": false
+}
