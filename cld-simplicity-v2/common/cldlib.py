@@ -23,7 +23,8 @@ from common.rotlib import haar  # noqa: E402
 
 OUT = ROOT / "outputs" / "cld-simplicity-v2"
 OUT.mkdir(parents=True, exist_ok=True)
-MODELS = ["CR3", "C1", "C2", "C3"]
+import os
+MODELS = os.environ.get("CLD_MODELS", "CR3,C1,C2,C3").split(",")
 # frozen EXP13 reference (historical, p channel): (mcc, leak_mean, leak_max)
 EXP13 = {("CR3", 1): (0.8173, 0.1646, 0.3677), ("CR3", 2): (0.8122, 0.1832, 0.3781), ("C1", 1): (0.9688, 0.0212, 0.0576), ("C1", 2): (0.9689, 0.0202, 0.0611),
          ("C2", 1): (0.9645, 0.0599, 0.1523), ("C2", 2): (0.9677, 0.0427, 0.1450), ("C3", 1): (0.9600, 0.0464, 0.1143), ("C3", 2): (0.9615, 0.0478, 0.1525)}

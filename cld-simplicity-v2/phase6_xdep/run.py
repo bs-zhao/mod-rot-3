@@ -35,7 +35,7 @@ METHODS = {
     "cp_r4": lambda: M.m_cp(G, Xb, 4), "cp_r8": lambda: M.m_cp(G, Xb, 8),
     "localLinear": lambda: M.m_local_linear(G, Xb, None, True), "chord_knn": lambda: M.m_local_linear(G, Xb, None, False),
     "gam_spline": lambda: M.m_gam(G, Xb),
-    "sobolev_mlp": lambda: M.m_sobolev_mlp(G, c["h"].double(), Vgrid, Xb, Vsc, device=__import__("os").environ.get("MLP_DEVICE", str(L.X.DEV)), epochs=25),
+    "sobolev_mlp": lambda: M.m_sobolev_mlp(G, c["h"].double(), Vgrid, Xb, Vsc, device=__import__("os").environ.get("MLP_DEVICE", str(L.X.DEV)), epochs=25, seed=int(__import__("os").environ.get("SEED", "0"))),
 }
 import os
 if os.environ.get("ONLY"):

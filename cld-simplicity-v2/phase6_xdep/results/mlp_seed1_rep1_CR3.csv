@@ -1,0 +1,2 @@
+model,rep,cand,status,mcc,leak,leak_max,oracle_angle_max,rel_err_Htx,rel_err_SX,info,secs
+CR3,1,sobolev_mlp,ok,0.8290584027003155,0.14802910072813813,0.37131029316147646,25.91533850134948,3.5023144319776973,4.476305374463429,"{'epochs': 25, 'width': 128}",20.676148414611816

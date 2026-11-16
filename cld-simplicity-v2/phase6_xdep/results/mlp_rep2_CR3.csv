@@ -1,2 +1,2 @@
-model,rep,cand,status
-CR3,2,sobolev_mlp,"error: OutOfMemoryError: CUDA out of memory. Tried to allocate 20.00 MiB. GPU 0 has a total capacity of 7.96 GiB of which 0 bytes is free. Of the allocated memory 24.43 GiB is allocated by PyTorch, an"
+model,rep,cand,status,mcc,leak,leak_max,oracle_angle_max,rel_err_Htx,rel_err_SX,info,secs
+CR3,2,sobolev_mlp,ok,0.8002992599267253,0.19146703949383317,0.4259591869862583,33.948208902456855,4.074811859864134,5.186418846083656,"{'epochs': 25, 'width': 128}",16.134507417678833

@@ -63,7 +63,7 @@ with torch.no_grad():
 Vv = torch.tensor(st.V[hid], dtype=torch.float64).repeat_interleave(Kb, 0)
 Xv = Xb.repeat(len(hid), 1)
 rows = []
-for k, lam in [(3, 1e-6), (4, 1e-6)]:
+for k, lam in [(4, 1e-6)]:
     t0 = time.time()
     E = exps(k)
     F = torch.cat([feats(Vgrid[i:i + 20000].to(DEVICE), Xgrid[i:i + 20000].to(DEVICE), E) for i in range(0, len(Vgrid), 20000)])
@@ -79,8 +79,8 @@ for k, lam in [(3, 1e-6), (4, 1e-6)]:
     SX = torch.zeros(p, d, d, dtype=torch.float64)
     T4 = torch.zeros(d * d, d * d, dtype=torch.float64)
     n = 0
-    for i in range(0, len(Vgrid), 5000):
-        z = torch.cat([Vgrid[i:i + 5000] / Vsc, (Xgrid[i:i + 5000] - sx_mu) / sx_sd], -1).to(DEVICE)
+    for i in range(0, len(Vgrid), 500):
+        z = torch.cat([Vgrid[i:i + 500] / Vsc, (Xgrid[i:i + 500] - sx_mu) / sx_sd], -1).to(DEVICE)
         Hz = Hfn(z).cpu()                                   # (n, d+p, d+p) in scaled variables
         Hvv = Hz[:, :d, :d] / Vsc ** 2
         Hvx = Hz[:, :d, d:] / (Vsc * sx_sd)
@@ -98,4 +98,4 @@ for k, lam in [(3, 1e-6), (4, 1e-6)]:
     rows.append(dict(model=model, rep=rep, cand=f"sieve|deg{k}|ridge{lam}", status="ok", mcc=mcc, leak=leak, leak_max=lmax, oracle_angle_max=L.X.signed_perm_angle(Q, st.oracle),
                      heldout_R2=r2, train_R2=r2tr, n_terms=len(E), secs=time.time() - t0))
     print(rows[-1], flush=True)
-    pd.DataFrame(rows).to_csv(RES / f"dev_rep{rep}_{model}.csv", index=False)
+    pd.DataFrame(rows).to_csv(RES / f"deg4_rep{rep}_{model}.csv", index=False)

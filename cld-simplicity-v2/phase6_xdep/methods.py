@@ -212,6 +212,7 @@ def m_sobolev_mlp(G, Hval, Vgrid, Xb, Vsc, epochs=40, width=128, device="cuda", 
             loss = ((out - h_all[b]) ** 2).mean() / hs ** 2 + ((gz - g_all[b]) ** 2).mean() / gs ** 2
             opt.zero_grad(); loss.backward(); opt.step()
         sched.step()
+    net.requires_grad_(False)                                  # free the training graph: derivative stage must not track parameter gradients
     f = lambda z: net(z.unsqueeze(0)).squeeze()
     gfun = lambda z: jacrev(f)(z)[:d]
     Hfun = vmap(jacfwd(gfun))
