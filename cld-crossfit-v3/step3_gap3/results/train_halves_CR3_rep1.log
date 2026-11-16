@@ -1,0 +1,12 @@
+CR3 rep1 half0 seed0: best val CE 0.5607 (30 epochs, 9s)
+CR3 rep1 half0 seed1: best val CE 0.5617 (30 epochs, 10s)
+CR3 rep1 half0 seed2: best val CE 0.5621 (30 epochs, 13s)
+CR3 rep1 half0 seed3: best val CE 0.5613 (30 epochs, 12s)
+CR3 rep1 half0 seed4: best val CE 0.5622 (30 epochs, 11s)
+CR3 rep1 half1 seed0: best val CE 0.5624 (30 epochs, 7s)
+CR3 rep1 half1 seed1: best val CE 0.5620 (30 epochs, 12s)
+CR3 rep1 half1 seed2: best val CE 0.5608 (30 epochs, 13s)
+CR3 rep1 half1 seed3: best val CE 0.5620 (30 epochs, 14s)
+CR3 rep1 half1 seed4: best val CE 0.5610 (30 epochs, 13s)
+saved D:\Projects\rotation\mod-rot-3\outputs\cld-crossfit-v3\dec\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_h2\fields_prob.pt
+saved D:\Projects\rotation\mod-rot-3\outputs\cld-crossfit-v3\dec\CR3_beta5em05_lambda0_ctx0p25to0p8_L4_h2\fields_logit.pt

@@ -1,0 +1,15 @@
+noise-free singular energy shares: [4.281e-01 2.621e-01 2.012e-01 8.220e-02 9.600e-03 5.200e-03 2.600e-03
+ 2.300e-03 1.700e-03 1.300e-03 1.000e-03 8.000e-04 6.000e-04 3.000e-04]  cum [0.9737 0.9885 0.9934 0.9964 0.9982]
+binary singular energy shares: [0.3495 0.2165 0.1719 0.0715 0.0131 0.0104 0.0092 0.0084 0.0083 0.008
+ 0.0079 0.0077 0.0075 0.0072]  cum [0.8095 0.833  0.8507 0.8669 0.8825]
+noise energy / signal energy per polynomial degree block (Q basis is not graded exactly, indicative):
+ r= 4: truncation loss 0.0263 | binary fit projected on its own top-r subspace: |err|^2/|signal|^2 = 0.058  (unprojected 0.242)
+ r= 6: truncation loss 0.0115 | binary fit projected on its own top-r subspace: |err|^2/|signal|^2 = 0.062  (unprojected 0.242)
+ r= 8: truncation loss 0.0066 | binary fit projected on its own top-r subspace: |err|^2/|signal|^2 = 0.078  (unprojected 0.242)
+ r=10: truncation loss 0.0036 | binary fit projected on its own top-r subspace: |err|^2/|signal|^2 = 0.095  (unprojected 0.242)
+ r=12: truncation loss 0.0018 | binary fit projected on its own top-r subspace: |err|^2/|signal|^2 = 0.111  (unprojected 0.242)
+ r=16: truncation loss 0.0006 | binary fit projected on its own top-r subspace: |err|^2/|signal|^2 = 0.141  (unprojected 0.242)
+ r=34: truncation loss 0.0000 | binary fit projected on its own top-r subspace: |err|^2/|signal|^2 = 0.242  (unprojected 0.242)
+noise-free energy share by degree: first order 0.9270  second order 0.0653  third order 0.0077
+share of the top-4 singular functions lying in the linear block: 0.9521
+binary-fit noise energy / noise-free signal energy by degree: first 0.03  second 1.08  third 18.31
