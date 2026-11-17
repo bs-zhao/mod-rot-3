@@ -50,7 +50,12 @@ def compare_metrics(path, got, expected, block, source):
         if metric not in got:
             records.append({"metric":metric,"block":block,"method":source,"status":"not_available"})
             continue
-        try: verdict=metric_accuracy(got[metric],expected[metric])
+        try:
+            a=np.asarray(got[metric]); b=np.asarray(expected[metric])
+            if a.dtype.kind not in "fiu" or b.dtype.kind not in "fiu":
+                verdict={"status":"not_applicable","reason":"non_numeric_status"}
+            else:
+                verdict=metric_accuracy(a,b)
         except Exception as exc:verdict={"status":"failed","reason":str(exc)}
         records.append({"metric":metric,"block":block,"method":source,**verdict})
     with open(path,"a",encoding="utf-8") as f:
@@ -85,6 +90,7 @@ def run_case(model,repeat,channel,args):
     f_true=make_function(case,"analytic_truth",channel,"float64",args.standardized)
     f_mapped=make_function(case,"analytic_mapped",channel,"float64",args.standardized)
     f_nn=make_function(case,"nn",channel,args.precision,args.standardized)
+    f_nn64=make_function(case,"nn",channel,"float64",args.standardized)
     truth_v,_=input_pairs(case,standardized=args.standardized,reference="truth")
     if args.blocks=="all":blocks=BLOCKS
     else:
@@ -95,7 +101,9 @@ def run_case(model,repeat,channel,args):
     dtype=torch.float32 if args.precision=="float32" else torch.float64
     references={}
     # All reference fields are persisted, allowing later methods to resume.
-    for source,fn,u in (("analytic_truth",f_true,truth_v),("analytic_mapped",f_mapped,V)):
+    for source,fn,u in (("analytic_truth",f_true,truth_v),
+                        ("analytic_mapped",f_mapped,V),
+                        ("nn_ad64",f_nn64,V)):
         rf=folder/source
         rf.mkdir(exist_ok=True)
         metrics={}
@@ -122,16 +130,31 @@ def run_case(model,repeat,channel,args):
             log_json(rf/"fullw_error.json",{"error":repr(exc),"traceback":traceback.format_exc()})
             if args.fail_fast:raise
         references[source]=rf
-        log_json(rf/"run_manifest.json",{"status":"reference","source":source,"blocks":list(blocks)})
+        log_json(rf/"run_manifest.json",{"status":"reference","source":source,
+                  "reference_kind":("nn_numerical_reference" if source=="nn_ad64" else
+                                    "true_theta" if source=="analytic_truth" else "supervised_mapped_proxy"),
+                  "blocks":list(blocks)})
 
     if args.stage=="reference":return folder
     expected_dir=references["analytic_mapped"]
+    nn_reference_dir=references["nn_ad64"]
+    # G1->G2 is an aggregate structural comparison only (different inputs).
+    # Never compute pointwise derivative error between theta and V.
+    diagnostics=folder/"truth_vs_mapped_structural.jsonl"
+    diagnostics.write_text("",encoding="utf-8")
+    for block in blocks:
+        left=load_metrics(references["analytic_mapped"]/f"{block}_metrics.npz")
+        right=load_metrics(references["analytic_truth"]/f"{block}_metrics.npz")
+        compare_metrics(diagnostics,left,right,block,"mapped_vs_truth_structure")
     for method in selected:
         mf=folder/method
         mf.mkdir(exist_ok=True)
         manifest={"status":"incomplete","method":method,"finished":{},"errors":{}}
         if (mf/"run_manifest.json").exists() and not args.force:
             manifest=json.loads((mf/"run_manifest.json").read_text(encoding="utf-8"))
+        if args.force:
+            for stale in ("metric_comparisons.jsonl","metric_comparisons_nn_ad.jsonl"):
+                (mf/stale).unlink(missing_ok=True)
         if method=="stein_gaussian_u":
             try:
                 yy=X if X.ndim==2 else X[0]
@@ -195,10 +218,14 @@ def run_case(model,repeat,channel,args):
                     device=args.device,chunk=args.chunk,pointwise_fn=estimator)
                 got=np.load(dest,mmap_mode="r")
                 ref=np.load(expected_dir/f"{block}.npy",mmap_mode="r")
+                nn_ref=np.load(nn_reference_dir/f"{block}.npy",mmap_mode="r")
                 observed=enrich(got,block,block_metrics(got,block))
                 npz_metrics(mf/f"{block}_metrics.npz",observed)
                 reference_metrics=load_metrics(expected_dir/f"{block}_metrics.npz")
                 errors=field_accuracy(got,ref,zero_tol=args.zero_tol)
+                against_nn_ad=field_accuracy(got,nn_ref,zero_tol=args.zero_tol)
+                errors.update({f"{key}_vs_nn_ad64":val for key,val in against_nn_ad.items()
+                               if key in ("mae","rmse","relative_l2","pearson","bias")})
                 errors.update({"elapsed_seconds":time.monotonic()-started,
                                "method":method,"block":block,"family":FAMILY[block]})
                 log_json(mf/"field_comparisons.json",{
@@ -206,6 +233,8 @@ def run_case(model,repeat,channel,args):
                         if (mf/"field_comparisons.json").exists() else {}),
                         block:errors})
                 compare_metrics(mf/"metric_comparisons.jsonl",observed,reference_metrics,block,method)
+                compare_metrics(mf/"metric_comparisons_nn_ad.jsonl",observed,
+                                load_metrics(nn_reference_dir/f"{block}_metrics.npz"),block,method)
                 energy_proxies[block]=np.asarray(observed["A03.rms"])[None,None,...]
                 manifest["finished"][block]="complete"
                 manifest.setdefault("metadata",{})[block]=est_meta
@@ -224,6 +253,8 @@ def run_case(model,repeat,channel,args):
             if (expected_dir/"joint_metrics.npz").exists():
                 compare_metrics(mf/"metric_comparisons.jsonl",joint,
                     load_metrics(expected_dir/"joint_metrics.npz"),"joint",method)
+                compare_metrics(mf/"metric_comparisons_nn_ad.jsonl",joint,
+                    load_metrics(nn_reference_dir/"joint_metrics.npz"),"joint",method)
         # Genuine full-W gradient/Hessian/third tensor, from the SAME points.
         # This is separate from full-W block-energy aggregation.
         try:
@@ -235,6 +266,8 @@ def run_case(model,repeat,channel,args):
                 if (expected_dir/"fullw_metrics.npz").exists():
                     compare_metrics(mf/"metric_comparisons.jsonl",fullw,
                           load_metrics(expected_dir/"fullw_metrics.npz"),"full_W",method)
+                    compare_metrics(mf/"metric_comparisons_nn_ad.jsonl",fullw,
+                          load_metrics(nn_reference_dir/"fullw_metrics.npz"),"full_W",method)
         except Exception as exc:
             manifest["errors"]["full_W"]={"error":repr(exc),"traceback":traceback.format_exc()}
             if args.fail_fast:raise
