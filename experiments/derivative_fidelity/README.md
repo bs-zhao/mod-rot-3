@@ -244,3 +244,47 @@ cleanup records `cleanup_warnings` in the manifest if a third-party process
 still locks a file; it does not discard completed metrics. `--storage all`
 retains every NN field and never attempts that deletion. A mock integration
 unit test simulates WinError 32, even in CI running on Linux.
+
+## CR3 zero-amount domains (important)
+
+In the original CR3 bank the gain/loss fields can be structurally zero. The
+function includes `amount**alpha` and is **not ordinarily differentiable**
+with respect to amount at 0 for all alpha values. For this reason there are
+TWO scientifically distinct CR3 benchmark protocols:
+
+1. Original-bank U-only benchmark (all 500 unchanged X): use
+   `--domain all --blocks U,UU,UUU`. Here X is held fixed, and U
+   derivatives are defined even when amounts are zero (provided alpha
+   satisfies its simulation constraints). No complete X derivative claims.
+2. Full U/X/W derivatives on **counterfactual smooth probes**: use
+   `--domain smooth_probes --blocks all`. For each of the same 500 bank
+   rows, all gain/loss amounts below 1.0 are replaced by 1.0 in RAW amount
+   units, and exact/near 0 or 1 probabilities are moved to [0.01,0.99].
+   This produces a continuously differentiable query grid, but is NOT the
+   original stimulus distribution and may be partly off NN training support.
+   The original and evaluation X arrays are saved separately as
+   `X_original_bank_raw.npy` / `X_evaluation_raw.npy`, along with detailed
+   change counts in `domain.json`. Sensitivity to amount floor should be
+   checked before drawing conclusions about CR3 decoder derivatives.
+
+The `--domain interior` option retains only original-bank rows strictly
+interior in ALL six X dimensions. It can be empty; if so it now issues an
+explicit diagnostic. Crucially, the test is performed on original RAW amount
+and probability units even if `--standardized` is selected.
+
+Recommended CR3 runs (separate tags distinguish evaluation measures):
+
+    python -m experiments.derivative_fidelity.run --models CR3 --repeats 1 2 --channels logit prob --subjects 64 --stimuli 500 --methods ad_mixed --tag fidelity_cr3_u_original --standardized --domain all --blocks U,UU,UUU
+
+    python -m experiments.derivative_fidelity.run --models CR3 --repeats 1 2 --channels logit prob --subjects 64 --stimuli 500 --methods ad_mixed --tag fidelity_cr3_smooth --standardized --domain smooth_probes
+
+## Direct true-T evaluation for X-only blocks
+
+For X, XX, and XXX the derivatives have the **same coordinate meaning** on
+NN(V_s,X) and true generator(T_s,X). For these three blocks, comparison
+to the actual subject truth does NOT require the approximate TRAIN fit
+Tstd≈AV+b. In addition to comparisons against analytic_mapped and NN-AD64,
+`field_comparisons.json` records `*_vs_true_T` values, and
+`metric_comparisons_true_T_X_only.jsonl` stores X-only metric comparisons
+against the actual generating theta. For U-containing blocks, we continue to
+use the explicitly labeled mapped-analytic proxy.

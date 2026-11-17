@@ -96,18 +96,66 @@ def compare_metrics(path, got, expected, block, source):
     return records
 
 
-def set_domain(case,X,domain):
-    if case.model!="CR3" or domain=="all":
-        return X,{"domain":domain,"boundary_policy":"all derivative values are branch-dependent at non-smooth inputs"}
-    mask=strict_x_interior(case,X)
-    if X.ndim==2: X=X[mask]
-    else:
-        keep=np.all(mask,axis=0)
-        X=X[:,keep]
-    if len(X)==0 or (X.ndim==3 and X.shape[1]==0):
-        raise RuntimeError("CR3 has no strict-interior X rows; use --domain all for U-only or redesign X probes")
-    return X,{"domain":"strict_interior","retained_stimuli":X.shape[-2],
-              "excluded_stimuli":"non-smooth X rows (zero amount / probability boundary)"}
+def set_domain(case, X, domain, standardized=False,
+               amount_floor=1.0, prob_epsilon=0.01):
+    """Define a physically meaningful CR3 evaluation measure.
+
+    CR3 amounts and probabilities must ALWAYS be checked in raw units, not in
+    standardized X coordinates. Strict interior is a subset of ORIGINAL bank
+    (may be empty). Smooth probes change the bank and are visibly labeled as
+    counterfactual/partly out-of-distribution function queries.
+    """
+    if case.model != "CR3":
+        if domain == "smooth_probes":
+            raise ValueError("--domain smooth_probes is only defined for CR3")
+        return X, {"domain": domain, "source": "original_non_CR3_X"}
+    raw = (X * case.x_sd + case.x_mu) if standardized else X.copy()
+    if domain == "all":
+        return X, {"domain": domain, "source": "original_CR3_bank",
+                   "warning": "X derivatives on zero-amount / probability boundary are branch derivatives, not mathematically well-defined"}
+    if domain == "interior":
+        mask = strict_x_interior(case, raw)
+        keep = mask if raw.ndim == 2 else np.all(mask, axis=0)
+        selected = X[keep] if X.ndim == 2 else X[:, keep]
+        retained = selected.shape[-2]
+        if retained == 0:
+            raise RuntimeError(
+                "CR3 original lottery bank contains no all-6D differentiable interior rows. "
+                "For complete W derivative comparison, use --domain smooth_probes; "
+                "for unmodified original-bank U-only derivatives, use "
+                "--domain all --blocks U,UU,UUU. Do not treat branch derivatives "
+                "at zero amount as full X derivatives."
+            )
+        return selected, {"domain": "interior", "source": "subset_of_original_CR3_bank",
+                          "retained_stimuli": int(retained),
+                          "discarded_stimuli": int(raw.shape[-2]-retained)}
+    if domain != "smooth_probes":
+        raise ValueError(f"unknown domain: {domain}")
+    if not (amount_floor > 0 and 0 < prob_epsilon < 0.5):
+        raise ValueError("CR3 smooth probes require positive amount_floor and 0<prob_epsilon<0.5")
+    adjusted = np.array(raw, copy=True)
+    amt = [0, 1, 3, 4]
+    prob = [2, 5]
+    adjusted[..., amt] = np.maximum(adjusted[..., amt], amount_floor)
+    adjusted[..., prob] = np.clip(adjusted[..., prob], prob_epsilon, 1-prob_epsilon)
+    changed = np.abs(adjusted-raw) > 1e-12
+    interior_mask = strict_x_interior(case, adjusted)
+    if not np.all(interior_mask):
+        raise RuntimeError("smooth probes unexpectedly contain non-differentiable points")
+    output = (adjusted-case.x_mu)/case.x_sd if standardized else adjusted
+    return output, {
+        "domain": "smooth_probes",
+        "source": "modified_CR3_bank_counterfactual_X",
+        "warning": "Not original empirical bank. Zero amounts and extreme probabilities replaced; NN may be queried off training-support.",
+        "amount_floor_raw_units": float(amount_floor),
+        "probability_epsilon_raw_units": float(prob_epsilon),
+        "original_stimuli": int(raw.shape[-2]),
+        "changed_rows": int(np.count_nonzero(np.any(changed, axis=-1))),
+        "changed_elements_by_x_column": np.sum(changed, axis=tuple(range(changed.ndim-1))).astype(int).tolist(),
+        "maximum_absolute_raw_change": float(np.max(np.abs(raw-adjusted))),
+        "mean_absolute_raw_change": float(np.mean(np.abs(raw-adjusted))),
+        "all_six_X_derivatives_valid_at_probes": True
+    }
 
 
 def run_case(model,repeat,channel,args):
@@ -117,8 +165,16 @@ def run_case(model,repeat,channel,args):
     folder.mkdir(parents=True,exist_ok=True)
     save_metadata(folder,case)
     V,X=input_pairs(case,standardized=args.standardized)
-    X,domain_info=set_domain(case,X,args.domain)
+    raw_X_before = (X*case.x_sd + case.x_mu) if (model=="CR3" and args.standardized) else np.array(X,copy=True)
+    X,domain_info=set_domain(case,X,args.domain,standardized=args.standardized,
+                              amount_floor=getattr(args,"cr3_amount_floor",1.0),
+                              prob_epsilon=getattr(args,"cr3_prob_epsilon",0.01))
     log_json(folder/"domain.json",domain_info)
+    if model=="CR3":
+        np.save(folder/"X_original_bank_raw.npy",raw_X_before)
+        final_raw = (X*case.x_sd + case.x_mu) if args.standardized else X
+        np.save(folder/"X_evaluation_raw.npy",final_raw)
+
     log_json(folder/"config.json",{**vars(args),"model":model,"repeat":repeat,"channel":channel})
     f_true=make_function(case,"analytic_truth",channel,"float64",args.standardized)
     f_mapped=make_function(case,"analytic_mapped",channel,"float64",args.standardized)
@@ -212,7 +268,8 @@ def run_case(model,repeat,channel,args):
         if (mf/"run_manifest.json").exists() and not args.force:
             manifest=json.loads((mf/"run_manifest.json").read_text(encoding="utf-8"))
         if args.force:
-            for stale in ("metric_comparisons.jsonl","metric_comparisons_nn_ad.jsonl"):
+            for stale in ("metric_comparisons.jsonl","metric_comparisons_nn_ad.jsonl",
+                          "metric_comparisons_true_T_X_only.jsonl"):
                 (mf/stale).unlink(missing_ok=True)
         if method=="stein_gaussian_u":
             try:
@@ -298,6 +355,16 @@ def run_case(model,repeat,channel,args):
                 reference_metrics=load_metrics(expected_dir/f"{block}_metrics.npz")
                 errors=field_accuracy(got,ref,zero_tol=args.zero_tol)
                 against_nn_ad=field_accuracy(got,nn_ref,zero_tol=args.zero_tol)
+                if block in ("X","XX","XXX"):
+                    # Same subject, same X coordinate, so generator truth is
+                    # directly comparable WITHOUT any estimated theta(V) map.
+                    true_x_field = np.load(references["analytic_truth"]/f"{block}.npy",mmap_mode="r")
+                    try:
+                        x_only_accuracy=field_accuracy(got,true_x_field,zero_tol=args.zero_tol)
+                    finally:
+                        close_memmap(true_x_field)
+                    errors.update({f"{key}_vs_true_T":val for key,val in x_only_accuracy.items()
+                                   if key in ("mae","rmse","relative_l2","pearson","bias")})
                 errors.update({f"{key}_vs_nn_ad64":val for key,val in against_nn_ad.items()
                                if key in ("mae","rmse","relative_l2","pearson","bias")})
                 errors.update({"elapsed_seconds":time.monotonic()-started,
@@ -309,6 +376,10 @@ def run_case(model,repeat,channel,args):
                 compare_metrics(mf/"metric_comparisons.jsonl",observed,reference_metrics,block,method)
                 compare_metrics(mf/"metric_comparisons_nn_ad.jsonl",observed,
                                 load_metrics(nn_reference_dir/f"{block}_metrics.npz"),block,method)
+                if block in ("X","XX","XXX"):
+                    compare_metrics(mf/"metric_comparisons_true_T_X_only.jsonl",
+                         observed,load_metrics(references["analytic_truth"]/f"{block}_metrics.npz"),
+                         block,method)
                 energy_proxies[block]=np.asarray(observed["A03.rms"])[None,None,...]
                 manifest["finished"][block]="complete"
                 manifest.setdefault("metadata",{})[block]=est_meta
@@ -385,7 +456,11 @@ def parse():
     ap.add_argument("--stimuli",type=int,default=64)
     ap.add_argument("--seed",type=int,default=20261116)
     ap.add_argument("--grid",choices=("shared","paired"),default="shared")
-    ap.add_argument("--domain",choices=("interior","all"),default="interior")
+    ap.add_argument("--domain",choices=("interior","all","smooth_probes"),default="interior")
+    ap.add_argument("--cr3-amount-floor",type=float,default=1.0,
+                    help="For CR3 smooth probes only: replace gain/loss amounts below this positive raw-unit value.")
+    ap.add_argument("--cr3-prob-epsilon",type=float,default=0.01,
+                    help="For CR3 smooth probes only: clamp probabilities into [eps,1-eps].")
     ap.add_argument("--standardized",action="store_true")
     ap.add_argument("--precision",choices=("float32","float64"),default="float64")
     ap.add_argument("--device",default="auto")

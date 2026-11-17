@@ -105,3 +105,29 @@ def test_windows_style_locked_mmap_cleanup(tmp_path,monkeypatch):
     import json
     manifest=json.loads((folder/"ad_mixed"/"run_manifest.json").read_text())
     assert manifest["status"] == "complete"
+
+def test_cr3_domain_masks_raw_units_even_when_standardized():
+    """Zero-amount rows must not become 'interior' through z-scoring."""
+    import pytest
+    from types import SimpleNamespace
+    case=SimpleNamespace(model="CR3",
+        x_mu=np.array([20.,10.,.5,20.,10.,.5]),
+        x_sd=np.array([20.,10.,.2,20.,10.,.2]))
+    raw=np.array([[0.,4.,.5,40.,0.,.5],
+                  [30.,10.,.5,25.,8.,.5]])
+    standard=(raw-case.x_mu)/case.x_sd
+    selected,details=run.set_domain(case,standard,"interior",standardized=True)
+    assert details["retained_stimuli"]==1
+    assert np.allclose(selected[0], standard[1])
+    smooth,info=run.set_domain(case,standard,"smooth_probes",standardized=True,
+                               amount_floor=1.0,prob_epsilon=0.01)
+    smooth_raw=smooth*case.x_sd+case.x_mu
+    assert smooth_raw[0,0]>=1.0 and smooth_raw[0,4]>=1.0
+    assert np.allclose(smooth_raw[1],raw[1])
+    assert info["changed_rows"]==1
+    assert info["changed_elements_by_x_column"]==[1,0,0,0,1,0]
+    assert run.strict_x_interior(case,smooth_raw).all()
+    all_x,all_info=run.set_domain(case,standard,"all",standardized=True)
+    assert np.allclose(all_x,standard)
+    with pytest.raises(RuntimeError,match="smooth_probes"):
+        run.set_domain(case,standard[:1],"interior",standardized=True)
