@@ -161,7 +161,14 @@ def run_case(model,repeat,channel,args):
                 record=aggregate_gaussian_stein_u(f_nn,V[:min(8,len(V))],yy,
                             sigma=args.sigma,samples=args.stein_samples,seed=args.seed,device=args.device)
                 npz_metrics(mf/"stein_gaussian_u.npz",record)
-                manifest.update({"status":"aggregate_only","note":"Gaussian smoothed U-only expectation, not empirical pointwise derivative"})
+                ref_record=aggregate_gaussian_stein_u(f_mapped,V[:min(8,len(V))],yy,
+                            sigma=args.sigma,samples=args.stein_samples,
+                            seed=args.seed,device=args.device)
+                npz_metrics(mf/"stein_analytic_mapped.npz",ref_record)
+                log_json(mf/"aggregate_comparison.json",
+                      {k:metric_accuracy(record[k],ref_record[k]) for k in ref_record})
+                manifest.update({"status":"aggregate_only",
+                    "note":"Gaussian-smoothed U-only derivative expectations at NN and mapped analytic; both integrated with the same MC probes, not empirical pointwise derivatives"})
             except Exception as exc:
                 manifest["status"]="failed"; manifest["errors"]["stein"]=repr(exc)
                 if args.fail_fast:raise
@@ -174,6 +181,13 @@ def run_case(model,repeat,channel,args):
                             device=args.device,precision=args.precision,
                             n_points=args.directional_points)
                 log_json(mf/"directional.json",report)
+                ref_report=directional_report(f_mapped,V,X,seed=args.seed,
+                            device=args.device,precision="float64",
+                            n_points=args.directional_points)
+                log_json(mf/"directional_analytic_mapped.json",ref_report)
+                log_json(mf/"directional_comparison.json",
+                         {k:metric_accuracy(report[k],ref_report[k])
+                          for k in ref_report if k.endswith("_mean") or k.endswith("_rms")})
                 manifest["status"]="contraction"
             except Exception as exc:
                 manifest["status"]="failed";manifest["errors"]["directional"]=repr(exc)
