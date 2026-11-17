@@ -29,7 +29,6 @@ def stencil_weights(order, radius, degree, scheme):
         n=2*radius+1
         nodes=radius*np.cos((np.arange(n)+0.5)*np.pi/n)
         mat=np.polynomial.chebyshev.chebvander(nodes/radius,degree)
-        deriv=np.polynomial.chebyshev.Chebyshev.basis(order).deriv(order)(0) if False else None
         # actual derivative of every basis T_k at 0
         rhs=np.array([np.polynomial.chebyshev.Chebyshev.basis(k).deriv(order)(0)/
                       radius**order for k in range(degree+1)])
@@ -80,7 +79,7 @@ def value_difference(h, block, d, p, step=.03, method="fd2"):
     indices=tuple(_unique_tuples(block,d,p))
     sizes=block_shape(block,d,p)
     def one_pass(u,x,stepscale=1.):
-        output=torch.zeros(sizes,device=u.device,dtype=u.dtype)
+        values={}
         for idx in indices:
             counts=Counter((c,j) for c,j in zip(block,idx))
             groups=[]
@@ -96,9 +95,18 @@ def value_difference(h, block, d, p, step=.03, method="fd2"):
                     else: X=X+torch.nn.functional.one_hot(torch.tensor(j,device=x.device),num_classes=p).to(X)*delta
                     weight*=wgt
                 total=total+weight*h(U,X)
-            for equivalent in _all_equal_permutations(block,idx):
-                output[equivalent]=total
-        return output
+            values[idx]=total
+        # Functional assembly is required: vmap cannot in-place write a batched
+        # value into a tensor constructed with unbatched torch.zeros().
+        assembled=[]
+        for idx in product(*[range(size) for size in sizes]):
+            canonical=list(idx)
+            for char in "UX":
+                positions=[a for a,b in enumerate(block) if b==char]
+                ordered=sorted(canonical[a] for a in positions)
+                for a,v in zip(positions,ordered): canonical[a]=v
+            assembled.append(values[tuple(canonical)])
+        return torch.stack(assembled).reshape(sizes)
     if method!="richardson": return lambda u,x:one_pass(u,x)
     # Correct leading O(h^4) error for radius2 degree4 via h and h/2.
     return lambda u,x:(16*one_pass(u,x,.5)-one_pass(u,x))/15

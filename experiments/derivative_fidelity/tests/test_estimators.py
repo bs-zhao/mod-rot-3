@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import math
 from experiments.derivative_fidelity.estimators import value_difference,hybrid_ad_fd,stencil_weights,fit_value_surrogate
 
 
@@ -10,7 +11,7 @@ def fun(u,x):
 def test_stencils():
     for n in [1,2,3]:
         nodes,weights=stencil_weights(n,3,6,"fd")
-        assert abs(sum(w*x**n for x,w in zip(nodes,weights))-np.math.factorial(n))<1e-9
+        assert abs(sum(w*x**n for x,w in zip(nodes,weights))-math.factorial(n))<1e-9
 
 
 def test_finite_difference_all_orders():

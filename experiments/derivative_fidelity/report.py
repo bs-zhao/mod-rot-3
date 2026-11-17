@@ -55,7 +55,7 @@ def make_report(root):
     groups=defaultdict(list)
     for r in rows:
         if r.get("status")=="ok":
-            method=r["folder"].split("/")[-1]
+            method=r["folder"].replace("\\","/").split("/")[-1]
             groups[(method,r["block"])].append(r)
     for (method,block),records in sorted(groups.items()):
         rr=[float(x["relative_l2"]) for x in records if x.get("relative_l2") is not None]

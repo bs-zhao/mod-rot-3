@@ -182,7 +182,7 @@ def metadata(case):
             "grid": case.grid, "subject_ids": case.ids.tolist(),
             "beta_zdim": DEFAULTS[case.model], "checkpoint_sha256": case.checkpoint_sha,
             "A_train": case.A.tolist(), "b_train": case.b.tolist(),
-            "train_linear_map_r2": (1-np.var(case.Tstd-(case.V@case.A.T+case.b), axis=0)/
+            "heldout_linear_map_r2": (1-np.var(case.Tstd-(case.V@case.A.T+case.b), axis=0)/
                                     np.var(case.Tstd, axis=0).clip(1e-12)).tolist()}
 
 
