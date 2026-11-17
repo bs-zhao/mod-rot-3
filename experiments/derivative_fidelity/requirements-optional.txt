@@ -1,0 +1,4 @@
+# Base dependencies (torch, scipy, numpy, matplotlib, pytest) are provided
+# by the main mod-rot-3 Python environment.
+# Optional CP/Tucker reconstruction metrics:
+tensorly>=0.8
