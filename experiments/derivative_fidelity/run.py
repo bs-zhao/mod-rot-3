@@ -19,6 +19,7 @@ from .data import DEFAULTS,load_case,make_function,input_pairs,strict_x_interior
 from .derivatives import BLOCKS,write_field,derivative_function
 from .estimators import METHODS,build_estimator,fit_value_surrogate,aggregate_gaussian_stein_u
 from .metrics import block_metrics,field_accuracy,metric_accuracy,assemble_energy
+from .metrics_extended import enrich,summarize_fullw
 from .finite_scale import taylor_tests
 from .report import make_report
 
@@ -104,7 +105,7 @@ def run_case(model,repeat,channel,args):
                 write_field(destination,fn,u,X,block,"mixed","float64",args.device,args.chunk)
             field=np.load(destination,mmap_mode="r")
             try:
-                m=block_metrics(field,block)
+                m=enrich(field,block,block_metrics(field,block))
                 npz_metrics(rf/f"{block}_metrics.npz",m)
                 metrics[block]=np.asarray(m["A03.rms"])[None,None,...]
             except Exception as exc:
@@ -113,6 +114,13 @@ def run_case(model,repeat,channel,args):
                 if args.fail_fast:raise
         if metrics:
             npz_metrics(rf/"joint_metrics.npz",assemble_energy(metrics))
+        try:
+            field_arrays={b:np.load(rf/f"{b}.npy",mmap_mode="r") for b in blocks}
+            fullw=summarize_fullw(field_arrays)
+            if fullw:npz_metrics(rf/"fullw_metrics.npz",fullw)
+        except Exception as exc:
+            log_json(rf/"fullw_error.json",{"error":repr(exc),"traceback":traceback.format_exc()})
+            if args.fail_fast:raise
         references[source]=rf
         log_json(rf/"run_manifest.json",{"status":"reference","source":source,"blocks":list(blocks)})
 
@@ -187,7 +195,7 @@ def run_case(model,repeat,channel,args):
                     device=args.device,chunk=args.chunk,pointwise_fn=estimator)
                 got=np.load(dest,mmap_mode="r")
                 ref=np.load(expected_dir/f"{block}.npy",mmap_mode="r")
-                observed=block_metrics(got,block)
+                observed=enrich(got,block,block_metrics(got,block))
                 npz_metrics(mf/f"{block}_metrics.npz",observed)
                 reference_metrics=load_metrics(expected_dir/f"{block}_metrics.npz")
                 errors=field_accuracy(got,ref,zero_tol=args.zero_tol)
@@ -201,10 +209,7 @@ def run_case(model,repeat,channel,args):
                 energy_proxies[block]=np.asarray(observed["A03.rms"])[None,None,...]
                 manifest["finished"][block]="complete"
                 manifest.setdefault("metadata",{})[block]=est_meta
-                if args.storage=="metrics":
-                    dest.unlink(missing_ok=True)
-                else:
-                    field_paths[block]=dest
+                field_paths[block]=dest
             except Exception as exc:
                 manifest["finished"][block]="failed"
                 manifest["errors"][block]={"error":repr(exc),"traceback":traceback.format_exc()}
@@ -219,6 +224,23 @@ def run_case(model,repeat,channel,args):
             if (expected_dir/"joint_metrics.npz").exists():
                 compare_metrics(mf/"metric_comparisons.jsonl",joint,
                     load_metrics(expected_dir/"joint_metrics.npz"),"joint",method)
+        # Genuine full-W gradient/Hessian/third tensor, from the SAME points.
+        # This is separate from full-W block-energy aggregation.
+        try:
+            present={b:np.load(mf/f"{b}.npy",mmap_mode="r")
+                     for b in blocks if (mf/f"{b}.npy").exists()}
+            fullw=summarize_fullw(present)
+            if fullw:
+                npz_metrics(mf/"fullw_metrics.npz",fullw)
+                if (expected_dir/"fullw_metrics.npz").exists():
+                    compare_metrics(mf/"metric_comparisons.jsonl",fullw,
+                          load_metrics(expected_dir/"fullw_metrics.npz"),"full_W",method)
+        except Exception as exc:
+            manifest["errors"]["full_W"]={"error":repr(exc),"traceback":traceback.format_exc()}
+            if args.fail_fast:raise
+        if args.storage=="metrics":
+            for path in field_paths.values():
+                Path(path).unlink(missing_ok=True)
         manifest["status"]="complete" if all(manifest["finished"].get(b)=="complete" for b in blocks) else "incomplete"
         log_json(mf/"run_manifest.json",manifest)
     if args.taylor:
