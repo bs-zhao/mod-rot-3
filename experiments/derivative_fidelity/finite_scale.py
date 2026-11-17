@@ -19,7 +19,7 @@ def taylor_tests(h, V, X, device="cpu", seed=20261116,
     T=jacfwd(H)
     for direction in ("U","X","W"):
         for size in radii:
-            errors={k:[] for k in ("first","second","third")}
+            errors={k:[] for k in ("first","second","third","gradient_variation","hessian_variation","factorial_contrast")}
             for _ in range(n_points):
                 s=int(rng.integers(0,S)); k=int(rng.integers(0,K))
                 x=X[s,k] if X.ndim==3 else X[k]
@@ -33,12 +33,31 @@ def taylor_tests(h, V, X, device="cpu", seed=20261116,
                     y0=full(w)
                     grad=g(w); hess=H(w); third=T(w)
                     ytarget=full(w+z)
+                    grad_target=g(w+z)
+                    hess_target=H(w+z)
                 linear=y0+grad@z
                 quad=linear+.5*torch.einsum("i,ij,j->",z,hess,z)
                 cubic=quad+torch.einsum("i,j,k,ijk->",z,z,z,third)/6
                 for name,pred in (("first",linear),("second",quad),("third",cubic)):
                     errors[name].append(float((pred-ytarget).detach().abs()))
+                # F04/F05: finite-scale controlled change of gradient/Hessian
+                # predicted by the next derivative order, respectively.
+                errors["gradient_variation"].append(float(
+                    torch.linalg.norm((grad_target-grad)-hess@z).detach()))
+                errors["hessian_variation"].append(float(
+                    torch.linalg.norm((hess_target-hess)-torch.einsum("ijk,k->ij",third,z)).detach()))
+                # F06: an exact 2x2 factorial contrast between a U and X axis
+                # versus its second-order Taylor interaction approximation.
+                ui=int(rng.integers(0,d))
+                xi=int(rng.integers(d,len(w)))
+                zu=torch.zeros_like(w); zx=torch.zeros_like(w)
+                zu[ui]=size; zx[xi]=size
+                with torch.no_grad():
+                    interaction=full(w+zu+zx)-full(w+zu)-full(w+zx)+y0
+                predicted=hess[ui,xi]*size*size
+                errors["factorial_contrast"].append(float((interaction-predicted).detach().abs()))
             records.append({"direction":direction,"radius":size,"n_points":n_points,
                             **{f"F0{j}.mae":float(np.mean(errors[name]))
-                               for j,name in enumerate(("first","second","third"),start=1)}})
+                               for j,name in enumerate(("first","second","third",
+                                    "gradient_variation","hessian_variation","factorial_contrast"),start=1)}})
     return records

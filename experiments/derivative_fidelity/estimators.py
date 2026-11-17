@@ -183,7 +183,9 @@ def fit_value_surrogate(h, train_u, train_x, kind="krr", n_train=600,
         # Use function-value validation ONLY. A GP uses all selected
         # observation sites and exact K+noise inversion; KRR uses Nyström.
         def kernel(a,b,ls):
-            return torch.exp(-.5*torch.cdist(a/ls,b/ls)**2)
+            # Explicit squared distance keeps third derivatives differentiable;
+            # torch.cdist does not support all higher-order backward paths.
+            return torch.exp(-.5*((a[:,None,:]-b[None,:,:])/ls).square().sum(-1))
         best=None
         for ls in (lengthscale*.5,lengthscale,lengthscale*2):
             try:
@@ -209,6 +211,7 @@ def fit_value_surrogate(h, train_u, train_x, kind="krr", n_train=600,
         return surrogate,{"type":kind,"n_fit":n_fit,"centers":len(center),
                           "lengthscale":ls,"validation_mse":validation}
     if kind=="mlp":
+        torch.manual_seed(seed)
         model=torch.nn.Sequential(torch.nn.Linear(w.shape[1],64),
                   torch.nn.SiLU(),torch.nn.Linear(64,64),torch.nn.SiLU(),
                   torch.nn.Linear(64,1)).to(device=device,dtype=dtype)

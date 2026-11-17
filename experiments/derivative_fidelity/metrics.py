@@ -40,6 +40,7 @@ def _sparsity(e, prefix):
         f"{prefix}.gini":_gini(f),
         f"{prefix}.l1l2":float(amplitude.sum()/(np.linalg.norm(amplitude)+EPS)),
         f"{prefix}.quartimax":float(-(q*q).sum()),
+        f"{prefix}.geomin":float(np.exp(np.mean(np.log(f/(max(total,EPS))+1e-12)))),
         f"{prefix}.max_share":float(q.max(initial=0)),
         f"{prefix}.tail1":float(1-np.sort(q)[-1:].sum()),
         f"{prefix}.tail2":float(1-np.sort(q)[-2:].sum()),
@@ -220,6 +221,16 @@ def assemble_energy(fields):
             ukeys=[k for k in specs if "U" in k]
             vals[f"E.order{order}.U_related_energy"]=float(sum(vals.get(f"E.order{order}.{k}_energy",0)*
                    ({2:{"UX":2},3:{"UUX":3,"UXX":3}}.get(order,{}).get(k,1)) for k in ukeys))
+    # Order-specific sparse support and combined multi-order profiles.
+    all_energies=[]
+    for k in ("U","X","UU","UX","XX","UUU","UUX","UXX","XXX"):
+        if k in fields:
+            a=np.asarray(fields[k],dtype=np.float64)
+            all_energies.append(np.mean(a*a,axis=(0,1)).ravel())
+    if all_energies:
+        stack=np.concatenate(all_energies)
+        vals["E13.joint_sparse_support_1pct"]=float(np.sum(stack>0.01*stack.max(initial=0)))
+        vals["E13.joint_sparse_neff"]=_entropy_neff(stack)
     if "UU" in fields and "UX" in fields:
         uu=vals["E.order2.UU_energy"]; ux=vals["E.order2.UX_energy"]
         vals["E02.UU_to_UX_ratio"]=float(uu/(ux+EPS))

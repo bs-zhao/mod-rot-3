@@ -98,8 +98,8 @@ One shared metric implementation is used for analytic and every estimator.
   additional A/B/C/D full-W metrics. These subset results are labeled.
 * **F01-F03 finite scale**: directional first-/second-/third-order Taylor
   reconstruction error with U-only, X-only and complete-W perturbations.
-  F04-F06 are reserved for controlled derivative variation and factorial
-  contrasts; they are **not yet included** as separate scalar outputs.
+  F04-F06: controlled gradient/Hessian variation and U-X factorial contrasts
+  are also recorded as finite-scale scalar output errors.
 
 Not all possible theoretical indicators in the earlier proposal have a
 well-defined finite-sample implementation or scalar numerical convention.
