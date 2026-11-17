@@ -5,6 +5,7 @@ and frozen checkpoints are read only. Use python -m with repository root cwd.
 """
 from __future__ import annotations
 import argparse
+import gc
 import json
 import os
 import sys
@@ -29,6 +30,37 @@ DEFAULT_METHODS=("ad_mixed","ad_forward","fd2","hybrid","gaussian_smoothing")
 HEAVY_METHODS=("fd4","richardson","local_poly","spectral_chebyshev","krr","gp","mlp")
 FAMILY={"U":"U-only","X":"X-only","UU":"U-only","UX":"mixed",
         "XX":"X-only","UUU":"U-only","UUX":"mixed","UXX":"mixed","XXX":"X-only"}
+
+
+def close_memmap(array):
+    """Release NumPy's OS-level mmap handle before Windows file cleanup."""
+    if isinstance(array, np.memmap):
+        mapping = getattr(array, "_mmap", None)
+        if mapping is not None and not mapping.closed:
+            mapping.close()
+
+
+def cleanup_temporary_fields(paths):
+    """Best-effort cleanup AFTER all mapped readers/writers are closed.
+
+    Preserve computed metrics and record any remaining file-lock error rather
+    than incorrectly marking an otherwise completed fit as failed.
+    """
+    gc.collect()
+    warnings = {}
+    for path in paths:
+        p = Path(path)
+        for attempt in range(3):
+            try:
+                p.unlink(missing_ok=True)
+                break
+            except PermissionError as exc:
+                if attempt == 2:
+                    warnings[str(p)] = str(exc)
+                else:
+                    gc.collect()
+                    time.sleep(0.1 * (attempt + 1))
+    return warnings
 
 
 def log_json(path,obj):
@@ -121,8 +153,12 @@ def run_case(model,repeat,channel,args):
                 log_json(rf/f"{block}_metrics_error.json",{"exception":repr(exc),
                          "traceback":traceback.format_exc()})
                 if args.fail_fast:raise
+            finally:
+                close_memmap(field)
+                del field
         if metrics:
             npz_metrics(rf/"joint_metrics.npz",assemble_energy(metrics))
+        field_arrays = {}
         try:
             field_arrays={b:np.load(rf/f"{b}.npy",mmap_mode="r") for b in blocks}
             fullw=summarize_fullw(field_arrays)
@@ -130,6 +166,10 @@ def run_case(model,repeat,channel,args):
         except Exception as exc:
             log_json(rf/"fullw_error.json",{"error":repr(exc),"traceback":traceback.format_exc()})
             if args.fail_fast:raise
+        finally:
+            for mapped in field_arrays.values():
+                close_memmap(mapped)
+            field_arrays.clear()
         references[source]=rf
         log_json(rf/"run_manifest.json",{"status":"reference","source":source,
                   "reference_kind":("nn_numerical_reference" if source=="nn_ad64" else
@@ -242,6 +282,7 @@ def run_case(model,repeat,channel,args):
             started=time.monotonic()
             manifest["finished"][block]="running"
             log_json(mf/"run_manifest.json",manifest)
+            got = ref = nn_ref = None
             try:
                 estimator,est_meta=build_estimator(method,h,block,case.d,case.p,
                     step=args.step,sigma=args.sigma,mc=args.mc,
@@ -279,6 +320,9 @@ def run_case(model,repeat,channel,args):
                     log_json(mf/"run_manifest.json",manifest)
                     raise
             finally:
+                for mapped in (got, ref, nn_ref):
+                    close_memmap(mapped)
+                del got, ref, nn_ref
                 log_json(mf/"run_manifest.json",manifest)
         if energy_proxies:
             joint=assemble_energy(energy_proxies)
@@ -290,6 +334,7 @@ def run_case(model,repeat,channel,args):
                     load_metrics(nn_reference_dir/"joint_metrics.npz"),"joint",method)
         # Genuine full-W gradient/Hessian/third tensor, from the SAME points.
         # This is separate from full-W block-energy aggregation.
+        present = {}
         try:
             present={b:np.load(mf/f"{b}.npy",mmap_mode="r")
                      for b in blocks if (mf/f"{b}.npy").exists()}
@@ -304,10 +349,18 @@ def run_case(model,repeat,channel,args):
         except Exception as exc:
             manifest["errors"]["full_W"]={"error":repr(exc),"traceback":traceback.format_exc()}
             if args.fail_fast:raise
-        if args.storage=="metrics":
-            for path in field_paths.values():
-                Path(path).unlink(missing_ok=True)
-        manifest["status"]="complete" if all(manifest["finished"].get(b)=="complete" for b in blocks) else "incomplete"
+        finally:
+            for mapped in present.values():
+                close_memmap(mapped)
+            present.clear()
+        cleanup_warnings = cleanup_temporary_fields(field_paths.values()) if args.storage=="metrics" else {}
+        if cleanup_warnings:
+            manifest["cleanup_warnings"] = cleanup_warnings
+        else:
+            manifest.pop("cleanup_warnings", None)
+        fields_ok = all(manifest["finished"].get(b)=="complete" for b in blocks)
+        manifest["status"]=("complete_with_cleanup_warning" if fields_ok and cleanup_warnings
+                            else "complete" if fields_ok else "incomplete")
         log_json(mf/"run_manifest.json",manifest)
     if args.taylor:
         for label,fn in (("analytic_mapped",f_mapped),("nn",f_nn)):

@@ -68,13 +68,19 @@ def write_field(path, h, V, X, block, method="mixed", precision="float64",
     out = np.lib.format.open_memmap(dest, mode="w+", dtype=np.float64, shape=shape)
     fn = pointwise_fn if pointwise_fn is not None else derivative_function(h, block, method)
     view = out.reshape(len(v), *shape[2:])
-    for i in range(0, len(v), chunk):
-        a = torch.as_tensor(v[i:i+chunk], dtype=dtype, device=device)
-        b = torch.as_tensor(x[i:i+chunk], dtype=dtype, device=device)
-        with torch.enable_grad():
-            ans = vmap(fn)(a, b)
-        view[i:i+len(a)] = ans.detach().cpu().numpy()
-    out.flush()
+    try:
+        for i in range(0, len(v), chunk):
+            a = torch.as_tensor(v[i:i+chunk], dtype=dtype, device=device)
+            b = torch.as_tensor(x[i:i+chunk], dtype=dtype, device=device)
+            with torch.enable_grad():
+                ans = vmap(fn)(a, b)
+            view[i:i+len(a)] = ans.detach().cpu().numpy()
+        out.flush()
+    finally:
+        del view
+        if getattr(out, "_mmap", None) is not None:
+            out._mmap.close()
+        del out
     return str(dest)
 
 

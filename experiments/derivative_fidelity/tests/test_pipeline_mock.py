@@ -1,5 +1,6 @@
 """End-to-end small synthetic execution without user checkpoint files."""
 import sys
+from pathlib import Path
 import numpy as np
 import torch
 from types import SimpleNamespace
@@ -60,3 +61,47 @@ def test_mock_pipeline(tmp_path,monkeypatch):
     assert not (folder/"ad_mixed"/"U.npy").exists()  # storage=metrics
     n,m=run.make_report(tmp_path/"mock")
     assert n>0 and m>0
+
+def test_windows_style_locked_mmap_cleanup(tmp_path,monkeypatch):
+    """Emulate Windows refusal to unlink any still-memory-mapped .npy file."""
+    original_unlink = Path.unlink
+    original_load = np.load
+    refs = []
+    import weakref
+
+    def tracked_load(path,*args,**kwargs):
+        result = original_load(path,*args,**kwargs)
+        if kwargs.get("mmap_mode") == "r" and isinstance(result,np.memmap):
+            refs.append((Path(path),weakref.ref(result)))
+        return result
+
+    def windows_unlink(path,*args,**kwargs):
+        for target,ref in refs:
+            arr=ref()
+            if arr is not None and target == Path(path):
+                mm=getattr(arr,"_mmap",None)
+                if mm is not None and not mm.closed:
+                    raise PermissionError("Simulated WinError 32: file is mapped")
+        return original_unlink(path,*args,**kwargs)
+
+    monkeypatch.setattr(np,"load",tracked_load)
+    monkeypatch.setattr(Path,"unlink",windows_unlink)
+    monkeypatch.setattr(run,"BASE",tmp_path)
+    monkeypatch.setattr(run,"load_case",lambda *a,**k:fake_case())
+    from types import SimpleNamespace
+    args=SimpleNamespace(
+        models=["C1"],repeats=[1],channels=["logit"],stage="run",
+        tag="windows_lock",subjects=2,stimuli=4,seed=12,grid="shared",
+        domain="all",standardized=False,precision="float64",
+        device="cpu",beta=None,zdim=None,pca=0,
+        blocks="U,UX",methods="ad_mixed",step=.03,sigma=.05,
+        mc=8,stein_samples=32,surrogate_train=100,centers=20,epochs=3,
+        chunk=4,zero_tol=1e-8,directional_points=4,
+        storage="metrics",taylor=False,taylor_points=2,
+        force=False,fail_fast=True,audit=False)
+    folder=run.run_case("C1",1,"logit",args)
+    assert not (folder/"ad_mixed"/"U.npy").exists()
+    assert not (folder/"ad_mixed"/"UX.npy").exists()
+    import json
+    manifest=json.loads((folder/"ad_mixed"/"run_manifest.json").read_text())
+    assert manifest["status"] == "complete"

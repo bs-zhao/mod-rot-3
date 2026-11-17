@@ -234,3 +234,13 @@ symmetry, alternative AD nesting and finite-difference consistency) and, on
 logit runs, sigmoid_chain_audit.json. The E14 consistency family is computed
 here rather than pretending it is a sparsity score. Use --no-audit to skip
 these checks for costly pilot jobs; --audit-points controls the sample size.
+
+## Windows mmap file-handle safety
+
+When `--storage metrics` (the default), each NN derivative field is kept
+only until its metric and full-W summaries are computed. The writer and every
+NumPy memory-mapped reader are explicitly closed before unlink. A protected
+cleanup records `cleanup_warnings` in the manifest if a third-party process
+still locks a file; it does not discard completed metrics. `--storage all`
+retains every NN field and never attempts that deletion. A mock integration
+unit test simulates WinError 32, even in CI running on Linux.
