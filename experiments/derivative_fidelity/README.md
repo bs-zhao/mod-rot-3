@@ -96,7 +96,7 @@ One shared metric implementation is used for analytic and every estimator.
   higher-to-lower-order ratios. Full-W gradient, Hessian and third-order
   fields are reconstructed on the SAME limited evaluation subset to compute
   additional A/B/C/D full-W metrics. These subset results are labeled.
-* **F01-F03 finite scale**: directional first-/second-/third-order Taylor
+* **F01-F06 finite scale**: directional first-/second-/third-order Taylor
   reconstruction error with U-only, X-only and complete-W perturbations.
   F04-F06: controlled gradient/Hessian variation and U-X factorial contrasts
   are also recorded as finite-scale scalar output errors.
@@ -226,3 +226,11 @@ but running against the frozen checkpoints requires the existing
 outputs/choice/.../s3_train checkpoints and latent files on the local machine.
 This suite is an experimental implementation. Check CI and perform the smoke
 run before allocating substantial GPU time.
+
+## Numerical audit
+
+Every reference source now records numerical_audit.json (Hessian/third-order
+symmetry, alternative AD nesting and finite-difference consistency) and, on
+logit runs, sigmoid_chain_audit.json. The E14 consistency family is computed
+here rather than pretending it is a sparsity score. Use --no-audit to skip
+these checks for costly pilot jobs; --audit-points controls the sample size.

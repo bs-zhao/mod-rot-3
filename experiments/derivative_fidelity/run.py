@@ -21,6 +21,7 @@ from .estimators import METHODS,build_estimator,fit_value_surrogate,aggregate_ga
 from .metrics import block_metrics,field_accuracy,metric_accuracy,assemble_energy
 from .metrics_extended import enrich,summarize_fullw
 from .finite_scale import taylor_tests
+from .audits import audit_derivatives,audit_probability_chain
 from .report import make_report
 
 BASE=ROOT/"outputs"/"derivative_fidelity"
@@ -134,6 +135,24 @@ def run_case(model,repeat,channel,args):
                   "reference_kind":("nn_numerical_reference" if source=="nn_ad64" else
                                     "true_theta" if source=="analytic_truth" else "supervised_mapped_proxy"),
                   "blocks":list(blocks)})
+
+    if getattr(args,"audit",True):
+        for source,fn,u in (("analytic_truth",f_true,truth_v),
+                            ("analytic_mapped",f_mapped,V),("nn_ad64",f_nn64,V)):
+            try:
+                check=audit_derivatives(fn,u,X,device=args.device,
+                        precision="float64",points=getattr(args,"audit_points",2))
+                log_json(folder/source/"numerical_audit.json",check)
+                if channel=="logit":
+                    prob=make_function(case,("nn" if source=="nn_ad64" else source),
+                                       "prob","float64",args.standardized)
+                    chain=audit_probability_chain(fn,prob,u,X,device=args.device,
+                              precision="float64",points=getattr(args,"audit_points",2))
+                    log_json(folder/source/"sigmoid_chain_audit.json",chain)
+            except Exception as exc:
+                log_json(folder/source/"audit_error.json",
+                         {"exception":repr(exc),"traceback":traceback.format_exc()})
+                if args.fail_fast:raise
 
     if args.stage=="reference":return folder
     expected_dir=references["analytic_mapped"]
@@ -334,6 +353,8 @@ def parse():
     ap.add_argument("--directional-points",type=int,default=32)
     ap.add_argument("--storage",choices=("metrics","all"),default="metrics")
     ap.add_argument("--taylor",action="store_true")
+    ap.add_argument("--no-audit",action="store_false",dest="audit",default=True)
+    ap.add_argument("--audit-points",type=int,default=2)
     ap.add_argument("--taylor-points",type=int,default=20)
     ap.add_argument("--force",action="store_true")
     ap.add_argument("--fail-fast",action="store_true")
