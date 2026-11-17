@@ -288,3 +288,30 @@ Tstd≈AV+b. In addition to comparisons against analytic_mapped and NN-AD64,
 `metric_comparisons_true_T_X_only.jsonl` stores X-only metric comparisons
 against the actual generating theta. For U-containing blocks, we continue to
 use the explicitly labeled mapped-analytic proxy.
+
+## CR3 empirical original-bank interior verified from the 500-trial bank
+
+A check on the existing original CR3 X data found 112 out of 500 trials
+with all four gain/loss amounts strictly positive and both probabilities
+strictly between 0 and 1. An older standardization bug caused the program
+to report zero eligible rows; the corrected raw-unit filter retains 112.
+**Prefer this unchanged-data interior cohort to artificial smooth probes for
+all-X-axes fidelity comparisons**:
+
+    python -m experiments.derivative_fidelity.run --models CR3 --repeats 1 2 --channels logit prob --subjects 64 --stimuli 500 --methods ad_mixed --tag fidelity_cr3_interior_original --standardized --domain interior --fail-fast
+
+The exact retained count is dataset-dependent; verify domain.json. The smooth
+probe run remains an explicitly counterfactual robustness check (using the
+current default thresholds, 388/500 raw-bank rows would be changed).
+
+### Important CR3 original-bank numerical audit correction
+
+For CR3 runs using `--domain all --blocks U,UU,UUU`, the numerical audit
+now differentiates with respect to U only and holds X fixed, as the test
+claims. Previous `numerical_audit.json` files recorded enormous finite-
+difference failures in **full-W directions** because a zero amount is a
+non-smooth X boundary; those X-axis error values do not diagnose U-only
+analytic derivatives. Existing U-only derivative field values and metrics
+are unchanged by this audit fix. To regenerate only audits, a subsequent
+run of the same tag recomputes reference audits and resumes existing
+successful field metrics.

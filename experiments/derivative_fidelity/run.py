@@ -236,8 +236,12 @@ def run_case(model,repeat,channel,args):
         for source,fn,u in (("analytic_truth",f_true,truth_v),
                             ("analytic_mapped",f_mapped,V),("nn_ad64",f_nn64,V)):
             try:
+                audit_scope=("U" if model=="CR3" and args.domain=="all" and
+                             all(set(block).issubset({"U"}) for block in blocks)
+                             else "W")
                 check=audit_derivatives(fn,u,X,device=args.device,
-                        precision="float64",points=getattr(args,"audit_points",2))
+                        precision="float64",points=getattr(args,"audit_points",2),
+                        scope=audit_scope)
                 log_json(folder/source/"numerical_audit.json",check)
                 if channel=="logit":
                     prob=make_function(case,("nn" if source=="nn_ad64" else source),
