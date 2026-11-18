@@ -92,6 +92,22 @@ def diagnostic_summary(design,fields,stats):
 
 def derive(args,design,channel,out):
     out.mkdir(parents=True,exist_ok=True)
+    protocol=dict(
+        bank_sha256=design.bank_hash, dataset_sha256=design.dataset_hash,
+        subject_ids=design.subject_ids.tolist(),
+        trial_ids=design.trial_ids.tolist(),
+        amount_step=float(args.amount_step),
+        probability_step=float(args.probability_step),
+        x_scale=args.x_scale,channel=channel,
+    )
+    protocol_path=out/"protocol.json"
+    if protocol_path.exists() and not args.force:
+        previous=read_json(protocol_path)
+        if previous!=protocol:
+            raise RuntimeError("Existing output tag uses a different data/step/scaling protocol: "+
+                               str(protocol_path)+
+                               ". Choose a NEW --tag, or explicitly --force to recompute.")
+    dump_json(protocol_path,protocol)
     fields_path=out/"fields.npz"
     moments_path=out/"moments.npz"
     if fields_path.exists() and moments_path.exists() and not args.force:
@@ -253,7 +269,15 @@ def main(argv=None):
         raise ValueError("subjects/batch/restarts must be positive, random_rotations nonnegative")
     out=BASE/args.tag
     out.mkdir(parents=True,exist_ok=True)
-    dump_json(out/"config.json",{**vars(args),"bank":str(args.bank),"dataset":str(args.dataset)})
+    if args.stage in ("precheck","derive","all"):
+        dump_json(out/"config.json",{**vars(args),"bank":str(args.bank),"dataset":str(args.dataset)})
+    elif args.stage=="search":
+        dump_json(out/"search_config.json",{
+            "tag":args.tag,"channels":args.channels,"seed":args.seed,
+            "random_rotations":args.random_rotations,
+            "restarts":args.restarts,"maxiter":args.maxiter,
+            "optimize":args.optimize
+        })
     if args.stage in ("precheck","derive","all"):
         d=load_design(args.subjects,args.stimuli,args.seed,args.bank,args.dataset)
         check=true_generator_selfcheck(d)
