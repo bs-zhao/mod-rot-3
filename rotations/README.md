@@ -75,3 +75,13 @@ Its own folder contains `surrogate.py`, `metrics.py`, `mdl.py`, `optimizer.py`, 
 ## Differential program and function-equivariant rotation
 
 [`differential_program/`](differential_program/README.md) investigates full pure/mixed derivative module code, axial recurrence and function-supported output shift/gain directions. Its `equivariant_run.py` fixes only supported functional axes and searches their orthogonal complement, with identical rules for C1/C2/C3/CR3. The candidate is frozen before a fresh CR3 NP training repetition; exploratory gains and limitations are documented in [`research/DIFFERENTIAL_OBJECTIVES_2026-11-06.md`](../research/DIFFERENTIAL_OBJECTIVES_2026-11-06.md). This is a research candidate, not a universal identifiability claim.
+
+## CR4 smooth functional-axis rotation suite
+
+The isolated [CR4 functional-axis suite](cr4_functional_axes/README.md)
+tests a function-supported output-gain axis followed by the lowest pure-U
+curvature axis in its orthogonal complement, using only the frozen CR4 NP.
+It includes a held-out VALID support gate and a separate exact UX
+stimulus-column sensitivity audit. No theta is used to fit R.
+
+    python rotations/cr4_functional_axes/run.py --model CR4 --condition beta0p0005_lambda0_ctx0p25to0p8_L3 --repeat 1

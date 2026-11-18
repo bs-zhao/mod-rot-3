@@ -1,0 +1,19 @@
+{
+  "seed": 31,
+  "fit_subjects": 96,
+  "valid_subjects": 48,
+  "fit_x": 128,
+  "valid_x": 64,
+  "batch_subjects": 8,
+  "whiten_floor": 0.00001,
+  "gain_ridge": 0.0001,
+  "gain_fit_max_ratio": 0.2,
+  "gain_valid_max_ratio": 0.3,
+  "gain_min_gap": 0.08,
+  "gain_min_energy_share": 0.025,
+  "min_curvature_gap": 0.03,
+  "curvature_grid": 181,
+  "teacher_device": "auto",
+  "ux_subjects": 24,
+  "ux_x": 48
+}
