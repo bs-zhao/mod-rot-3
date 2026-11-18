@@ -137,6 +137,11 @@ def main(argv=None):
     if out.exists():
         if (out/"fit_complete.json").exists():
             print("Preserved complete Hessian rotation:",out)
+            if not args.no_evaluate and not (out/"oracle_comparison.json").is_file():
+                # Retroactive post-freeze diagnostic: NO decoder derivative
+                # extraction, NO blind R* re-optimization.
+                from rotations.hessian_sparsity.oracle_compare import compare_existing
+                compare_existing(out)
             return out
         raise FileExistsError(f"Incomplete output folder exists: {out}")
     print(f"{args.model}: frozen decoder UU/UX autodiff, mode={cfg['mode']}, group={cfg['grouping']}",flush=True)
@@ -195,6 +200,10 @@ def main(argv=None):
         scores=evaluate(source,U,out)
         print("TEST mean r^2",scores["hessian_sparsity"]["mean_matched_test_r2"],
               "PCA",scores["identity_pca"]["mean_matched_test_r2"],flush=True)
+        # TRAIN-supervised oracle is fitted AFTER theta-blind R* is frozen,
+        # and evaluated on the SAME saved FIT/VALID Hessian moments.
+        from rotations.hessian_sparsity.oracle_compare import compare_existing
+        compare_existing(out)
     return out
 
 

@@ -116,3 +116,79 @@ CPT axes. A result must improve FIT/VALID losses, show separate held-out
 TEST recovery, and reproduce under independent NP seeds to count as
 strong evidence. Do not select hyperparameters from TEST theta. Compare
 \`pooled\` with \`balanced\` to understand stimulus-mixture effects.
+
+
+## Mandatory post-freeze Oracle R vs unsupervised R* loss comparison
+
+New runs automatically produce this comparison **after** the original
+R* has been optimized from Hessians without theta and frozen to disk.
+Existing runs can get the exact same comparison retroactively, WITHOUT
+retraining the NP, re-extracting any Hessians or rerunning the blind
+multistart optimization:
+
+    git pull origin main
+    python rotations/hessian_sparsity/oracle_compare.py --model CR3
+    python rotations/hessian_sparsity/oracle_compare.py --model CR4
+    python rotations/hessian_sparsity/oracle_compare.py --model CR5
+
+Commands above locate exactly one completed
+\`main_joint_pooled_*\` directory for each model's default condition;
+if you have multiple fingerprints, pass
+\`--run-dir "outputs/choice/CR3/rotations/hessian_sparsity/..."\` to
+select the exact existing folder. Use \`--mode uu_only\`,
+\`--grouping balanced\`, \`--tag\`, \`--repeat\` and/or \`--condition\`
+to select other runs. \`--force\` explicitly regenerates only the
+Oracle report, never the original R*. Re-running without \`--force\`
+preserves existing Oracle outputs.
+
+**Two TRAIN-only Oracle definitions, same frozen q coordinates:**
+
+1. \`R_oracle_procrustes\`: standardized true theta against
+   TRAIN PCA-whitened q, \`SO(d)\` orthogonal Procrustes, minimizing
+   squared coordinate distances. Because \`theta(q)\` need not be
+   perfectly linear, this is only the best TRAIN orthogonal approximation.
+2. **\`R_oracle\` / \`oracle_R_correlation\`**: initialized with that
+   Procrustes solution, run 20 seeded SO(d) multi-start fits maximizing
+   \`mean_i corr(theta_i, (R q)_i)^2\` on **TRAIN subjects only**.
+   Parameter names fix the row order. The oracle is approximate rather
+   than mathematically guaranteed global, and does not use either
+   Hessian simplicity loss or TEST labels in fitting.
+
+After fitting, compare FOUR rotations on the EXACT SAME saved Hessian
+moments, original normalization, mode, and original FIT/VALID person and
+X anchors:
+
+    R = I                original PCA coordinates
+    R = R*               unsupervised Hessian-sparsity optimum
+    R = R_procrustes     TRAIN parameter-supervised orthogonal L2 oracle
+    R = R_oracle         TRAIN parameter-supervised max-r² oracle
+
+Key result: \`L_FIT(R_oracle)-L_FIT(R*)\` and
+\`L_VALID(R_oracle)-L_VALID(R*)\`, along with per-UU/per-UX and each
+condition contribution, independently of NN retraining.
+Also report each rotation's TEST r²; oracle itself is NEVER used to
+select the blind Hessian R* or its optimizer settings.
+
+NEW outputs in the SAME ORIGINAL run folder (no overwrite of
+\`rotation.npz\`, \`fit_complete.json\`, \`loss_diagnostics.json\` or
+\`evaluation.json\`):
+- \`oracle_comparison.json\`: all four R, identical FIT/VALID Hessian
+  loss, individual UU/UX and group losses, TRAIN matching, TEST r²,
+  numerical oracle-minus-blind gaps, and source SHA256 audit.
+- \`oracle_rotations.npz\`: R*, R_oracle, R_procrustes and alignment.
+- \`oracle_loss_comparison.csv\`: side-by-side FIT/VALID/component losses.
+- \`oracle_loss_comparison.png\`: two loss barplots.
+- \`oracle_axis_overlap.png\`: absolute cosine of Oracle and blind axes.
+
+Run only the post-fit report by invoking \`oracle_compare.py\`. The
+original \`run.py\` also automatically adds it on newly completed runs
+unless \`--no-evaluate\` was requested. The old \`run.py\` output folder
+fingerprint changes when code changes: the STANDALONE Oracle command is
+the safest and fastest way to upgrade pre-existing runs.
+
+This analysis is **diagnostic and supervised**. The blind R* rotation
+remains a genuinely unsupervised simplicity optimizer; the Oracle
+parameter mapping does NOT enter Hessian loss optimization. A higher
+Oracle Hessian loss would indicate a conflict between the current
+simple-function definition and parameter alignment, but does not
+imply NN Hessian numerical error by itself.
