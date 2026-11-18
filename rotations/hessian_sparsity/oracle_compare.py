@@ -1,18 +1,17 @@
-"""Post-freeze TRAIN-supervised Oracle R vs unsupervised R* on IDENTICAL Hessian losses.
+"""Post-freeze ALL-SUBJECT Oracle R vs unsupervised R* on identical Hessian losses.
 
 Run retroactively on an existing hessian_sparsity folder WITHOUT
 recomputing decoder AD fields or rerunning the SO(d) blind optimizer.
 
 Oracle definitions:
-  (1) R_oracle_procrustes: SO(d) orthogonal Procrustes mapping q_train to
-      standardized theta_train (squared-distance oracle).
-  (2) R_oracle: optimize SO(d) to maximize the mean squared TRAIN Pearson
-      correlations corr(theta_i, (R q)_i)^2, one axis per true parameter.
-      This is an approximate TRAIN-supervised oracle, never a Hessian fit.
+  (1) R_oracle_procrustes: SO(d) orthogonal Procrustes mapping ALL q
+      to standardized ALL theta.
+  (2) R_oracle: optimize SO(d) to maximize mean Pearson² on ALL subjects.
+      This is an approximate supervised oracle, not a Hessian fit.
 
-True theta is read ONLY here, AFTER fit_complete.json and rotation.npz
-already exist. VALID Hessian loss uses exactly the saved VALID fields,
-and TEST theta is used only for descriptive generalization diagnostics.
+True theta is read ONLY here, AFTER fit_complete.json and rotation.npz.
+There is no TEST sample, and no parameter generalization estimate.
+FIT-X and VALID-X use different stimulus sets but the SAME all-subject cohort.
 """
 from __future__ import annotations
 
@@ -37,7 +36,7 @@ def _corr(a,b):
     a=np.asarray(a,dtype=float);b=np.asarray(b,dtype=float)
     ac=a-a.mean(0);bc=b-b.mean(0)
     denom=np.sqrt(np.sum(ac*ac,axis=0)[:,None]*np.sum(bc*bc,axis=0)[None,:])
-    return np.divide(ac.T@bc,den,out=np.zeros((a.shape[1],b.shape[1])),
+    return np.divide(ac.T@bc,denom,out=np.zeros((a.shape[1],b.shape[1])),
                      where=denom>1e-14)
 
 
@@ -48,15 +47,15 @@ def _is_so(R,tol=1e-8):
 
 
 def procrustes_oracle(q_train,theta_train):
-    """Closest mapping q@R.T -> theta_train_z using TRAIN subjects only."""
+    """Closest mapping q@R.T -> z-scored theta using ALL subjects."""
     q=np.asarray(q_train,dtype=float)
     theta=np.asarray(theta_train,dtype=float)
     if q.shape!=theta.shape or q.ndim!=2 or len(q)<q.shape[1]+1:
-        raise ValueError("Oracle requires matched TRAIN q/theta matrices")
+        raise ValueError("Oracle requires matched ALL-subject q/theta matrices")
     qc=q-q.mean(0); tc=theta-theta.mean(0)
     sd=tc.std(0,ddof=1)
     if np.any(sd<1e-10) or not np.isfinite(sd).all():
-        raise ValueError("Oracle true parameter has no TRAIN variance")
+        raise ValueError("Oracle true parameter has no ALL-subject variance")
     # For R rows, solve max tr(R @ Q.T @ T_std), i.e.
     # R = U V^T for T_std.T @ Q = U diag(s) V^T.
     cross=(tc/sd).T@qc
@@ -65,14 +64,14 @@ def procrustes_oracle(q_train,theta_train):
     fix[-1,-1]=float(np.sign(np.linalg.det(U@Vt)))
     R=U@fix@Vt
     if not _is_so(R):
-        raise RuntimeError("TRAIN Procrustes R is not in SO(d)")
-    return R,dict(train_theta_mean=theta.mean(0).tolist(),
-                  train_theta_sd=sd.tolist(),
+        raise RuntimeError("ALL-subject Procrustes R is not in SO(d)")
+    return R,dict(all_theta_mean=theta.mean(0).tolist(),
+                  all_theta_sd=sd.tolist(),
                   singular_values=s.tolist())
 
 
 def correlation_oracle(q_train,theta_train,R_initial,restarts=20,maxiter=300,seed=981):
-    """Approximate full-SO(d) TRAIN Pearson² oracle; no Hessian or TEST reads."""
+    """Approximate full-SO(d) ALL-subject Pearson² oracle; no Hessian role assumptions."""
     q=np.asarray(q_train,dtype=float)
     t=np.asarray(theta_train,dtype=float)
     R_initial=np.asarray(R_initial,dtype=float)
@@ -80,13 +79,13 @@ def correlation_oracle(q_train,theta_train,R_initial,restarts=20,maxiter=300,see
     if q.shape!=t.shape or R_initial.shape!=(d,d) or not _is_so(R_initial):
         raise ValueError("Oracle shape/initial SO(d) mismatch")
     if not np.isfinite(q).all() or not np.isfinite(t).all():
-        raise ValueError("Nonfinite TRAIN q/theta")
+        raise ValueError("Nonfinite ALL-subject q/theta")
     qc=q-q.mean(0);tc=t-t.mean(0)
     cov_q=qc.T@qc
     cross=tc.T@qc
     theta_energy=np.square(tc).sum(0)
     if np.min(np.linalg.eigvalsh(cov_q))<1e-10 or np.min(theta_energy)<1e-10:
-        raise ValueError("Degenerate TRAIN q or theta for correlation oracle")
+        raise ValueError("Degenerate ALL-subject q or theta for correlation oracle")
     cq=torch.as_tensor(cov_q,dtype=torch.float64)
     ct=torch.as_tensor(cross,dtype=torch.float64)
     energy=torch.as_tensor(theta_energy,dtype=torch.float64)
@@ -115,42 +114,44 @@ def correlation_oracle(q_train,theta_train,R_initial,restarts=20,maxiter=300,see
         angles=np.asarray(res.x,dtype=float)
         R=(givens(torch.as_tensor(angles,dtype=torch.float64),d)@base).detach().numpy()
         correlations=_corr(t,q@R.T)
-        train_diag=np.diag(correlations)
-        score=float(np.mean(train_diag**2))
-        records.append(dict(start=i,train_mean_diag_r2=score,
+        diag=np.diag(correlations)
+        score=float(np.mean(diag**2))
+        records.append(dict(start=i,all_mean_diag_r2=score,
                             scipy_success=bool(res.success),
                             iterations=int(res.nit)))
-        if best is None or score>best["train_mean_diag_r2"]:
-            best=dict(R=R,train_mean_diag_r2=score,start=i)
+        if best is None or score>best["all_mean_diag_r2"]:
+            best=dict(R=R,all_mean_diag_r2=score,start=i)
     if not _is_so(best["R"]):
-        raise RuntimeError("TRAIN correlation Oracle R not in SO(d)")
+        raise RuntimeError("ALL-subject correlation Oracle R not in SO(d)")
     return best["R"],dict(
-        method="approximate_SO(d)_maximize_TRAIN_parameter_specific_Pearson_r2",
-        mean_train_r2=best["train_mean_diag_r2"],
+        method="approximate_SO(d)_maximize_ALL_parameter_specific_Pearson_r2",
+        mean_all_r2=best["all_mean_diag_r2"],
         selected_start=int(best["start"]),
         num_restarts=len(starts),all_starts=records,
-        training_only=True,used_hessian_losses_for_oracle=False,
-        used_valid_or_test_to_select_oracle=False)
+        all_subjects=True,used_hessian_losses_for_oracle=False,
+        no_test_split=True)
 
 
-def _param_scores(theta,q,R,train_ids,test_ids,labels,oracle_axes=False):
+def _param_scores(theta,q,R,labels,oracle_axes=False):
+    """Descriptive in-sample Pearson r² on ALL subjects, with no TEST."""
     u=q@R.T
-    ctr=_corr(theta[train_ids],u[train_ids])
-    cte=_corr(theta[test_ids],u[test_ids])
-    d=len(labels)
+    correlation=_corr(theta,u)
     if oracle_axes:
-        # Oracle rows are directly aligned to true theta in named order.
         matched={name:i for i,name in enumerate(labels)}
     else:
-        i,j=linear_sum_assignment(-np.square(ctr))
+        i,j=linear_sum_assignment(-np.square(correlation))
         matched={labels[a]:int(b) for a,b in zip(i,j)}
-    r2={name:float(cte[a,matched[name]]**2) for a,name in enumerate(labels)}
-    return dict(train_correlation=ctr.tolist(),test_correlation=cte.tolist(),
-                train_matched_axis=matched,
-                matched_test_r2=r2,
-                mean_matched_test_r2=float(np.mean(list(r2.values()))),
-                train_oracle_diagonal_r2=float(np.mean(np.diag(ctr)**2)) if oracle_axes else None,
-                labels=labels)
+    r2={name:float(correlation[a,matched[name]]**2)
+        for a,name in enumerate(labels)}
+    return dict(
+        all_correlation=correlation.tolist(),
+        all_matched_axis=matched,matched_all_r2=r2,
+        mean_matched_all_r2=float(np.mean(list(r2.values()))),
+        oracle_diagonal_all_r2=(float(np.mean(np.diag(correlation)**2))
+                                if oracle_axes else None),
+        n_subjects=len(q),
+        scope="ALL subjects, no independent TEST; in-sample parameter alignment",
+        labels=labels)
 
 
 def _fields(path,include_ux):
@@ -189,24 +190,23 @@ def _load_old(run_dir):
     with np.load(out/"rotation.npz",allow_pickle=False) as a:
         R=np.asarray(a["R"],float)
         q=np.asarray(a["q"],float)
-        train=np.asarray(a["train_ids"],int)
-        test=np.asarray(a["test_ids"],int)
-        fit_sub=np.asarray(a["fit_subject_ids"],int)
-        valid_sub=np.asarray(a["valid_subject_ids"],int)
+        if "all_subject_ids" not in a.files:
+            raise RuntimeError("Legacy subset rotation cannot be represented as ALL-subject R*. "
+                               "Re-run hessian_sparsity/run.py with the new all-subject protocol.")
+        all_ids=np.asarray(a["all_subject_ids"],int)
         fit_x=np.asarray(a["fit_x_ids"],int)
         valid_x=np.asarray(a["valid_x_ids"],int)
     if not _is_so(R):
         raise RuntimeError("Original optimizer R* is not SO(d)")
     if q.ndim!=2 or q.shape[1]!=len(R):
         raise ValueError("Original PCA whitened q does not match R*")
-    for ids,name in ((train,"train"),(test,"test"),
-                     (fit_sub,"fit subjects"),(valid_sub,"validation subjects"),
-                     (fit_x,"fit X"),(valid_x,"validation X")):
-        if not np.array_equal(ids,np.asarray(protocol.get(
-            {"fit subjects":"fit_subject_ids","validation subjects":"valid_subject_ids",
-             "fit X":"fit_x_ids","validation X":"valid_x_ids"}.get(name,""),ids))):
-            # Protocol intentionally does not repeat full TRAIN/TEST ids.
-            raise RuntimeError(f"{name} ids changed from saved protocol")
+    if (protocol.get("rotation_subject_scope")!="all_subjects_no_test" or
+        not np.array_equal(all_ids,np.arange(len(q))) or
+        protocol.get("all_subject_count")!=len(q)):
+        raise RuntimeError("Not a true ALL-subject rotation protocol")
+    for ids,name in ((fit_x,"fit_x_ids"),(valid_x,"valid_x_ids")):
+        if not np.array_equal(ids,np.asarray(protocol[name],dtype=int)):
+            raise RuntimeError(f"{name} changed since R* fitting")
     with np.load(dataset,allow_pickle=False) as a:
         theta=np.asarray(a["parameters"],float)
     labels=(["alpha","lambda_loss","gamma","tau"] if model=="CR3"
@@ -227,7 +227,7 @@ def _load_old(run_dir):
         if abs(objective.value(R)-float(prev[field]["total"]))>1e-9:
             raise RuntimeError(f"{label} Hessian loss no longer reproduces R* run")
     return dict(out=out,model=model,q=q,R=R,theta=theta,labels=labels,
-                tr=train,te=test,fit_loss=fit_loss,valid_loss=valid_loss,
+                all_ids=all_ids,fit_loss=fit_loss,valid_loss=valid_loss,
                 protocol=protocol)
 
 
@@ -240,11 +240,10 @@ def compare_existing(run_dir,*,force=False,oracle_restarts=20,oracle_maxiter=300
         print("Existing Oracle comparison preserved:",result_path,flush=True)
         return json.loads(result_path.read_text(encoding="utf-8"))
     q,theta,Rstar=src["q"],src["theta"],src["R"]
-    tr,te=src["tr"],src["te"]
     d=len(Rstar)
-    Rpro,pro_meta=procrustes_oracle(q[tr],theta[tr])
+    Rpro,pro_meta=procrustes_oracle(q,theta)
     Roracle,corr_meta=correlation_oracle(
-        q[tr],theta[tr],Rpro,restarts=oracle_restarts,
+        q,theta,Rpro,restarts=oracle_restarts,
         maxiter=oracle_maxiter,seed=oracle_seed)
     matrices={"identity_PCA":np.eye(d),"optimized_R_star":Rstar,
               "oracle_R_procrustes":Rpro,"oracle_R_correlation":Roracle}
@@ -254,7 +253,7 @@ def compare_existing(run_dir,*,force=False,oracle_restarts=20,oracle_maxiter=300
         valid=src["valid_loss"].scalar(R)
         reports[label]=dict(
             FIT=fit,VALID=valid,
-            TEST=_param_scores(theta,q,R,tr,te,src["labels"],
+            ALL=_param_scores(theta,q,R,src["labels"],
                                oracle_axes=label.startswith("oracle_R")))
     gap_fit=float(reports["oracle_R_correlation"]["FIT"]["total"]-
                   reports["optimized_R_star"]["FIT"]["total"])
@@ -266,14 +265,14 @@ def compare_existing(run_dir,*,force=False,oracle_restarts=20,oracle_maxiter=300
         condition=src["protocol"]["condition"],
         mode=src["protocol"]["config"]["mode"],
         grouping=src["protocol"]["config"]["grouping"],
-        oracle_definition="TRAIN-only SO(d) max mean named-parameter Pearson r^2; approximate multistart solution",
-        oracle_procrustes_definition="TRAIN-only SO(d) orthogonal least-squares fit to standardized theta",
+        oracle_definition="ALL-subject SO(d) maximize mean named-parameter Pearson r^2; approximate multistart solution",
+        oracle_procrustes_definition="ALL-subject SO(d) orthogonal least-squares fit to standardized theta",
         original_R_star_remains_unchanged=True,
         original_source_hashes=src["protocol"]["hashes"],
         theta_used_in_blind_optimization=False,
         theta_used_for_oracle=True,
-        oracle_training_split="TRAIN only; NO TEST or VALID labels in fitting",
-        hessian_loss_evaluation_split="Original saved FIT and VALID derivative fields, exact original objective",
+        oracle_subject_scope="ALL subjects, no held-out TEST",
+        hessian_loss_evaluation_scope="Original saved FIT-X and VALID-X derivative fields; both include ALL subjects",
         procrustes_metadata=pro_meta,
         correlation_oracle_metadata=corr_meta,
         matrices={name:R.tolist() for name,R in matrices.items()},
@@ -282,7 +281,7 @@ def compare_existing(run_dir,*,force=False,oracle_restarts=20,oracle_maxiter=300
         oracle_higher_hessian_loss_in_FIT=gap_fit>0,
         oracle_higher_hessian_loss_in_VALID=gap_val>0,
         optimized_to_oracle_axis_overlap=np.abs(alignment).tolist(),
-        note="Oracle is a TRAIN-supervised best orthogonal approximation; nonlinearity in theta(z) can prevent perfect alignment. Never use Oracle to select the blind loss.")
+        note="Oracle is an ALL-subject supervised orthogonal approximation; no independent test performance is claimed. Never use Oracle to choose blind loss.")
     # Write all diagnostics separately. No mutation of the frozen R or
     # original evaluation/loss protocol.
     np.savez_compressed(out/"oracle_rotations.npz",
@@ -293,7 +292,7 @@ def compare_existing(run_dir,*,force=False,oracle_restarts=20,oracle_maxiter=300
     with (out/"oracle_loss_comparison.csv").open("w",newline="",encoding="utf-8") as f:
         names=["rotation","FIT_total","VALID_total",
                "FIT_UU","VALID_UU","FIT_UX","VALID_UX",
-               "TEST_mean_matched_r2"]
+               "ALL_mean_matched_r2"]
         writer=csv.DictWriter(f,fieldnames=names)
         writer.writeheader()
         for name,detail in reports.items():
@@ -306,7 +305,7 @@ def compare_existing(run_dir,*,force=False,oracle_restarts=20,oracle_maxiter=300
                 VALID_total=detail["VALID"]["total"],
                 FIT_UU=part("FIT","uu"),VALID_UU=part("VALID","uu"),
                 FIT_UX=part("FIT","ux"),VALID_UX=part("VALID","ux"),
-                TEST_mean_matched_r2=detail["TEST"]["mean_matched_test_r2"]))
+                ALL_mean_matched_r2=detail["ALL"]["mean_matched_all_r2"]))
     import matplotlib
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
@@ -347,7 +346,7 @@ def compare_existing(run_dir,*,force=False,oracle_restarts=20,oracle_maxiter=300
         one=reports[name]
         print(f"  {name:26s} FIT={one['FIT']['total']:.6f} "
               f"VALID={one['VALID']['total']:.6f} "
-              f"TEST_r2={one['TEST']['mean_matched_test_r2']:.4f}",flush=True)
+              f"ALL_r2={one['ALL']['mean_matched_all_r2']:.4f}",flush=True)
     print("  Oracle - R*: FIT",gap_fit,"VALID",gap_val,flush=True)
     print("Saved post-fit Oracle comparison:",result_path,flush=True)
     return report
@@ -368,7 +367,9 @@ def _find_run(args):
     parent=(ROOT/"outputs"/"choice"/args.model/"rotations"/"hessian_sparsity"/
             condition/f"repeat{args.repeat:02d}")
     folders=sorted(parent.glob(f"{args.tag}_{args.mode}_{args.grouping}_*"))
-    folders=[f for f in folders if (f/"fit_complete.json").is_file()]
+    folders=[f for f in folders if (f/"fit_complete.json").is_file()
+             and json.loads((f/"protocol.json").read_text(encoding="utf-8")).get(
+                 "rotation_subject_scope")=="all_subjects_no_test"]
     if len(folders)!=1:
         raise FileNotFoundError(
             f"Expected one completed run, found {len(folders)} at {parent}. "

@@ -57,9 +57,11 @@ def choose_config(args):
     if (cfg["mode"] not in ("joint","uu_only","ux_only") or
         cfg["grouping"] not in ("pooled","balanced")):
         raise ValueError("Unknown mode or grouping")
-    if (min(int(cfg[n]) for n in ("fit_subjects","valid_subjects","fit_x",
+    if (min(int(cfg[n]) for n in ("fit_x",
                                "valid_x","batch_subjects","restarts","maxiter"))<1):
         raise ValueError("All sample budgets and optimizer iterations must be positive")
+    if cfg.get("subject_scope")!="all":
+        raise ValueError("Current hessian_sparsity protocol requires ALL subjects in rotation")
     return cfg
 
 
@@ -112,8 +114,12 @@ def main(argv=None):
         suite="hessian_sparsity",model=args.model,condition=args.condition,
         repeat=args.repeat,tag=args.tag,dimension=dim,config=cfg,
         hashes=source["hashes"],code_sha256=source_hash(),
-        fit_subject_ids=source["fit_subject_ids"].tolist(),
-        valid_subject_ids=source["valid_subject_ids"].tolist(),
+        rotation_subject_scope="all_subjects_no_test",
+        all_subject_count=int(len(source["z"])),
+        subject_ids_sha256=hashlib.sha256(
+            source["all_subject_ids"].astype(np.int64).tobytes()).hexdigest(),
+        stimulus_validation_only=True,
+        np_original_train_valid_test_not_used_for_rotation=True,
         fit_x_ids=source["fit_x_ids"].tolist(),
         valid_x_ids=source["valid_x_ids"].tolist(),
         original_x_labels=source["group_names"],
@@ -131,8 +137,8 @@ def main(argv=None):
     if args.dry_run:
         print("SOURCE VALIDATION: PASS")
         print("Output:",out)
-        print("MODEL",args.model,"DIM",dim,"FIT",len(source["fit_subject_ids"]),
-              "VALID",len(source["valid_subject_ids"]))
+        print("MODEL",args.model,"DIM",dim,"ALL SUBJECTS",len(source["all_subject_ids"]),
+              "FIT X",len(source["fit_x_ids"]),"VALID X",len(source["valid_x_ids"]))
         return out
     if out.exists():
         if (out/"fit_complete.json").exists():
@@ -144,7 +150,9 @@ def main(argv=None):
                 compare_existing(out)
             return out
         raise FileExistsError(f"Incomplete output folder exists: {out}")
-    print(f"{args.model}: frozen decoder UU/UX autodiff, mode={cfg['mode']}, group={cfg['grouping']}",flush=True)
+    print(f"{args.model}: ALL {len(source['all_subject_ids'])} subjects, "
+          f"frozen decoder UU/UX autodiff, mode={cfg['mode']}, "
+          f"group={cfg['grouping']}",flush=True)
     model,device,mu,sd=restore(source,cfg["device"])
     include_ux=cfg["mode"]!="uu_only"
     fit_fields=extract(model,device,source,source["fit_subject_ids"],source["fit_x_ids"],
@@ -166,11 +174,8 @@ def main(argv=None):
                         W=source["W"],B=source["B"],q=source["q"],
                         native_Z_mean=source["pca_mean"],
                         native_Z_residual=source["residual"],
-                        train_ids=source["train_ids"],
-                        validation_ids=source["validation_ids"],
-                        test_ids=source["test_ids"],
-                        fit_subject_ids=source["fit_subject_ids"],
-                        valid_subject_ids=source["valid_subject_ids"],
+                        all_subject_ids=source["all_subject_ids"],
+                        subject_scope="all_subjects_no_test",
                         fit_x_ids=source["fit_x_ids"],valid_x_ids=source["valid_x_ids"])
     for prefix,fields in (("fit",fit_fields),("validation",val_fields)):
         np.savez_compressed(out/f"{prefix}_fields.npz",
@@ -190,7 +195,8 @@ def main(argv=None):
         selected_restart_by="FIT Hessian simplicity ONLY",
         objective_fit=float(results["fit_loss"]["total"]),
         objective_VALID=float(results["validation_loss"]["total"]),
-        status="candidate; TEST parameter recovery not used for selection",
+        status="ALL-subject candidate; parameter alignment is in-sample and not used for selection",
+        subject_scope="all_subjects_no_test",
         plane_symmetry_checked=True))
     print("Frozen Hessian-sparsity R:",out,flush=True)
     print("FIT loss",results["fit_loss"]["total"],"VALID",results["validation_loss"]["total"],
@@ -198,10 +204,10 @@ def main(argv=None):
     if not args.no_evaluate:
         from rotations.hessian_sparsity.evaluation import evaluate
         scores=evaluate(source,U,out)
-        print("TEST mean r^2",scores["hessian_sparsity"]["mean_matched_test_r2"],
-              "PCA",scores["identity_pca"]["mean_matched_test_r2"],flush=True)
-        # TRAIN-supervised oracle is fitted AFTER theta-blind R* is frozen,
-        # and evaluated on the SAME saved FIT/VALID Hessian moments.
+        print("ALL-subject mean r^2",scores["hessian_sparsity"]["mean_all_r2"],
+              "PCA",scores["identity_pca"]["mean_all_r2"],flush=True)
+        # ALL-subject supervised oracle is fitted AFTER blind R* is frozen,
+        # then evaluated on identical FIT-X and VALID-X Hessian moments.
         from rotations.hessian_sparsity.oracle_compare import compare_existing
         compare_existing(out)
     return out

@@ -64,8 +64,8 @@ def optimize(fit,valid,config):
                             angles=angles.tolist(),fit=score,valid=valid_score,
                             scipy_success=bool(res.success),iterations=int(res.nit),
                             message=str(res.message)))
-        # Fit-only selection; validation scores are diagnostic and never
-        # influence objective choice, start selection or regularization.
+        # Fit-X selection; VALID-X scores are diagnostic only.
+        # Both stimulus partitions contain the same ALL SUBJECTS.
         if best is None or score<best["fit"]:
             best=dict(R=R,fit=score,valid=valid_score,start=idx,
                       angles=angles.tolist())
@@ -84,5 +84,5 @@ def optimize(fit,valid,config):
         candidate_improves_VALID=bool(valid.value(R)<valid.value(I)),
         fit_valid_gap=float(valid.value(R)-fit.value(R)),
         all_starts=records,
-        warning="VALID is diagnostic only. TRUE parameters are never used for selection.")
+        warning="FIT-X and VALID-X both use ALL subjects; X only is disjoint. No TEST subjects; no theta used for blind rotation.")
     return R,report

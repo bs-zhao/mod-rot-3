@@ -1,7 +1,5 @@
 {
   "seed": 3405,
-  "fit_subjects": 48,
-  "valid_subjects": 24,
   "fit_x": 96,
   "valid_x": 64,
   "batch_subjects": 4,
@@ -13,5 +11,6 @@
   "ux_weight": 1,
   "mode": "joint",
   "grouping": "pooled",
-  "device": "auto"
+  "device": "auto",
+  "subject_scope": "all"
 }

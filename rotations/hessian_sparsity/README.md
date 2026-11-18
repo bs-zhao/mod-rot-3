@@ -7,7 +7,7 @@ same structural loss and optimizer apply to all three frozen NPs.
 
 ## Mathematical objective
 
-Let q be d TRAIN-PCA-whitened latent dimensions (d=4 CR3, d=3 CR4/CR5).
+Let q be d ALL-SUBJECT-PCA-whitened latent dimensions (d=4 CR3, d=3 CR4/CR5).
 Take \`U=Rq\` with \`R in SO(d)\`. For each selected subject and original X,
 differentiate the frozen Decoder logit and obtain
 
@@ -39,22 +39,28 @@ original condition*, averaging the four values equally. The default
 has only one random-X condition. Neither condition label nor theta
 enters a role-specific rule.
 
-## Optimization and validation
+## Optimization and full-subject descriptive evaluation
 
-- Optimize ALL d(d-1)/2 Givens angles jointly over SO(d), not a sequence
-  of axes or a two-dimensional-only search.
-- FIT = up to 48 NP TRAIN people × 96 original X trials;
-  VALID = up to 24 disjoint NP VALID people × 64 disjoint original X trials.
-- Precompute second-moment tensors once; fast exact torch-autograd gradient
-  of the scalar rotation loss; 16 deterministic multistart L-BFGS-B runs.
-- Choose the winning restart by **FIT alone**. VALID is only diagnostic.
-  Save all restart scores and validation-vs-PCA comparisons.
-- Scan all pairs of U coordinates 0...90° after optimizing and save the
-  FIT/VALID curves. Endpoints 0/90 are mathematically equivalent by
-  signed-permutation symmetry; not a parameter recovery guarantee.
-- Persist R, U and source/provenance hashes, audit zero change in frozen
-  predictions, then and only then load true theta. Use TRAIN theta to
-  choose signed/permutation matching; report held-out TEST r/r².
+- **ALL subjects, with NO rotation-stage train/validation/test participant split.**
+  The original NP training splits stay intact for NN training and source
+  integrity, but have NO role in rotation, PCA, supervised Oracle or scoring.
+- PCA/whitening is fit on the full subject Z matrix.
+- FIT-X and VALID-X contain disjoint *original stimulus trial IDs*, and
+  both contain **the identical complete set of all subjects**.
+  Thus VALID-X is a stimulus sensitivity diagnostic, NOT held-out subjects.
+- Optimize ALL d(d-1)/2 Givens angles simultaneously in SO(d).
+- Precompute second-moment tensors once; differentiate this scalar loss via
+  autograd; seeded multistart L-BFGS-B. R* selected using only FIT-X.
+- Save FIT-X/VALID-X loss, optimizer restarts and all pairwise rotation
+  landscapes. Persist R* BEFORE reading any generating theta.
+- Report full-population Pearson correlations, matched ALL-subject r²,
+  and TRAIN/VALID/TEST-free alignment to actual theta after R* frozen.
+  These are **in-sample descriptions**, not generalization claims.
+- Full cohort (typically 5,000) creates significantly more NN Hessian
+  computation than prior 48-person subsetting. Tune `--set fit_x=...`
+  and `--set valid_x=...` if stimulus budget is too costly; these
+  choices do NOT drop any subjects. Batch size is configurable.
+
 
 **CR3:** requires the newly trained \`_xstd\` S3 checkpoint, not old raw-X.
 For p=0/1 CR3/CR5, smooth NN X-derivatives are finite but do NOT equal
@@ -73,9 +79,9 @@ Inspect paths first:
 
     python rotations/hessian_sparsity/run.py --model CR3 --dry-run
 
-Fast CR3 smoke (the full one is costlier):
+Full-cohort low-stimulus-cost CR3 run (still ALL subjects):
 
-    python rotations/hessian_sparsity/run.py --model CR3 --mode joint --tag smoke --set fit_subjects=8 --set valid_subjects=8 --set fit_x=20 --set valid_x=16 --set restarts=3 --set maxiter=80
+    python rotations/hessian_sparsity/run.py --model CR3 --mode joint --tag all_low_X --set fit_x=20 --set valid_x=16 --set restarts=3 --set maxiter=80
 
 Full runs (same metric, model-specific latent dimension):
 
@@ -112,79 +118,55 @@ Artifacts: \`protocol.json\`, \`rotation.npz\`, \`fit_fields.npz\`,
 and candidate / identity heatmaps.
 
 This is an UNSUPERVISED ROTATION HYPOTHESIS, not guaranteed to recover
-CPT axes. A result must improve FIT/VALID losses, show separate held-out
-TEST recovery, and reproduce under independent NP seeds to count as
-strong evidence. Do not select hyperparameters from TEST theta. Compare
+CPT axes. A result can improve FIT-X/VALID-X losses while decreasing
+full-population parameter alignment. With no rotation TEST set,
+correlations are descriptive in-sample. Replication under independent
+NP seeds is required to assess stability. Do not select hyperparameters from TEST theta. Compare
 \`pooled\` with \`balanced\` to understand stimulus-mixture effects.
 
 
-## Mandatory post-freeze Oracle R vs unsupervised R* loss comparison
+## Post-freeze Oracle R vs blind R* loss comparison — ALL subjects
 
-New runs automatically produce this comparison **after** the original
-R* has been optimized from Hessians without theta and frozen to disk.
-Existing runs can get the exact same comparison retroactively, WITHOUT
-retraining the NP, re-extracting any Hessians or rerunning the blind
-multistart optimization:
+New full-subject runs automatically produce this comparison AFTER
+the blind R* has been frozen to disk. It uses ALL subjects for both
+unsupervised Hessian R* and supervised Oracle R. No TEST subjects
+or TRAIN-only parameter matching exist in this protocol.
 
-    git pull origin main
+For each new completed full-subject run, rerun this cheap post-fit
+analysis WITHOUT retraining NP, extracting derivatives or refitting R*:
+
     python rotations/hessian_sparsity/oracle_compare.py --model CR3
     python rotations/hessian_sparsity/oracle_compare.py --model CR4
     python rotations/hessian_sparsity/oracle_compare.py --model CR5
 
-Commands above locate exactly one completed
-\`main_joint_pooled_*\` directory for each model's default condition;
-if you have multiple fingerprints, pass
-\`--run-dir "outputs/choice/CR3/rotations/hessian_sparsity/..."\` to
-select the exact existing folder. Use \`--mode uu_only\`,
-\`--grouping balanced\`, \`--tag\`, \`--repeat\` and/or \`--condition\`
-to select other runs. \`--force\` explicitly regenerates only the
-Oracle report, never the original R*. Re-running without \`--force\`
-preserves existing Oracle outputs.
+The resolver selects completed ALL-SUBJECT run folders only. Use
+\`--run-dir\` with an exact output path if multiple matches exist.
+Legacy runs fitted to 48 subjects are intentionally rejected: a
+previous subsampled R* must NOT be mislabeled as full-cohort R*.
 
-**Two TRAIN-only Oracle definitions, same frozen q coordinates:**
+Oracle definitions use the **entire Z,theta population**:
+1. \`R_oracle_procrustes\`: full-cohort standardized-theta SO(d)
+   orthogonal least-squares fit.
+2. \`R_oracle\`: full-cohort approximate SO(d) optimization maximizing
+   mean named-axis Pearson r² (20 seeded starts by default).
 
-1. \`R_oracle_procrustes\`: standardized true theta against
-   TRAIN PCA-whitened q, \`SO(d)\` orthogonal Procrustes, minimizing
-   squared coordinate distances. Because \`theta(q)\` need not be
-   perfectly linear, this is only the best TRAIN orthogonal approximation.
-2. **\`R_oracle\` / \`oracle_R_correlation\`**: initialized with that
-   Procrustes solution, run 20 seeded SO(d) multi-start fits maximizing
-   \`mean_i corr(theta_i, (R q)_i)^2\` on **TRAIN subjects only**.
-   Parameter names fix the row order. The oracle is approximate rather
-   than mathematically guaranteed global, and does not use either
-   Hessian simplicity loss or TEST labels in fitting.
+Evaluate R=I, blind R*, Procrustes Oracle and correlation Oracle on the
+**same original FIT-X and VALID-X second-derivative moments**.
+Save \`L(R_oracle)-L(R*)\` in both X samples, including UU/UX separately.
+Output files: \`oracle_comparison.json\`, \`oracle_rotations.npz\`,
+\`oracle_loss_comparison.csv\`, \`oracle_loss_comparison.png\`,
+\`oracle_axis_overlap.png\`. Original files are never overwritten.
 
-After fitting, compare FOUR rotations on the EXACT SAME saved Hessian
-moments, original normalization, mode, and original FIT/VALID person and
-X anchors:
-
-    R = I                original PCA coordinates
-    R = R*               unsupervised Hessian-sparsity optimum
-    R = R_procrustes     TRAIN parameter-supervised orthogonal L2 oracle
-    R = R_oracle         TRAIN parameter-supervised max-r² oracle
-
-Key result: \`L_FIT(R_oracle)-L_FIT(R*)\` and
-\`L_VALID(R_oracle)-L_VALID(R*)\`, along with per-UU/per-UX and each
-condition contribution, independently of NN retraining.
-Also report each rotation's TEST r²; oracle itself is NEVER used to
-select the blind Hessian R* or its optimizer settings.
-
-NEW outputs in the SAME ORIGINAL run folder (no overwrite of
-\`rotation.npz\`, \`fit_complete.json\`, \`loss_diagnostics.json\` or
-\`evaluation.json\`):
-- \`oracle_comparison.json\`: all four R, identical FIT/VALID Hessian
-  loss, individual UU/UX and group losses, TRAIN matching, TEST r²,
-  numerical oracle-minus-blind gaps, and source SHA256 audit.
-- \`oracle_rotations.npz\`: R*, R_oracle, R_procrustes and alignment.
-- \`oracle_loss_comparison.csv\`: side-by-side FIT/VALID/component losses.
-- \`oracle_loss_comparison.png\`: two loss barplots.
-- \`oracle_axis_overlap.png\`: absolute cosine of Oracle and blind axes.
+The Oracle uses theta supervision, but only as a *post-freeze reference*.
+Neither Oracle's supervised criterion nor the true theta enter the
+blind optimization. All reported parameter correlation statistics
+are in-sample over the 5,000 subjects. There is **no TEST r²**.
 
 Run only the post-fit report by invoking \`oracle_compare.py\`. The
 original \`run.py\` also automatically adds it on newly completed runs
-unless \`--no-evaluate\` was requested. The old \`run.py\` output folder
-fingerprint changes when code changes: the STANDALONE Oracle command is
-the safest and fastest way to upgrade pre-existing runs.
+unless \`--no-evaluate\` was requested. This full-cohort protocol creates
+NEW folders; old 48-person runs are preserved but cannot be reclassified
+as all-subject experiments.
 
 This analysis is **diagnostic and supervised**. The blind R* rotation
 remains a genuinely unsupervised simplicity optimizer; the Oracle

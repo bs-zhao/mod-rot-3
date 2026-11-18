@@ -1,4 +1,4 @@
-"""TRAIN-only supervised Oracle comparison is separate from blind R* fitting."""
+"""ALL-subject supervised Oracle comparison is separate from blind R* fitting."""
 from __future__ import annotations
 
 import json
@@ -17,19 +17,21 @@ def orthogonal(d,seed):
 
 
 @pytest.mark.parametrize("dimension",[3,4])
-def test_oracle_recovers_known_train_mapping_without_hessian_or_test(dimension):
+def test_oracle_uses_all_subjects_and_recovers_high_alignment(dimension):
     rng=np.random.default_rng(114+dimension)
     q=rng.normal(size=(300,dimension))
     true_R=orthogonal(dimension,121+dimension)
     theta=q@true_R.T
     Rpro,meta=oc.procrustes_oracle(q,theta)
-    np.testing.assert_allclose(Rpro,true_R,atol=1e-10)
+    # z-scoring the target theta can slightly change its optimal SO(d)
+    # Procrustes mapping when latent dimensions have unequal variation.
+    assert float(np.mean(np.diag(oc._corr(theta,q@Rpro.T))**2))>.99
     assert oc._is_so(Rpro)
     Rcorr,report=oc.correlation_oracle(
         q,theta,Rpro,restarts=3,maxiter=80,seed=41)
     assert oc._is_so(Rcorr)
     assert report["used_hessian_losses_for_oracle"] is False
-    assert report["used_valid_or_test_to_select_oracle"] is False
+    assert report["no_test_split"] is True
     np.testing.assert_allclose(np.abs(np.diag(oc._corr(theta,q@Rcorr.T))),
                                np.ones(dimension),atol=1e-6)
 
@@ -56,14 +58,11 @@ def _fake_run(tmp_path,monkeypatch,d=3):
     theta=q@truth.T+.03*rng.normal(size=(n,d))
     dataset.parent.mkdir(parents=True,exist_ok=True)
     np.savez_compressed(dataset,parameters=theta)
-    tr=np.arange(65)
-    te=np.arange(65,n)
-    fsub=np.arange(16);vsub=np.arange(16,28)
+    all_ids=np.arange(n)
     fx=np.arange(10);vx=np.arange(10,20)
     Rstar=np.eye(d)
     np.savez_compressed(out/"rotation.npz",R=Rstar,q=q,
-                        train_ids=tr,test_ids=te,fit_subject_ids=fsub,
-                        valid_subject_ids=vsub,fit_x_ids=fx,
+                        all_subject_ids=all_ids,fit_x_ids=fx,
                         valid_x_ids=vx)
     flds=[]
     for off in (0,10):
@@ -85,7 +84,8 @@ def _fake_run(tmp_path,monkeypatch,d=3):
                   hashes=hashes,
                   config=dict(mode="joint",grouping="pooled",
                               uu_weight=1.,ux_weight=1.,epsilon=1e-8),
-                  fit_subject_ids=fsub.tolist(),valid_subject_ids=vsub.tolist(),
+                  rotation_subject_scope="all_subjects_no_test",
+                  all_subject_count=n,
                   fit_x_ids=fx.tolist(),valid_x_ids=vx.tolist())
     (out/"protocol.json").write_text(json.dumps(protocol))
     (out/"fit_complete.json").write_text(json.dumps(
@@ -110,12 +110,13 @@ def test_postfit_oracle_uses_existing_fields_and_writes_independent_report(tmp_p
     results=report["comparison"]
     assert set(results)=={"identity_PCA","optimized_R_star",
                           "oracle_R_procrustes","oracle_R_correlation"}
-    assert results["oracle_R_correlation"]["TEST"]["mean_matched_test_r2"]>.995
+    assert results["oracle_R_correlation"]["ALL"]["mean_matched_all_r2"]>.995
     assert report["oracle_minus_optimized"]["FIT"]==pytest.approx(
         results["oracle_R_correlation"]["FIT"]["total"]-
         results["optimized_R_star"]["FIT"]["total"])
     with np.load(out/"rotation.npz") as saved:
         np.testing.assert_array_equal(saved["R"],np.eye(3))
+        np.testing.assert_array_equal(saved["all_subject_ids"],np.arange(90))
     before=(out/"oracle_comparison.json").read_bytes()
     oc.compare_existing(out)
     assert (out/"oracle_comparison.json").read_bytes()==before
@@ -135,4 +136,14 @@ def test_no_oracle_if_frozen_marker_does_not_prove_theta_blind(tmp_path,monkeypa
     out,_=_fake_run(tmp_path,monkeypatch)
     (out/"fit_complete.json").write_text('{"rotation_frozen":true}')
     with pytest.raises(RuntimeError,match="theta-blind"):
+        oc.compare_existing(out,oracle_restarts=1,oracle_maxiter=20)
+
+
+def test_old_subset_protocol_is_rejected_for_true_all_subject_comparison(tmp_path,monkeypatch):
+    out,_=_fake_run(tmp_path,monkeypatch)
+    p=out/"protocol.json"
+    meta=json.loads(p.read_text())
+    del meta["rotation_subject_scope"]
+    p.write_text(json.dumps(meta))
+    with pytest.raises(RuntimeError,match="ALL-subject rotation"):
         oc.compare_existing(out,oracle_restarts=1,oracle_maxiter=20)

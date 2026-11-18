@@ -1,7 +1,8 @@
 """Isolated read-only loader for CR3/4/5 S1, S3 and S5 artifacts.
 
 The true generating theta is intentionally not loaded here. The S1 dataset
-is accessed only for the common X stimulus bank and split consistency.
+is accessed only for the common X stimulus bank and NP provenance. All
+rotation-stage PCA and Hessian fitting use the ENTIRE subject population.
 """
 from __future__ import annotations
 from pathlib import Path
@@ -75,7 +76,7 @@ def load_source(model,condition,repeat,dim,config):
         else:
             group_codes=np.zeros(500,dtype=int)
             group_names=["all"]
-    pca=PCA(n_components=dim,svd_solver="full").fit(z[tr])
+    pca=PCA(n_components=dim,svd_solver="full").fit(z)
     # q = PCA-whitened subject coordinates; B reconstructs native Z.
     W=pca.components_/np.sqrt(np.maximum(pca.explained_variance_,
                                           float(config["whiten_floor"])))[:,None]
@@ -84,18 +85,20 @@ def load_source(model,condition,repeat,dim,config):
     residual=z-pca.mean_-q@B.T
     if not np.allclose(z,pca.mean_+q@B.T+residual,atol=1e-9):
         raise RuntimeError("PCA-whitening roundtrip failed")
+    # User-selected FULL-POPULATION rotation protocol. The existing NP
+    # TRAIN/VALID/TEST splits are checked for S5 integrity but are NOT
+    # used for fitting, whitening, Oracle alignment or evaluation.
     rng=np.random.default_rng(int(config["seed"]))
-    nfit=min(len(tr),int(config["fit_subjects"]))
-    nval=min(len(va),int(config["valid_subjects"]))
-    fit_subjects=np.sort(rng.choice(tr,nfit,replace=False))
-    valid_subjects=np.sort(rng.choice(va,nval,replace=False))
+    all_subjects=np.arange(len(z),dtype=int)
+    fit_subjects=all_subjects
+    valid_subjects=all_subjects
     trials=rng.permutation(500)
     nf=min(500,int(config["fit_x"]))
     nv=min(500-nf,int(config["valid_x"]))
     fit_x_ids=np.sort(trials[:nf])
     valid_x_ids=np.sort(trials[nf:nf+nv])
-    if min(nfit,nval,nf,nv)<4:
-        raise ValueError("Need >=4 subjects and X trial anchors in both FIT/VALID")
+    if len(all_subjects)<4 or min(nf,nv)<4:
+        raise ValueError("Need >=4 subjects and X trial anchors in both FIT/VALID-X")
     if model in ("CR3","CR5") and config["grouping"]=="balanced":
         for selected in (fit_x_ids,valid_x_ids):
             counts=np.bincount(group_codes[selected],minlength=4)
@@ -104,7 +107,9 @@ def load_source(model,condition,repeat,dim,config):
     return {**paths,"model":model,"condition":condition,"repeat":repeat,
             "hashes":hashes,"z":z,"q":q,"W":W,"B":B,"pca_mean":pca.mean_,
             "residual":residual,"train_ids":tr,"validation_ids":va,
-            "test_ids":te,"fit_subject_ids":fit_subjects,
+            "test_ids":te,"all_subject_ids":all_subjects,
+            "rotation_subject_scope":"all_subjects_no_test_split",
+            "fit_subject_ids":fit_subjects,
             "valid_subject_ids":valid_subjects,"fit_x_ids":fit_x_ids,
             "valid_x_ids":valid_x_ids,"bank_x":physical_x,
             "group_codes":group_codes,"group_names":group_names}
