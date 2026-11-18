@@ -44,7 +44,7 @@ def condition(args) -> str:
     # Preserve all existing raw-X CR3 checkpoints, Z and reports in the
     # historical unsuffixed condition directory. New CR3 outputs are
     # isolated and cannot silently load or overwrite old raw-X runs.
-    if args.model == 'CR3':
+    if getattr(args, 'model', None) == 'CR3':
         tag += '_xstd'
     return tag
 
