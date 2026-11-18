@@ -25,7 +25,7 @@ def synthetic(d,seed=42,n=8,t=20):
     for j in range(6):
         J0[...,j%d,j]=rng.normal(size=(n,t))
     # Original q coordinates were rotated by Q.T.
-    H=np.einsum("ai,...ab,bj->...ij",Q.T,H0,Q,optimize=True)
+    H=np.einsum("ai,...ab,bj->...ij",Q,H0,Q,optimize=True)
     J=np.einsum("ia,...aj->...ij",Q.T,J0,optimize=True)
     return dict(eta=np.zeros((n,t)),UU=H,UX=J,
                 group_codes=np.arange(t)%4),Q
