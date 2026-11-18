@@ -6,8 +6,7 @@ sys.path.insert(0, str(NP_ROOT / 'src'))
 """S1: Generate binary-choice data with the exact old C1/C2/C3/CR3 generators."""
 from modrot3.cli import parse_args
 from modrot3.pipeline import (dataset_path, _run_legacy, _cr3_refs, _cr3_bank,
-                              _cr2_bank, _cr4_bank, _cr4_ref, _cr5_bank, _cr5_ref,
-                              _cr3_bank)
+                              _cr2_bank, _cr4_bank, _cr4_ref, _cr5_bank, _cr5_ref)
 from modlearn_rot.generators.registry import get_model
 from modlearn_rot.generators.dataset import generate_dataset, save_dataset, summarize_dataset
 from modlearn_rot.task_specs import get_task_spec_for_model
