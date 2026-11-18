@@ -95,7 +95,7 @@ def test_cr3_evaluation_four_axes_and_three_axis_partial(tmp_path):
         assert len(result["unmatched_parameters"])==4-dim
         assert result["full_parameter_axis_recovery_possible"]==(dim==4)
         assert abs(result["mean_all_r2"]-1)<1e-10
-        assert (folder/"candidate_correlations.png").is_file()
+        assert (folder/"candidate_all_correlations.png").is_file()
 
 
 def test_source_transform_must_not_accept_legacy_raw_cr3(monkeypatch):
