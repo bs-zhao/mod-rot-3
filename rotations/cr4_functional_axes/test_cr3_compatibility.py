@@ -90,11 +90,11 @@ def test_cr3_evaluation_four_axes_and_three_axis_partial(tmp_path):
         result=scores["candidate"]
         assert result["total_parameters"]==4
         assert result["matched_parameters"]==dim
-        assert len(result["signed_test_corr"])==4
-        assert len(result["signed_test_corr"][0])==dim
+        assert len(result["signed_all_corr"])==4
+        assert len(result["signed_all_corr"][0])==dim
         assert len(result["unmatched_parameters"])==4-dim
         assert result["full_parameter_axis_recovery_possible"]==(dim==4)
-        assert abs(result["mean_test_r2"]-1)<1e-10
+        assert abs(result["mean_all_r2"]-1)<1e-10
         assert (folder/"candidate_correlations.png").is_file()
 
 

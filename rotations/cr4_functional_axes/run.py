@@ -117,7 +117,9 @@ def main(argv=None):
     if args.model=="CR3" and args.rotation_dim==3:
         print("WARNING: CR3 has FOUR true parameters; L3 can only give a partial 3-of-4 axis comparison. Use L4 + --rotation-dim 4 for all four.",flush=True)
     config=read_config(args)
-    if min(int(config[k]) for k in ("fit_subjects","valid_subjects","fit_x",
+    if config.get("subject_scope")!="all":
+        raise ValueError("Rotation protocol requires ALL subjects")
+    if min(int(config[k]) for k in ("fit_x",
                                     "valid_x","batch_subjects"))<1:
         raise ValueError("Sampling and batch sizes must be positive")
     source=load_source(args,config)
@@ -126,18 +128,18 @@ def main(argv=None):
               true_parameter_count=(4 if args.model=="CR3" else 3),
               full_parameter_axis_recovery_possible=(args.model!="CR3" or args.rotation_dim==4),
               configuration=config,code_sha256=code_sha(),
-              fit_subject_ids=source["fit_subject_ids"].tolist(),
-              validation_subject_ids=source["valid_subject_ids"].tolist(),
+              rotation_subject_scope="all_subjects_no_test",
+              all_subject_count=int(len(source["z"])),
+              fit_and_valid_X_share_all_subjects=True,
               fit_x_ids=source["fit_x_ids"].tolist(),
               validation_x_ids=source["valid_x_ids"].tolist(),
-              gate_policy="Both FIT/VALID gain+curvature thresholds; never use theta to select")
+              gate_policy="FIT-X/VALID-X both use all subjects and disjoint stimuli; never use theta to select")
     fingerprint=hashlib.sha256(json.dumps(meta,sort_keys=True).encode()).hexdigest()[:16]
     out=(source["root"]/"rotations"/HERE.name/args.condition/
          f"repeat{args.repeat:02d}"/f"{args.tag}_{fingerprint}")
     if args.dry_run:
         print(f"Planned independent {args.model} rotation:",out)
-        print("FIT subjects",len(source["fit_subject_ids"]),
-              "VALID subjects",len(source["valid_subject_ids"]),
+        print("ALL SUBJECTS",len(source["all_subject_ids"]),
               "FIT X",len(source["fit_x_ids"]),"VALID X",len(source["valid_x_ids"]))
         return out
     if out.exists():
@@ -173,8 +175,8 @@ def main(argv=None):
                         A_inverse=np.linalg.pinv(R@source["W"]),
                         U=U,q=source["q"],W=source["W"],B=source["B"],
                         z_mean=source["pca_mean"],z_residual=source["residual"],
-                        train_ids=source["tr"],validation_ids=source["va"],test_ids=source["te"],
-                        fit_subject_ids=source["fit_subject_ids"],
+                        all_subject_ids=source["all_subject_ids"],
+                        rotation_subject_scope="all_subjects_no_test",
                         fit_x_ids=source["fit_x_ids"])
     np.savez_compressed(out/"fit_fields.npz",eta=fit["eta"],G=fit["G"],H=fit["H"],
                         subject_ids=fit["subject_ids"],x_ids=fit["x_ids"])
@@ -192,6 +194,7 @@ def main(argv=None):
         result="functional candidate; see gate status",
         gate_pass=diagnostics["both_gates_pass"],
         theta_unavailable_during_fit=True,derivative_source="frozen_decoder_autodiff",
+        rotation_subject_scope="all_subjects_no_test",
         outputs=["rotation.npz","protocol.json","loss_diagnostics.json",
                  "invariance_audit.json","ux_diagnostics.json"]))
     print(f"Frozen {args.model} functional rotation:",out,flush=True)
@@ -199,8 +202,8 @@ def main(argv=None):
     if not args.no_evaluate:
         from rotations.cr4_functional_axes.evaluation import parameter_diagnostics
         scores=parameter_diagnostics(source,U,R,out)
-        print("TEST r2 candidate:",scores["candidate"]["mean_test_r2"],flush=True)
-        print("TEST r2 identity:",scores["identity_pca"]["mean_test_r2"],flush=True)
+        print("ALL-subject r2 candidate:",scores["candidate"]["mean_all_r2"],flush=True)
+        print("ALL-subject r2 identity:",scores["identity_pca"]["mean_all_r2"],flush=True)
     return out
 
 

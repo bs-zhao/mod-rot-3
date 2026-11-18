@@ -144,3 +144,23 @@ python rotations/cr4_functional_axes/run.py --model CR3 --condition beta0p0005_l
 
 Rotation results go only to `outputs/choice/CR3/rotations/` under the
 `_xstd` condition; old raw-X outputs are never reused.
+
+
+## ALL-subject rotation-stage protocol (new runs)
+
+The researcher has requested NO TEST or subject-level TRAIN/VALID split
+for rotation. The existing NP's training splits remain intact only for
+its original model training and source verification.
+
+Now \`cr4_functional_axes\` fits PCA/whitening on ALL subject Z, searches R
+on ALL subjects × FIT-X stimuli, and checks SAME subjects × disjoint
+VALID-X stimuli. Full-cohort parameter correlations are descriptive
+in-sample statistics and are saved in \`evaluation_all_subjects.json\`
+and \`*_all_correlations.png\`, not TEST generalization estimates.
+The R is still learned without theta and frozen before parameter scoring.
+
+Historical older rotation folders are NOT overwritten and keep their
+previous split-based semantics. Re-running the suite creates distinct
+fingerprint paths under the same independent package. Full-cohort NN
+derivative extraction takes more computation than the old protocol;
+reduce FIT-X/VALID-X counts if desired, not subject counts.

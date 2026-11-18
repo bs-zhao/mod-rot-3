@@ -40,7 +40,7 @@ def load_source(args, config):
     if k not in ((3,4) if args.model=="CR3" else (3,)) or z.shape[1]<k:
         raise ValueError(f"{args.model}: CR3 permits rotation_dim 3 or 4; "
                          f"CR4/CR5 require 3. Native-Z dim={z.shape[1]}")
-    pca = PCA(n_components=k, svd_solver="full").fit(z[tr])
+    pca = PCA(n_components=k, svd_solver="full").fit(z)
     w = pca.components_ / np.sqrt(np.maximum(pca.explained_variance_, config["whiten_floor"]))[:, None]
     b = np.linalg.pinv(w)
     q = (z - pca.mean_) @ w.T
@@ -61,8 +61,10 @@ def load_source(args, config):
         if not np.array_equal(np.asarray(a["x"][-500:]), bank):
             raise ValueError("Shared bank does not match last participant")
     rng = np.random.default_rng(config["seed"])
-    fs = np.sort(rng.choice(tr, size=min(len(tr), config["fit_subjects"]), replace=False))
-    vs = np.sort(rng.choice(va, size=min(len(va), config["valid_subjects"]), replace=False))
+    # Use ALL subjects for BOTH FIT-X and VALID-X structural diagnostics.
+    # Native NP train/valid/test labels are provenance only.
+    fs = np.arange(len(z), dtype=np.int64)
+    vs = fs
     ix = rng.permutation(len(bank))
     nx = min(len(bank), int(config["fit_x"]))
     nv = min(len(bank) - nx, int(config["valid_x"]))
@@ -73,5 +75,7 @@ def load_source(args, config):
     return dict(root=root, model=args.model, checkpoint=ck, dataset=dataset,
                 latent=latent, hashes=dict(checkpoint=ck_sha,dataset=ds_sha,latent=latent_sha),
                 z=z, q=q, residual=residual, W=w, B=b, pca_mean=pca.mean_.copy(),
-                tr=tr, va=va, te=te, fit_subject_ids=fs, valid_subject_ids=vs,
+                tr=tr, va=va, te=te, all_subject_ids=fs,
+                rotation_subject_scope="all_subjects_no_test",
+                fit_subject_ids=fs, valid_subject_ids=vs,
                 bank=bank, fit_x_ids=fit_x, valid_x_ids=valid_x)

@@ -1,7 +1,5 @@
 {
   "seed": 31,
-  "fit_subjects": 96,
-  "valid_subjects": 48,
   "fit_x": 128,
   "valid_x": 64,
   "batch_subjects": 8,
@@ -15,5 +13,6 @@
   "curvature_grid": 181,
   "teacher_device": "auto",
   "ux_subjects": 24,
-  "ux_x": 48
+  "ux_x": 48,
+  "subject_scope": "all"
 }
