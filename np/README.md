@@ -225,8 +225,8 @@ coordinates are independently sampled: four amounts Uniform(5,200) and two
 gain probabilities Uniform(0.05,0.95). Amounts are strictly positive and
 probabilities interior; there are NO intentionally inserted gain-only,
 loss-only, equal-probability, or sure-outcome trials, and NO FOSD filter or
-Fisher optimization. The bank is one fixed draw for all 5,000 subjects, so
-there is no identical trial imposed repeatedly across different populations.
+Fisher optimization. The bank is one fixed draw of 500 trials shared by every subject;
+the six X attributes are independently sampled within that bank.
 The sampling distributions are configurable when explicitly calling
 `np/reference/cr4/s0_s1_cr4.py --stage design`; keep defaults for comparisons.
 
