@@ -1,0 +1,17 @@
+{
+  "seed": 3405,
+  "fit_subjects": 48,
+  "valid_subjects": 24,
+  "fit_x": 96,
+  "valid_x": 64,
+  "batch_subjects": 4,
+  "whiten_floor": 0.00001,
+  "restarts": 16,
+  "maxiter": 240,
+  "epsilon": 1e-8,
+  "uu_weight": 1,
+  "ux_weight": 1,
+  "mode": "joint",
+  "grouping": "pooled",
+  "device": "auto"
+}

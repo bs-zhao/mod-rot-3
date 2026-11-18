@@ -85,3 +85,14 @@ It includes a held-out VALID support gate and a separate exact UX
 stimulus-column sensitivity audit. No theta is used to fit R.
 
     python rotations/cr4_functional_axes/run.py --model CR4 --condition beta0p0005_lambda0_ctx0p25to0p8_L3 --repeat 1
+
+## Role-free Hessian sparsity rotation for CR3/CR4/CR5
+
+See [Hessian sparsity suite](hessian_sparsity/README.md). Joint SO(3)/SO(4)
+search over UU/UX elementwise RMS-L1 sparsity; no assumed parameter roles,
+no output gain, deterministic multistart, group-balanced option, frozen
+Decoder, independently held-out VALID and TEST evaluation.
+
+    python rotations/hessian_sparsity/run.py --model CR3 --mode joint
+    python rotations/hessian_sparsity/run.py --model CR4 --mode joint
+    python rotations/hessian_sparsity/run.py --model CR5 --mode joint
