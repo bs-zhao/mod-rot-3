@@ -1,4 +1,4 @@
-"""Frozen CR4/CR5 decoders; apply their saved decoder-X scaler."""
+"""Frozen CR3/CR4/CR5 decoders; apply their saved decoder-X scaler."""
 from __future__ import annotations
 import numpy as np
 import torch
@@ -11,16 +11,17 @@ def restore(source, device="auto"):
     extra = ck.get("extra_state", {})
     pre = extra.get("decoder_x_standardization")
     if not pre:
-        raise RuntimeError("CR4/CR5 checkpoint missing decoder_x_standardization: retrain with S3")
+        raise RuntimeError("Checkpoint lacks decoder-X standardization; CR3 needs the NEW _xstd S3 checkpoint, not legacy raw-X weights")
     from rotations.cr4_functional_axes.data import sha256
-    bank_name = ("CR4_3P_random500.npz" if source["model"]=="CR4"
-                 else "CR5_3P_cr3bank500.npz")
+    bank_name = {"CR3": "CR3_4P_fixed500.npz",
+                 "CR4": "CR4_3P_random500.npz",
+                 "CR5": "CR5_3P_cr3bank500.npz"}[source["model"]]
     if pre.get("bank_sha256") != sha256(source["root"]/"s0_design"/bank_name):
         raise RuntimeError(f'{source["model"]} decoder-X scaler originated from a different bank')
     x_mu = np.asarray(pre["mean"], dtype=np.float64)
     x_sd = np.asarray(pre["sd"], dtype=np.float64)
     if x_mu.shape != (6,) or x_sd.shape != (6,) or np.any(x_sd <= 0):
-        raise RuntimeError("Invalid 3P decoder X scaler")
+        raise RuntimeError("Invalid CR3/CR4/CR5 decoder X scaler")
     cfg = DiscreteNPConfig(**ck["model_config"])
     if cfg.latent_dim != source["z"].shape[1] or cfg.x_dim != 6 or cfg.num_choices != 2:
         raise RuntimeError("Checkpoint decoder dimensions mismatch")

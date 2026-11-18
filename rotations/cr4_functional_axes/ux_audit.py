@@ -1,8 +1,8 @@
-"""CR4 UX audit, orthogonal rotations cannot repair stimulus-column energies.
+"""CR3/CR4/CR5 UX audit; orthogonal rotations preserve X-column energies.
 
 This is a POST-FIT diagnostic, not an extra optimization loss. All X probes
 are original fixed CR4 bank points; X differentiations are taken in the
-exact standardized decoder coordinates saved by the CR4 training checkpoint.
+exact standardized decoder coordinates saved by the trained checkpoint.
 """
 from __future__ import annotations
 import numpy as np
@@ -36,7 +36,7 @@ def ux_field(model,device,source,subject_ids,x_ids,x_mu,x_sd,batch_subjects=6):
             tensor.append(torch.stack(cols,dim=-1))
         rows.append(torch.stack(tensor,dim=-2).detach().cpu().numpy())
     values=np.concatenate(rows).astype(np.float64)
-    if not np.isfinite(values).all():raise RuntimeError("Nonfinite CR4 mixed derivatives")
+    if not np.isfinite(values).all():raise RuntimeError("Nonfinite frozen-decoder mixed derivatives")
     return values
 
 
@@ -58,4 +58,4 @@ def ux_diagnostics(field,R):
         X_energy_invariant_to_R=True,
         probability_columns_fraction=float(xfrac[2]+xfrac[5]),
         x_names=("gain_A","loss_A","p_gain_A","gain_B","loss_B","p_gain_B"),
-        warning="UX is diagnostic only; column energies cannot be changed by an orthogonal U rotation")
+        warning="UX is diagnostic only; CR3 boundaries are original stimulus design points; smooth NN derivatives are NOT CPT's singular endpoint derivatives. Orthogonal U rotation preserves each X-column energy.")

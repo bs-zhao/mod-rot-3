@@ -1,4 +1,4 @@
-"""Independent CR4/CR5 output-gain + low-curvature rotation.
+"""Independent CR3/CR4/CR5 output-gain + low-curvature rotation.
 
 No imports from another rotation suite; no true parameter is used to fit R.
 """
@@ -96,7 +96,7 @@ def roundtrip_audit(model,device,source,R,x_mu,x_sd):
 
 def main(argv=None):
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--model",choices=("CR4","CR5"),default="CR4")
+    ap.add_argument("--model",choices=("CR3","CR4","CR5"),default="CR4")
     ap.add_argument("--condition",default="beta0p0005_lambda0_ctx0p25to0p8_L3")
     ap.add_argument("--repeat",type=int,default=1)
     ap.add_argument("--rotation-dim",type=int,default=3)
@@ -107,15 +107,24 @@ def main(argv=None):
     ap.add_argument("--dry-run",action="store_true")
     ap.add_argument("--no-evaluate",action="store_true")
     args=ap.parse_args(argv)
-    if args.repeat<1 or args.rotation_dim!=3 or args.seed<0:
-        ap.error("Three-parameter CR4/CR5 requires repeat>=1, rotation_dim=3, seed>=0")
+    if args.repeat<1 or args.seed<0:
+        ap.error("repeat>=1 and seed>=0 are required")
+    if args.rotation_dim not in ((3,4) if args.model=="CR3" else (3,)):
+        ap.error("CR3 supports --rotation-dim 3 (partial) or 4 (complete); CR4/CR5 require 3")
+    if args.model=="CR3" and not args.condition.endswith("_xstd"):
+        args.condition += "_xstd"
+        print(f"CR3 automatically uses new X-standardized S3/S5 condition: {args.condition}",flush=True)
+    if args.model=="CR3" and args.rotation_dim==3:
+        print("WARNING: CR3 has FOUR true parameters; L3 can only give a partial 3-of-4 axis comparison. Use L4 + --rotation-dim 4 for all four.",flush=True)
     config=read_config(args)
     if min(int(config[k]) for k in ("fit_subjects","valid_subjects","fit_x",
                                     "valid_x","batch_subjects"))<1:
         raise ValueError("Sampling and batch sizes must be positive")
     source=load_source(args,config)
     meta=dict(suite=HERE.name,model=args.model,condition=args.condition,repeat=args.repeat,
-              rotation_dim=3,tag=args.tag,source_hashes=source["hashes"],
+              rotation_dim=args.rotation_dim,tag=args.tag,source_hashes=source["hashes"],
+              true_parameter_count=(4 if args.model=="CR3" else 3),
+              full_parameter_axis_recovery_possible=(args.model!="CR3" or args.rotation_dim==4),
               configuration=config,code_sha256=code_sha(),
               fit_subject_ids=source["fit_subject_ids"].tolist(),
               validation_subject_ids=source["valid_subject_ids"].tolist(),
@@ -142,9 +151,13 @@ def main(argv=None):
                 x_mu,x_sd,int(config["batch_subjects"]))
     valid=extract(model,device,source,source["valid_subject_ids"],source["valid_x_ids"],
                   x_mu,x_sd,int(config["batch_subjects"]))
-    R,diagnostics,landscape=fit_functional_axes(fit,valid,config)
-    if not np.allclose(R@R.T,np.eye(3),atol=1e-8) or not np.isclose(np.linalg.det(R),1.,atol=1e-8):
-        raise RuntimeError("Rotation not in SO(3)")
+    if args.rotation_dim==4:
+        from rotations.cr4_functional_axes.objective_cr3_4d import fit_four_axes
+        R,diagnostics,landscape=fit_four_axes(fit,valid,config)
+    else:
+        R,diagnostics,landscape=fit_functional_axes(fit,valid,config)
+    if not np.allclose(R@R.T,np.eye(args.rotation_dim),atol=1e-8) or not np.isclose(np.linalg.det(R),1.,atol=1e-8):
+        raise RuntimeError("Rotation not in SO(k)")
     U=source["q"]@R.T
     audit=roundtrip_audit(model,device,source,R,x_mu,x_sd)
     if audit["probability_max_abs"]>5e-6:

@@ -117,3 +117,30 @@ After completing CR5 S3 and S5:
 Results are isolated in `outputs/choice/CR5/rotations/cr4_functional_axes/`.
 Never reuse the CR4 checkpoint, Z or stimulus scaler on CR5. Strict
 CR5 source, checkpoint and S1/S5 hashes are checked before optimization.
+
+## Standardized four-parameter CR3
+
+CR3 is also supported via `--model CR3`, **but ONLY with the new
+X-standardized CR3 decoder**. The run loader requires a saved bank-validated
+`decoder_x_standardization` in the S3 checkpoint, identical to CR4/CR5.
+Historical raw-X CR3 weights cannot run this suite or be silently converted.
+The CLI automatically resolves CR3's unsuffixed condition string to its
+new `_xstd` S3/S5 checkpoint. The original 500-trial bank, four parameter
+generator, and all boundary conditions remain intact.
+
+For full four-parameter recovery, train/extract CR3 `--latent-dim 4` and
+run `--rotation-dim 4`. In four dimensions, after finding an output-gain
+direction, its orthogonal complement is **three-dimensional**, so the
+extension searches a 2-sphere for minimum pure axial curvature, then
+the remaining two-plane; this is NOT a mislabeled 2D-only angle scan.
+Gates distinguish unsupported directions from recovered parameter axes.
+CR3 with `--latent-dim 3 --rotation-dim 3` runs as an exploratory
+PARTIAL 4x3 theta-to-U comparison, explicitly marking the unmatched
+fourth parameter and never claiming full 4-axis recovery.
+
+```cmd
+python rotations/cr4_functional_axes/run.py --model CR3 --condition beta0p0005_lambda0_ctx0p25to0p8_L4 --repeat 1 --rotation-dim 4 --tag main
+```
+
+Rotation results go only to `outputs/choice/CR3/rotations/` under the
+`_xstd` condition; old raw-X outputs are never reused.

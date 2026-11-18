@@ -1,7 +1,7 @@
 """Exact frozen-decoder U gradient and U-U Hessian (no X differentiation).
 
-Evaluates at the ORIGINAL CR4 random bank, not synthetic counterfactual X.
-Physical X is standardized by the SAME persisted scaler used during S3;
+Evaluates at the ORIGINAL model-specific bank, never synthetic X probes.
+Physical X is standardized with the SAME persisted scaler used during S3;
 all derivatives are along PCA-whitened latent directions, with the native-Z
 residual preserved. Never differentiate the simulation's true parameter.
 """
@@ -17,8 +17,8 @@ def extract(model,device,source,subjects,trial_ids,x_mu,x_sd,batch_subjects=8):
     xstd = (bank - np.asarray(x_mu)) / np.asarray(x_sd)
     B = np.asarray(source["B"],dtype=np.float32)
     k = B.shape[1]
-    if k != 3:
-        raise ValueError("Suite is intended for exactly 3 CR4 factors")
+    if k not in (3,4):
+        raise ValueError("Suite requires 3 or 4 rotated latent axes")
     x0 = torch.as_tensor(xstd,dtype=torch.float32,device=device)
     directions = torch.as_tensor(B.T,dtype=torch.float32,device=device)
     values, gradients, hessians = [], [], []
@@ -51,5 +51,5 @@ def extract(model,device,source,subjects,trial_ids,x_mu,x_sd,batch_subjects=8):
     return dict(eta=eta,G=g,H=h,subject_ids=np.asarray(subjects),x_ids=np.asarray(trial_ids),
                 x_raw=bank,
                 max_hessian_asymmetry=float(np.max(np.abs(h-h.swapaxes(-1,-2)))),
-                U_coordinate="TRAIN PCA whitened q", X_coordinate="CR4 checkpoint X standardized",
+                U_coordinate="TRAIN PCA whitened q", X_coordinate="checkpoint X standardized",
                 response="choice logit1 - logit0")

@@ -37,8 +37,9 @@ def load_source(args, config):
     if not np.array_equal(np.sort(np.concatenate((tr, va, te))), np.arange(len(z))):
         raise ValueError("S5 subject split is not disjoint and exhaustive")
     k = int(args.rotation_dim)
-    if k != 3 or z.shape[1] < k:
-        raise ValueError("CR4/CR5 functional axes require k=3 selected axes and native Z >=3")
+    if k not in ((3,4) if args.model=="CR3" else (3,)) or z.shape[1]<k:
+        raise ValueError(f"{args.model}: CR3 permits rotation_dim 3 or 4; "
+                         f"CR4/CR5 require 3. Native-Z dim={z.shape[1]}")
     pca = PCA(n_components=k, svd_solver="full").fit(z[tr])
     w = pca.components_ / np.sqrt(np.maximum(pca.explained_variance_, config["whiten_floor"]))[:, None]
     b = np.linalg.pinv(w)
@@ -49,7 +50,7 @@ def load_source(args, config):
     with np.load(dataset, allow_pickle=False) as a:
         counts = np.asarray(a["trial_counts"], dtype=np.int64)
         if len(counts) != len(z) or not np.all(counts == 500):
-            raise ValueError("CR4/CR5 expect 500 trials per S5 subject")
+            raise ValueError("CR3/CR4/CR5 require 500 trials per S5 subject")
         # A fixed X bank is shared by all people. Read-only, no Y or theta.
         bank = np.asarray(a["x"][:500], dtype=np.float64)
         ids = np.asarray(a["subject_index"], dtype=np.int64)
