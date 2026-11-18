@@ -108,7 +108,7 @@ def load_source(model,condition,repeat,dim,config):
             "hashes":hashes,"z":z,"q":q,"W":W,"B":B,"pca_mean":pca.mean_,
             "residual":residual,"train_ids":tr,"validation_ids":va,
             "test_ids":te,"all_subject_ids":all_subjects,
-            "rotation_subject_scope":"all_subjects_no_test_split",
+            "rotation_subject_scope":"all_subjects_no_test",
             "fit_subject_ids":fit_subjects,
             "valid_subject_ids":valid_subjects,"fit_x_ids":fit_x_ids,
             "valid_x_ids":valid_x_ids,"bank_x":physical_x,
