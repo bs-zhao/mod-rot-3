@@ -1,0 +1,1 @@
+"""CR3 analytic-only stratified identifiability and rotation benchmark."""

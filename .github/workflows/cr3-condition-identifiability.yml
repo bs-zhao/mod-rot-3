@@ -1,0 +1,21 @@
+name: CR3 condition identifiability (isolated)
+on:
+  push:
+    paths:
+      - 'experiments/cr3_condition_identifiability/**'
+      - '.github/workflows/cr3-condition-identifiability.yml'
+  pull_request:
+    paths:
+      - 'experiments/cr3_condition_identifiability/**'
+      - '.github/workflows/cr3-condition-identifiability.yml'
+jobs:
+  analytic-unit-and-mock-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install -e '.[dev]'
+      - run: python -m pytest -q experiments/cr3_condition_identifiability/tests
