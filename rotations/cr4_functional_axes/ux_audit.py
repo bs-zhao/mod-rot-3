@@ -18,7 +18,9 @@ def ux_field(model,device,source,subject_ids,x_ids,x_mu,x_sd,batch_subjects=6):
     rows=[]
     for a in range(0,len(z),batch_subjects):
         zb=torch.as_tensor(z[a:a+batch_subjects],dtype=torch.float32,device=device)
-        xb=xx.unsqueeze(0).expand(len(zb),-1,-1)
+        # Forward-mode AD differentiates X here. expand() aliases storage
+        # across subjects, so make the expanded tensor independent first.
+        xb=xx.unsqueeze(0).expand(len(zb),-1,-1).clone()
         tensor=[]
         for i in range(len(directions)):
             tangent=directions[i].expand_as(zb)
