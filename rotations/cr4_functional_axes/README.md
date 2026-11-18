@@ -15,7 +15,7 @@ while the lambda direction has zero pure lambda-lambda curvature.
 This package tests these two functional properties without knowing their
 parameter names during fitting. On TRAIN subjects and a common original
 X sample, let eta(s,x) be frozen decoder logit and G(s,x) its gradient
-along the three TRAIN PCA-whitened latent directions q:
+along the three ALL-subject PCA-whitened latent directions q:
 
   1. Regress G(s,x) over eta(s,x) separately for each participant; form
      residual A=E[(G-c_s eta)(G-c_s eta)^T] and B=E[GG^T].
@@ -32,16 +32,17 @@ All quantities come from autodifferentiating the frozen NN, not a fitted
 polynomial surrogate. No sim theta, known CPT formula, or true axis labels
 enter objective selection.
 
-FIT uses up to 96 NP TRAIN people x 128 original X anchors; VALID uses
-up to 48 NP VALID people x 64 DISJOINT X anchors. The gain and curvature
+FIT and VALID use ALL subjects, but disjoint original X anchors
+(128 FIT-X versus 64 VALID-X by default). The gain and curvature
 conditions have predeclared thresholds for BOTH splits, and a candidate
 is flagged exploratory if either gate fails. Full decoder predictive
 distribution equivalence, orthogonality, residual preservation and
-source hashes are audited before theta access.
+source hashes are audited before theta access. Any later alignment scores
+are calculated on ALL subjects and are descriptive in-sample.
 
 ## Additional UX diagnostic
 
-Compute actual mixed U-X Hessian for 24 TRAIN subjects x 48 original
+Compute an optional, SAMPLE-based mixed U-X diagnostic for 24 subjects x 48 original
 stimuli, with X in the **saved decoder's standardized coordinates**.
 Rotate only the U index. Record six X-column energy shares before/after.
 Column energies must be orthogonally invariant, so R cannot repair a
@@ -63,7 +64,7 @@ Check that source exists and inspect anchors without running:
 
 Run a small smoke using an isolated output fingerprint:
 
-    python rotations/cr4_functional_axes/run.py --model CR4 --condition beta0p0005_lambda0_ctx0p25to0p8_L3 --tag smoke --set fit_subjects=20 --set valid_subjects=12 --set fit_x=24 --set valid_x=16 --set ux_subjects=8 --set ux_x=12
+    python rotations/cr4_functional_axes/run.py --model CR4 --condition beta0p0005_lambda0_ctx0p25to0p8_L3 --tag all_low_X --set fit_x=24 --set valid_x=16 --set ux_subjects=8 --set ux_x=12
 
 Run the declared main protocol:
 
@@ -79,7 +80,7 @@ residuals exactly, and applies R only to those 3 q coordinates.
 Under outputs/choice/CR4/rotations/cr4_functional_axes/<condition>/
 repeat01/main_<fingerprint> :
 
-- protocol.json: config and source/code SHA256, FIT/VALID ID lists
+- protocol.json: config/source SHA256, all-subject scope, disjoint X groups
 - rotation.npz: R, A=RW, U, q, native residuals, split identifiers
 - fit_fields.npz / validation_fields.npz: frozen eta, G and H
 - loss_diagnostics.json: gain eigenvalues/eigengap, directional energy,
@@ -88,14 +89,14 @@ repeat01/main_<fingerprint> :
 - ux_audit.npz and ux_diagnostics.json: exact mixed UX and X-column audit
 - invariance_audit.json: native-Z and probability roundtrips
 - fit_complete.json: R persisted BEFORE any theta diagnostic
-- evaluation.json: TRAIN matching -> TEST r^2 for candidate and PCA identity
-- candidate_correlations.png / identity_pca_correlations.png
+- evaluation_all_subjects.json: descriptive full-cohort Pearson/r²
+- candidate_all_correlations.png / identity_pca_all_correlations.png
 
 The method's output is a functional candidate, not guaranteed causal or
 parameter recovery. In a highly nonlinear NP representation, a globally
 constant direction implementing tau scaling or lambda affinity may not
 exist. Gate failures are scientifically meaningful and retained. Do not
-select variants based on TEST theta. If successful, compare against
+select variants based on true theta alignment, which is in-sample. If successful, compare against
 independent repeat-2 NP after defining the same precommitted protocol.
 
 
