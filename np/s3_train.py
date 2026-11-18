@@ -7,7 +7,7 @@ sys.path.insert(0, str(NP_ROOT / 'src'))
 import numpy as np
 from modrot3.cli import parse_args
 from modrot3.pipeline import (dataset_path, train_path, latent_path, condition, sha256,
-                               _require_qualified, _discrete_data, _run_seed)
+                               _require_qualified, _discrete_data, _run_seed, cr4_input_scaler, _cr4_bank)
 from modlearn_rot.generators.dataset import load_dataset
 from modlearn_rot.nn.np.point.discrete import DiscreteNPConfig
 from modlearn_rot.training.np.point.discrete import DiscreteNPTrainer, DiscreteNPTrainingConfig
@@ -60,18 +60,28 @@ def train(args):
                   f'betaKL={args.beta*tr["kl"]:.5f}', flush=True)
     result = trainer.fit(data, subject_splits=splits,
                          fixed_context_masks=masks, epoch_callback=progress)
+    input_transform={}
+    if args.model == 'CR4':
+        x_mu, x_sd = cr4_input_scaler()
+        input_transform=dict(
+            decoder_x_standardization=dict(
+                policy='CR4: physical X -> (X - bank_mean)/bank_sd',
+                mean=x_mu.tolist(), sd=x_sd.tolist(),
+                bank_sha256=sha256(_cr4_bank())))
     save_checkpoint(ckpt, result, model_cfg, config, splits, masks,
                     extra_state=dict(model_id=args.model, repeat=args.repeat,
                                      run_seed=_run_seed(args), condition=condition(args),
                                      dataset_sha256=sha256(dataset_path(args.model)),
-                                     source='same original DiscreteNeuralProcess and DiscreteNPTrainer'))
+                                     source='same original DiscreteNeuralProcess and DiscreteNPTrainer',
+                                     **input_transform))
     save_history_csv(result['history'], ckpt.parent/'s3_train__history.csv')
     save_json(dict(model=args.model, condition=condition(args), repeat=args.repeat,
                    model_config=model_cfg.to_dict(), training_config=config.to_dict(),
                    best_epoch=int(result['best_epoch'])+1,
                    validation_metrics=result['validation_metrics'],
                    test_metrics=result['test_metrics'],
-                   dataset_sha256=sha256(dataset_path(args.model))),
+                   dataset_sha256=sha256(dataset_path(args.model)),
+                   **input_transform),
               ckpt.parent/'s3_train__summary.json')
     print('Saved original NP architecture checkpoint:', ckpt)
 

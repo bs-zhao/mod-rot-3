@@ -4,7 +4,7 @@ Each experiment is its **own runnable Python file**, with actual stage logic in 
 
 | Order | Python entrypoint | What it does | Required previous output |
 |---|---|---|---|
-| 1 | `np/s1_generate.py` | Exact C1/C2/C3/CR3 simulator, theta/X sampling and binary choice Y | None; CR3 will prepare original design bank |
+| 1 | `np/s1_generate.py` | Exact C1/C2/C3/CR3/CR4 simulator, theta/X sampling and binary choice Y | None; CR3 will prepare original design bank |
 | 2 | `np/s2_precheck.py` | Original validity, identification and CR3 FOSD checks | S1 dataset |
 | 3 | `np/s3_train.py` | Train original NP; choose beta, lambda, latent dimension, optimizer hyperparameters | S2 qualification |
 | 4 | `np/s4_evaluate.py` | Saved NP validation/test accuracy, CE, KL, learning curves; if S5 exists, also posterior-Z histograms, per-axis variance and KL | S3 checkpoint; S5 optional for Z diagnostics |
@@ -212,3 +212,54 @@ trained model or rotate the latents. Low off-diagonal correlations are
 desirable only relative to the finite-sample correlations of true theta;
 the JSON includes that baseline to avoid interpreting sampling noise as
 parameter leakage.
+
+## CR4 (additive model, existing S1-S7 pipeline)
+
+CR4 removes **only alpha** from CR3 by fixing alpha=1; the three fitted
+parameters are (lambda_loss, gamma, tau) with the same marginal priors as CR3.
+The generating Bernoulli choice probability calls the **unchanged CR2/CR3
+formula** with alpha=1. No unrelated model or pipeline mathematics is changed.
+
+CR4 has a new **shared 500-X continuous random bank**. All six raw lottery
+coordinates are independently sampled: four amounts Uniform(5,200) and two
+gain probabilities Uniform(0.05,0.95). Amounts are strictly positive and
+probabilities interior; there are NO intentionally inserted gain-only,
+loss-only, equal-probability, or sure-outcome trials, and NO FOSD filter or
+Fisher optimization. The bank is one fixed draw for all 5,000 subjects, so
+there is no identical trial imposed repeatedly across different populations.
+The sampling distributions are configurable when explicitly calling
+`np/reference/cr4/s0_s1_cr4.py --stage design`; keep defaults for comparisons.
+
+**Training X scaling:** CR4 saves original physical X in the S1 dataset.
+Only in the CR4 data adapter does it standardize *all six* X coordinates
+with means/SDs from the shared stimulus bank; both encoder and unchanged
+decoder therefore receive appropriately scaled X. Since every TRAIN subject
+has exactly the same fixed bank, bank-X statistics equal TRAIN-X statistics
+(no held-out-subject or Y leakage). S5 uses the identical adapter. Decoder
+physical-X derivatives later require the stored checkpoint X transform.
+CR3 and C1/C2/C3 preprocessing remain untouched.
+
+Run these independently, one at a time (for the first diagnostic use
+`--subjects 5000` in S1 and `--oracle-precheck` in S2):
+
+```cmd
+python np/s1_generate.py --model CR4 --subjects 5000
+python np/s2_precheck.py --model CR4 --oracle-precheck --oracle-subjects 100 --oracle-starts 4
+python np/s3_train.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 --context-min 0.25 --context-max 0.80 --repeat 1 --device auto
+python np/s4_evaluate.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 --repeat 1
+python np/s5_extract_z.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 --repeat 1
+python np/s6_pca.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 --fa-factors 3 --repeat 1
+python np/s7_regression.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 --repeat 1
+```
+
+All CR4 outputs go to `outputs/choice/CR4/`; notably
+`s2_precheck/s2_precheck__report.json` and the optional
+`s2_precheck/s2_precheck__oracle_recovery.json` include model-design
+validity and individual bounded MLE recovery of all three parameters,
+lambda-tau estimation error correlation, and Fisher information eigenspectra.
+Oracle information is NOT supplied to the NP trainer or latent extraction.
+Inspect these before committing to expensive S3 training; 500 random trials
+do not automatically guarantee high practical parameter recovery.
+
+The CR4 branch neither overwrites CR3 assets nor silently reuses CR3
+checkpoints. Any attempt to overwrite an existing CR4 bank/dataset is blocked.

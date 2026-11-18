@@ -25,8 +25,11 @@ RIDGE_GRID = (0.0, .01, .1, 1.0, 10.0, 100.0, 1000.0)
 
 
 def param_names(model: str) -> list[str]:
-    return (['alpha','lambda_loss','gamma','tau'] if model == 'CR3'
-            else list(get_model(model).parameter_names))
+    if model == 'CR3':
+        return ['alpha','lambda_loss','gamma','tau']
+    if model == 'CR4':
+        return ['lambda_loss','gamma','tau']
+    return list(get_model(model).parameter_names)
 
 
 def corr(a: np.ndarray, b: np.ndarray) -> np.ndarray:

@@ -17,7 +17,7 @@ from modlearn_rot.training.np.point.discrete import DiscreteData
 from modlearn_rot.training.continuous import stable_run_seed, training_condition_tag
 
 ROOT = Path(__file__).resolve().parents[3]
-MODELS = ('C1','C2','C3','CR3')
+MODELS = ('C1','C2','C3','CR3','CR4')
 
 
 def sha256(path: Path) -> str:
@@ -67,13 +67,53 @@ def _cr3_bank() -> Path:
 def _cr2_bank() -> Path:
     return out_dir('CR2') / 's0_design_recovery' / 'CR2_4P_seed20261023_fixed500.npz'
 
+def _cr4_bank() -> Path:
+    return out_dir('CR4') / 's0_design' / 'CR4_3P_random500.npz'
+
+
+def _cr4_ref() -> Path:
+    return ROOT / 'np' / 'reference' / 'cr4' / 's0_s1_cr4.py'
+
+
+def _cr4_oracle_ref() -> Path:
+    return ROOT / 'np' / 'reference' / 'cr4' / 's2_oracle_cr4.py'
+
+
+def cr4_input_scaler():
+    """Identical bank X for all subjects => bank statistics equal TRAIN-X stats.
+
+    CR4 ONLY. Return values for converting physical lottery X into the
+    standardized coordinates used by *both* encoder and decoder. Physical X
+    stays unchanged in the S1 dataset and downstream analytic generators.
+    """
+    with np.load(_cr4_bank(), allow_pickle=False) as stored:
+        x = np.asarray(stored['X'], dtype=np.float64)
+    if x.shape != (500, 6) or not np.isfinite(x).all():
+        raise ValueError('Invalid CR4 bank for X standardization')
+    mu = x.mean(axis=0)
+    sd = x.std(axis=0, ddof=0)
+    if np.any(sd <= 1e-8):
+        raise ValueError('CR4 bank X has near-constant dimension')
+    return mu, sd
+
+
 def _discrete_data(args, data):
-    if args.model == 'CR3':
-        # Exactly the original CR3 fast reshape; same trial and choice ordering.
+    if args.model in ('CR3','CR4'):
         n = len(data.trial_counts)
-        return DiscreteData(x=torch.from_numpy(np.asarray(data.x, np.float32).reshape(n,500,6).copy()),
-                            choice=torch.from_numpy(np.asarray(data.y, np.int64).reshape(n,500).copy()),
-                            trial_mask=torch.ones((n,500), dtype=torch.bool))
+        if not np.all(np.asarray(data.trial_counts) == 500):
+            raise ValueError(f'{args.model} requires 500 trials per subject')
+        x = np.asarray(data.x, np.float64).reshape(n, 500, 6)
+        if args.model == 'CR4':
+            # Existing trainer normalizes only context-encoder inputs;
+            # new CR4 supplies normalized X ALSO to the unchanged decoder.
+            # The shared stimulus bank means TRAIN-only X moments coincide
+            # exactly with these bank moments (no subject/test leakage).
+            mu, sd = cr4_input_scaler()
+            x = (x - mu) / sd
+        return DiscreteData(
+            x=torch.from_numpy(np.asarray(x, np.float32).copy()),
+            choice=torch.from_numpy(np.asarray(data.y, np.int64).reshape(n,500).copy()),
+            trial_mask=torch.ones((n,500), dtype=torch.bool))
     # Fast contiguous fill equivalent to upstream DiscreteData.from_generated.
     # The original C-series generator emits each subject's trials contiguously.
     n = len(data.trial_counts)
@@ -101,7 +141,7 @@ def _require_qualified(args):
     report = json.loads(path.read_text(encoding='utf-8'))
     if not report.get('qualified'):
         raise RuntimeError('Dataset was not qualified by precheck')
-    if args.model == 'CR3' and report.get('dataset_sha256') != sha256(dataset_path(args.model)):
+    if args.model in ('CR3','CR4') and report.get('dataset_sha256') != sha256(dataset_path(args.model)):
         raise RuntimeError('CR3 precheck belongs to a different dataset')
 
 def _run_seed(args):
