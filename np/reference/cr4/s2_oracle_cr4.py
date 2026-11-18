@@ -27,24 +27,36 @@ NAMES = ["lambda_loss", "gamma", "tau"]
 
 
 def gradient(x, theta):
-    """Exact 3P logit Jacobian wrt (lambda,gamma,tau), no finite differences."""
+    """Exact 3P logit Jacobian wrt (lambda,gamma,tau), including the
+    original CR2/CR3 probability-clipping rule at p=0 and p=1."""
     x = np.asarray(x, dtype=np.float64)
     theta = np.asarray(theta, dtype=np.float64)
     lam, gamma, tau = theta
     pa, pb = x[:, 2], x[:, 5]
-    loga = logit_probability(pa)
-    logb = logit_probability(pb)
-    wa = expit(gamma * loga)
-    wb = expit(gamma * logb)
-    wla = 1 - wa
-    wlb = 1 - wb
-    da = wa * (1 - wa) * loga
-    db = wb * (1 - wb) * logb
+    if (not np.isfinite(x).all() or
+        np.any((pa < 0) | (pa > 1)) or np.any((pb < 0) | (pb > 1))):
+        raise ValueError("Oracle requires finite X and probabilities within [0, 1]")
+    # EXACTLY match s0_cr2_design_recovery.weighting(), including its
+    # numerical clipping at p=0/1. Direct logit(0/1) produces +/-inf and
+    # makes w*(1-w)*logit(p) an indeterminate 0*inf in the Fisher Jacobian.
+    # The implemented simulator uses clip(p, 1e-12, 1-1e-12): derivatives
+    # with respect to gamma must match that implemented (clipped) function,
+    # not the separate ideal mathematical endpoint limit.
+    def weight_and_dgamma(p):
+        log_odds = logit_probability(np.clip(p, 1e-12, 1 - 1e-12))
+        w = expit(gamma * log_odds)
+        return w, (w * (1 - w)) * log_odds
+
+    wa, da = weight_and_dgamma(pa)
+    wb, db = weight_and_dgamma(pb)
+    # Compute loss weighting separately: in the original simulator it is
+    # weighting(1-p,gamma), not an independently imposed 1-weighting(p).
+    wla, dla = weight_and_dgamma(1 - pa)
+    wlb, dlb = weight_and_dgamma(1 - pb)
     gains = wa * (x[:, 0] / 100) - wb * (x[:, 3] / 100)
     losses = wla * (x[:, 1] / 100) - wlb * (x[:, 4] / 100)
     gain_deriv = da * (x[:, 0] / 100) - db * (x[:, 3] / 100)
-    # d/dgamma w(1-p) = -d/dgamma w(p)
-    loss_deriv = -da * (x[:, 1] / 100) + db * (x[:, 4] / 100)
+    loss_deriv = dla * (x[:, 1] / 100) - dlb * (x[:, 4] / 100)
     return np.column_stack([
         -tau * losses,
         tau * (gain_deriv - lam * loss_deriv),

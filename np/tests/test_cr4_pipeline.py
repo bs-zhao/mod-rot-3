@@ -100,3 +100,42 @@ def test_cr4_registered_without_changing_legacy_config():
     for name in ("C1","C2","C3"):
         assert get_model(name).model_id==name
     assert parse_args("test",["--model","CR3"]).model=="CR3"
+
+
+
+def test_3p_oracle_gradient_includes_original_clipped_probability_endpoints():
+    """The CR3 sure-outcome stimuli use p=0 or p=1, so the S2 Fisher
+    Jacobian must differentiate the IMPLEMENTED clipped generator, not a
+    separate limiting endpoint formula."""
+    from scipy.special import expit as _expit
+    from s2_oracle_cr4 import fisher_diagnostics
+    bank = np.array([
+        [100., 0., 0.,  0., 70., 1.],
+        [0., 60., 1., 80., 0., 0.],
+        [140., 30., 1., 20., 90., 0.],
+        [100., 60., 0., 80., 40., 1.],
+        [95., 30., 0.5, 70., 60., 0.5],
+        [180., 100., 0.05, 80., 120., 0.95],
+        [50., 70., 1e-8, 90., 40., 1-1e-8],
+        [60., 80., 0.3, 140., 20., 0.7],
+    ], dtype=float)
+    for gamma in (0.02, 0.10, 0.65, 0.95):
+        theta = np.array([2.1, gamma, 2.2], dtype=float)
+        with np.errstate(all="raise"):
+            jac = gradient(bank, theta)
+        assert jac.shape == (len(bank), 3)
+        assert np.all(np.isfinite(jac))
+        h = 1e-5
+        numeric = np.column_stack([
+            (logits(bank, theta + np.eye(3)[j]*h) -
+             logits(bank, theta - np.eye(3)[j]*h))/(2*h)
+            for j in range(3)
+        ])
+        np.testing.assert_allclose(jac, numeric, rtol=1e-6, atol=3e-8)
+    rng = np.random.default_rng(111)
+    ref = sample_theta(24, rng)
+    with np.errstate(all="raise"):
+        fisher = fisher_diagnostics(bank, ref)
+    assert fisher["reference_subjects"] == len(ref)
+    assert np.isfinite(fisher["min_eigenvalue_median"])
+    assert np.isfinite(fisher["full_rank_fraction"])

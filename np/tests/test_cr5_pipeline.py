@@ -138,3 +138,23 @@ def test_cr5_registered_all_s1_s7_while_legacy_models_unchanged():
         assert parse_args("test",["--model",name]).model==name
     for name in ("C1","C2","C3"):
         assert get_model(name).model_id==name
+
+
+
+def test_cr5_oracle_handles_sure_gain_and_loss_endpoints():
+    """CR5 copies CR3, whose 500-item bank can include p=0/1 exactly."""
+    from s2_oracle_cr4 import gradient
+    x, _ = fixture_bank()
+    x = x.copy()
+    x[0,2] = 0.
+    x[1,2] = 1.
+    x[2,5] = 0.
+    x[3,5] = 1.
+    ref = sample_theta(12,np.random.default_rng(82))
+    with np.errstate(all="raise"):
+        grads = gradient(x, ref[0])
+        info = fisher_diagnostics(x, ref)
+    assert grads.shape == (500,3)
+    assert np.isfinite(grads).all()
+    assert np.isfinite(info["min_eigenvalue_median"])
+    assert info["full_rank_fraction"] > 0
