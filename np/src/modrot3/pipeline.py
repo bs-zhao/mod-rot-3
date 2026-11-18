@@ -17,7 +17,7 @@ from modlearn_rot.training.np.point.discrete import DiscreteData
 from modlearn_rot.training.continuous import stable_run_seed, training_condition_tag
 
 ROOT = Path(__file__).resolve().parents[3]
-MODELS = ('C1','C2','C3','CR3','CR4')
+MODELS = ('C1','C2','C3','CR3','CR4','CR5')
 
 
 def sha256(path: Path) -> str:
@@ -71,6 +71,18 @@ def _cr4_bank() -> Path:
     return out_dir('CR4') / 's0_design' / 'CR4_3P_random500.npz'
 
 
+def _cr5_bank() -> Path:
+    return out_dir('CR5') / 's0_design' / 'CR5_3P_cr3bank500.npz'
+
+
+def _cr5_ref() -> Path:
+    return ROOT / 'np' / 'reference' / 'cr5' / 's0_s1_cr5.py'
+
+
+def _cr5_oracle_ref() -> Path:
+    return ROOT / 'np' / 'reference' / 'cr5' / 's2_oracle_cr5.py'
+
+
 def _cr4_ref() -> Path:
     return ROOT / 'np' / 'reference' / 'cr4' / 's0_s1_cr4.py'
 
@@ -97,18 +109,37 @@ def cr4_input_scaler():
     return mu, sd
 
 
+def cr5_input_scaler():
+    """CR5: preserve RAW CR3 bank in S1, normalize X for BOTH encoder and decoder.
+
+    Since the identical 500-trial CR3 bank appears for every CR5 subject,
+    computing these X-only moments on the bank is exactly equivalent to
+    computing TRAIN-subject X moments, without accessing TEST theta/choice.
+    """
+    with np.load(_cr5_bank(),allow_pickle=False) as saved:
+        x=np.asarray(saved['X'],dtype=np.float64)
+    if x.shape != (500,6) or not np.isfinite(x).all():
+        raise ValueError('Invalid CR5 shared X bank for preprocessing')
+    mu=x.mean(axis=0)
+    sd=x.std(axis=0,ddof=0)
+    if np.any(sd <= 1e-8):
+        raise ValueError('CR5 bank X has near-constant coordinate')
+    return mu,sd
+
+
 def _discrete_data(args, data):
-    if args.model in ('CR3','CR4'):
+    if args.model in ('CR3','CR4','CR5'):
         n = len(data.trial_counts)
         if not np.all(np.asarray(data.trial_counts) == 500):
             raise ValueError(f'{args.model} requires 500 trials per subject')
         x = np.asarray(data.x, np.float64).reshape(n, 500, 6)
-        if args.model == 'CR4':
-            # Existing trainer normalizes only context-encoder inputs;
-            # new CR4 supplies normalized X ALSO to the unchanged decoder.
-            # The shared stimulus bank means TRAIN-only X moments coincide
-            # exactly with these bank moments (no subject/test leakage).
-            mu, sd = cr4_input_scaler()
+        if args.model in ('CR4','CR5'):
+            # Decoder gets standardized X for 3P models while retaining the
+            # original physical bank in the S1 disk data. The unchanged
+            # trainer also scales encoder context X. CR5 has zero-amount
+            # trials, so never filter or alter the underlying X values.
+            mu, sd = (cr4_input_scaler() if args.model == 'CR4'
+                      else cr5_input_scaler())
             x = (x - mu) / sd
         return DiscreteData(
             x=torch.from_numpy(np.asarray(x, np.float32).copy()),
@@ -141,8 +172,8 @@ def _require_qualified(args):
     report = json.loads(path.read_text(encoding='utf-8'))
     if not report.get('qualified'):
         raise RuntimeError('Dataset was not qualified by precheck')
-    if args.model in ('CR3','CR4') and report.get('dataset_sha256') != sha256(dataset_path(args.model)):
-        raise RuntimeError('CR3 precheck belongs to a different dataset')
+    if args.model in ('CR3','CR4','CR5') and report.get('dataset_sha256') != sha256(dataset_path(args.model)):
+        raise RuntimeError(f'{args.model} precheck belongs to a different dataset')
 
 def _run_seed(args):
     if args.model == 'CR3':

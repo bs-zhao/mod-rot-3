@@ -8,7 +8,8 @@ import json
 import numpy as np
 from modrot3.cli import parse_args
 from modrot3.pipeline import (ROOT, dataset_path, precheck_path, sha256,
-                              _cr3_bank, _cr4_bank, _cr4_oracle_ref, _run_legacy)
+                              _cr3_bank, _cr4_bank, _cr4_oracle_ref, _cr5_bank,
+                              _cr5_oracle_ref, _run_legacy)
 from modlearn_rot.generators.registry import get_model
 from modlearn_rot.generators.dataset import load_dataset
 from modlearn_rot.diagnostics.precheck import PrecheckSuite
@@ -89,12 +90,74 @@ def _verify_cr4(data):
         raise RuntimeError(f'CR4 generator fidelity error {max_error}')
     return x, manifest, max_error
 
+def _verify_cr5(data):
+    """Verify exact CR3 trial bank/codes, 3P CR4 generator and strong provenance."""
+    sys.path.insert(0,str(ROOT/'np'/'reference'/'cr5'))
+    from s0_s1_cr5 import validate_immutable_bank,logits
+    bank,codes,names,design=validate_immutable_bank()
+    n=len(data.parameters)
+    if data.parameters.shape != (n,3) or not np.all(np.asarray(data.trial_counts)==500):
+        raise ValueError('CR5 must have exactly 3 parameters and 500 trials per subject')
+    if data.x.shape != (n*500,6):
+        raise ValueError('CR5 observed X dimension mismatch')
+    if not np.array_equal(
+        np.asarray(data.x).reshape(n,500,6),
+        np.broadcast_to(bank,(n,500,6))
+    ):
+        raise RuntimeError('CR5 raw X does not equal CR3 bank in every subject')
+    manifest_path=dataset_path('CR5').with_name('s1_generate__manifest.json')
+    manifest=json.loads(manifest_path.read_text(encoding='utf-8'))
+    if (manifest['bank_sha256']!=sha256(_cr5_bank()) or
+        manifest['dataset_sha256']!=sha256(dataset_path('CR5')) or
+        manifest['cr3_source_sha256']!=design['cr3_source_sha256']):
+        raise RuntimeError('CR5 dataset or CR3 bank provenance mismatch')
+    from scipy.special import expit
+    p=np.asarray(data.predictive_true).reshape(n,500)
+    check_ids=sorted({0,n//2,n-1})
+    error=max(float(np.max(np.abs(
+        expit(logits(bank[None],data.parameters[s:s+1]))-p[s:s+1]
+    ))) for s in check_ids)
+    if error>1e-12:
+        raise RuntimeError(f'CR5 3P CPT generator fidelity error {error}')
+    return bank,codes,names,design,error
+
+
 def precheck(args):
     target = dataset_path(args.model)
     if not target.is_file():
         raise FileNotFoundError(f'Generate first: {target}')
     data = load_dataset(target)
-    if args.model == 'CR4':
+    if args.model == 'CR5':
+        x,codes,names,design,logit_prob_error=_verify_cr5(data)
+        p=np.asarray(data.predictive_true,dtype=float)
+        y=np.asarray(data.y,dtype=np.int64)
+        qualified=bool(np.isfinite(p).all() and np.all((p>0)&(p<1)) and
+                       np.isin(y,[0,1]).all())
+        group_counts={str(name):int((codes==j).sum()) for j,name in enumerate(names)}
+        report=dict(
+            model_id='CR5',model_version='3P_exact_CR3_bank500_alpha1',
+            qualified=qualified,subjects=len(data.parameters),trials=500,
+            parameter_names=['lambda_loss','gamma','tau'],alpha_fixed=1.0,
+            original_cr3_stimulus_bank=True,original_cr3_trial_order=True,
+            original_cr3_condition_counts=group_counts,
+            source_cr3_bank_sha256=design['cr3_source_sha256'],
+            bank_sha256=sha256(_cr5_bank()),dataset_sha256=sha256(target),
+            mean_accuracy_bayes=float(np.maximum(p,1-p).mean()),
+            response_rate=float(y.mean()),true_p_std=float(p.std()),
+            parameter_correlation=np.corrcoef(data.parameters,rowvar=False).tolist(),
+            checks={
+                'exact_cr3_X_and_native_labels':{'passed':True,'counts':group_counts},
+                'no_strict_FOSD':{'passed':True},
+                'original_cr3_X_zero_amounts_preserved':{'passed':bool(np.any(x[:,[0,1,3,4]]==0))},
+                'finite_CPT_alpha1_generator':{'passed':logit_prob_error<=1e-12,
+                                               'max_abs_error':logit_prob_error},
+                'valid_binary_choices':{'passed':qualified},
+            },
+            note='Exact CR3 stimulus-design / CR4 three-parameter function controlled contrast. Optional S2 oracle MLE+Fisher uses unchanged CR4 estimator.',
+        )
+        save_json(report,precheck_path(args.model))
+        print('CR5 exact CR3 bank / 3P CPT precheck:',qualified)
+    elif args.model == 'CR4':
         x, manifest, logit_prob_error = _verify_cr4(data)
         prob = np.asarray(data.predictive_true,dtype=float)
         y = np.asarray(data.y,dtype=int)
@@ -156,6 +219,10 @@ def precheck(args):
                      '--mle-starts', str(args.oracle_starts)])
     if args.model == 'CR4' and args.oracle_precheck:
         _run_legacy(_cr4_oracle_ref(), ['--subjects',str(args.oracle_subjects),
+                 '--starts',str(args.oracle_starts),
+                 '--seed',str(args.precheck_seed)])
+    if args.model == 'CR5' and args.oracle_precheck:
+        _run_legacy(_cr5_oracle_ref(), ['--subjects',str(args.oracle_subjects),
                  '--starts',str(args.oracle_starts),
                  '--seed',str(args.precheck_seed)])
     if not report['qualified']:

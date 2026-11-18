@@ -1,4 +1,4 @@
-"""Independent CR4-only output-gain + low-curvature rotation.
+"""Independent CR4/CR5 output-gain + low-curvature rotation.
 
 No imports from another rotation suite; no true parameter is used to fit R.
 """
@@ -70,7 +70,7 @@ def save_landscape(out,landscape):
     ax.plot(landscape["angle_deg"],landscape["validation_curvature"],label="VALID")
     ax.set(xlabel="Angle within output-gain orthogonal plane (degrees)",
            ylabel="Normalized directional squared Hessian",
-           title="CR4 low-curvature search; not a theta-based scan")
+           title="Low-curvature search; not a theta-based scan")
     ax.legend();fig.tight_layout()
     fig.savefig(out/"curvature_landscape.png",dpi=160);plt.close(fig)
 
@@ -96,7 +96,7 @@ def roundtrip_audit(model,device,source,R,x_mu,x_sd):
 
 def main(argv=None):
     ap=argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--model",choices=("CR4",),default="CR4")
+    ap.add_argument("--model",choices=("CR4","CR5"),default="CR4")
     ap.add_argument("--condition",default="beta0p0005_lambda0_ctx0p25to0p8_L3")
     ap.add_argument("--repeat",type=int,default=1)
     ap.add_argument("--rotation-dim",type=int,default=3)
@@ -108,13 +108,13 @@ def main(argv=None):
     ap.add_argument("--no-evaluate",action="store_true")
     args=ap.parse_args(argv)
     if args.repeat<1 or args.rotation_dim!=3 or args.seed<0:
-        ap.error("CR4 requires repeat>=1, rotation_dim=3, seed>=0")
+        ap.error("Three-parameter CR4/CR5 requires repeat>=1, rotation_dim=3, seed>=0")
     config=read_config(args)
     if min(int(config[k]) for k in ("fit_subjects","valid_subjects","fit_x",
                                     "valid_x","batch_subjects"))<1:
         raise ValueError("Sampling and batch sizes must be positive")
     source=load_source(args,config)
-    meta=dict(suite=HERE.name,model="CR4",condition=args.condition,repeat=args.repeat,
+    meta=dict(suite=HERE.name,model=args.model,condition=args.condition,repeat=args.repeat,
               rotation_dim=3,tag=args.tag,source_hashes=source["hashes"],
               configuration=config,code_sha256=code_sha(),
               fit_subject_ids=source["fit_subject_ids"].tolist(),
@@ -126,7 +126,7 @@ def main(argv=None):
     out=(source["root"]/"rotations"/HERE.name/args.condition/
          f"repeat{args.repeat:02d}"/f"{args.tag}_{fingerprint}")
     if args.dry_run:
-        print("Planned independent CR4 rotation:",out)
+        print(f"Planned independent {args.model} rotation:",out)
         print("FIT subjects",len(source["fit_subject_ids"]),
               "VALID subjects",len(source["valid_subject_ids"]),
               "FIT X",len(source["fit_x_ids"]),"VALID X",len(source["valid_x_ids"]))
@@ -136,7 +136,7 @@ def main(argv=None):
             print("Preserved completed rotation:",out)
             return out
         raise FileExistsError(f"Incomplete rotation folder; inspect before retry: {out}")
-    print("CR4 functional-axes: extracting true frozen-decoder derivative fields",flush=True)
+    print(f"{args.model} functional-axes: extracting frozen-decoder derivative fields",flush=True)
     model,device,x_mu,x_sd=restore(source,config["teacher_device"])
     fit=extract(model,device,source,source["fit_subject_ids"],source["fit_x_ids"],
                 x_mu,x_sd,int(config["batch_subjects"]))
@@ -181,7 +181,7 @@ def main(argv=None):
         theta_unavailable_during_fit=True,derivative_source="frozen_decoder_autodiff",
         outputs=["rotation.npz","protocol.json","loss_diagnostics.json",
                  "invariance_audit.json","ux_diagnostics.json"]))
-    print("Frozen CR4 functional rotation:",out,flush=True)
+    print(f"Frozen {args.model} functional rotation:",out,flush=True)
     print("FIT/VALID gates:",diagnostics["both_gates_pass"],flush=True)
     if not args.no_evaluate:
         from rotations.cr4_functional_axes.evaluation import parameter_diagnostics

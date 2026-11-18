@@ -27,7 +27,7 @@ RIDGE_GRID = (0.0, .01, .1, 1.0, 10.0, 100.0, 1000.0)
 def param_names(model: str) -> list[str]:
     if model == 'CR3':
         return ['alpha','lambda_loss','gamma','tau']
-    if model == 'CR4':
+    if model in ('CR4','CR5'):
         return ['lambda_loss','gamma','tau']
     return list(get_model(model).parameter_names)
 

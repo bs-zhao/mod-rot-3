@@ -6,7 +6,8 @@ sys.path.insert(0, str(NP_ROOT / 'src'))
 """S1: Generate binary-choice data with the exact old C1/C2/C3/CR3 generators."""
 from modrot3.cli import parse_args
 from modrot3.pipeline import (dataset_path, _run_legacy, _cr3_refs, _cr3_bank,
-                              _cr2_bank, _cr4_bank, _cr4_ref)
+                              _cr2_bank, _cr4_bank, _cr4_ref, _cr5_bank, _cr5_ref,
+                              _cr3_bank)
 from modlearn_rot.generators.registry import get_model
 from modlearn_rot.generators.dataset import generate_dataset, save_dataset, summarize_dataset
 from modlearn_rot.task_specs import get_task_spec_for_model
@@ -38,6 +39,19 @@ def generate(args):
         _run_legacy(_cr4_ref(), ['--stage', 'dataset',
                                  '--subjects', str(args.subjects),
                                  '--data-seed', str(args.data_seed)])
+        return
+    if args.model == 'CR5':
+        # Strict controlled contrast: exactly CR3's existing bank and trial
+        # order, with CR4's 3P alpha=1 choice function/prior. Never
+        # regenerate or modify the reference CR3 bank here.
+        if not _cr3_bank().is_file():
+            raise FileNotFoundError(
+                f'CR5 needs existing CR3 frozen S0 bank: {_cr3_bank()}')
+        if not _cr5_bank().is_file():
+            _run_legacy(_cr5_ref(), ['--stage','design'])
+        _run_legacy(_cr5_ref(), ['--stage','dataset',
+                                 '--subjects',str(args.subjects),
+                                 '--data-seed',str(args.data_seed)])
         return
     model = get_model(args.model)
     data = generate_dataset(model, args.data_seed)

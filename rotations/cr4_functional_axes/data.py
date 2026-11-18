@@ -17,7 +17,7 @@ def sha256(p):
 
 
 def load_source(args, config):
-    root = ROOT / "outputs" / "choice" / "CR4"
+    root = ROOT / "outputs" / "choice" / args.model
     ck = root / "s3_train" / args.condition / f"repeat{args.repeat:02d}" / "s3_train__checkpoint.pt"
     latent = root / "s4_evaluate" / args.condition / f"repeat{args.repeat:02d}" / "s4_evaluate__latent.npz"
     dataset = root / "s1_generate" / "s1_generate__dataset.npz"
@@ -38,7 +38,7 @@ def load_source(args, config):
         raise ValueError("S5 subject split is not disjoint and exhaustive")
     k = int(args.rotation_dim)
     if k != 3 or z.shape[1] < k:
-        raise ValueError("CR4 functional axes require k=3 selected axes and native Z >=3")
+        raise ValueError("CR4/CR5 functional axes require k=3 selected axes and native Z >=3")
     pca = PCA(n_components=k, svd_solver="full").fit(z[tr])
     w = pca.components_ / np.sqrt(np.maximum(pca.explained_variance_, config["whiten_floor"]))[:, None]
     b = np.linalg.pinv(w)
@@ -49,7 +49,7 @@ def load_source(args, config):
     with np.load(dataset, allow_pickle=False) as a:
         counts = np.asarray(a["trial_counts"], dtype=np.int64)
         if len(counts) != len(z) or not np.all(counts == 500):
-            raise ValueError("CR4 expects 500 trials per S5 subject")
+            raise ValueError("CR4/CR5 expect 500 trials per S5 subject")
         # A fixed X bank is shared by all people. Read-only, no Y or theta.
         bank = np.asarray(a["x"][:500], dtype=np.float64)
         ids = np.asarray(a["subject_index"], dtype=np.int64)
@@ -58,7 +58,7 @@ def load_source(args, config):
         if not np.all(np.isfinite(bank)):
             raise ValueError("Invalid bank X")
         if not np.array_equal(np.asarray(a["x"][-500:]), bank):
-            raise ValueError("CR4 bank does not match last participant")
+            raise ValueError("Shared bank does not match last participant")
     rng = np.random.default_rng(config["seed"])
     fs = np.sort(rng.choice(tr, size=min(len(tr), config["fit_subjects"]), replace=False))
     vs = np.sort(rng.choice(va, size=min(len(va), config["valid_subjects"]), replace=False))
@@ -69,7 +69,7 @@ def load_source(args, config):
         raise ValueError("Need >=8 FIT/VALID persons and X anchors")
     fit_x = np.sort(ix[:nx])
     valid_x = np.sort(ix[nx:nx+nv])
-    return dict(root=root, checkpoint=ck, dataset=dataset,
+    return dict(root=root, model=args.model, checkpoint=ck, dataset=dataset,
                 latent=latent, hashes=dict(checkpoint=ck_sha,dataset=ds_sha,latent=latent_sha),
                 z=z, q=q, residual=residual, W=w, B=b, pca_mean=pca.mean_.copy(),
                 tr=tr, va=va, te=te, fit_subject_ids=fs, valid_subject_ids=vs,

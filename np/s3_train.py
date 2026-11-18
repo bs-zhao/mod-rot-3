@@ -7,7 +7,8 @@ sys.path.insert(0, str(NP_ROOT / 'src'))
 import numpy as np
 from modrot3.cli import parse_args
 from modrot3.pipeline import (dataset_path, train_path, latent_path, condition, sha256,
-                               _require_qualified, _discrete_data, _run_seed, cr4_input_scaler, _cr4_bank)
+                               _require_qualified, _discrete_data, _run_seed, cr4_input_scaler, _cr4_bank,
+                               cr5_input_scaler, _cr5_bank)
 from modlearn_rot.generators.dataset import load_dataset
 from modlearn_rot.nn.np.point.discrete import DiscreteNPConfig
 from modlearn_rot.training.np.point.discrete import DiscreteNPTrainer, DiscreteNPTrainingConfig
@@ -61,13 +62,14 @@ def train(args):
     result = trainer.fit(data, subject_splits=splits,
                          fixed_context_masks=masks, epoch_callback=progress)
     input_transform={}
-    if args.model == 'CR4':
-        x_mu, x_sd = cr4_input_scaler()
+    if args.model in ('CR4','CR5'):
+        x_mu,x_sd=(cr4_input_scaler() if args.model=='CR4' else cr5_input_scaler())
+        bank=(_cr4_bank() if args.model=='CR4' else _cr5_bank())
         input_transform=dict(
             decoder_x_standardization=dict(
-                policy='CR4: physical X -> (X - bank_mean)/bank_sd',
-                mean=x_mu.tolist(), sd=x_sd.tolist(),
-                bank_sha256=sha256(_cr4_bank())))
+                policy=f'{args.model}: physical X -> (X - bank_mean)/bank_sd',
+                mean=x_mu.tolist(),sd=x_sd.tolist(),
+                bank_sha256=sha256(bank)))
     save_checkpoint(ckpt, result, model_cfg, config, splits, masks,
                     extra_state=dict(model_id=args.model, repeat=args.repeat,
                                      run_seed=_run_seed(args), condition=condition(args),

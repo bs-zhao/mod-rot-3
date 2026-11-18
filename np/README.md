@@ -263,3 +263,47 @@ do not automatically guarantee high practical parameter recovery.
 
 The CR4 branch neither overwrites CR3 assets nor silently reuses CR3
 checkpoints. Any attempt to overwrite an existing CR4 bank/dataset is blocked.
+
+
+## CR5: exact CR3 stimulus bank with CR4 three-parameter CPT (controlled contrast)
+
+CR5 is **CR3 X + CR4 theta and logit**. It fixes alpha=1; estimates
+(lambda_loss,gamma,tau), using the same CR4 parameter priors, seed policy,
+choice likelihood, NP architecture and two-sided X-standardization policy.
+CR5's bank is an EXACT per-row copy of the existing immutable CR3
+`CR3_4P_fixed500.npz` X, native `type_codes` and `type_names`.
+No resampling and no modification to CR3 or CR4. The original bank has
+60 gain-only, 60 gamma-neutral (p=.5 both), 40 loss-only and 340 general
+trials, and retains its no-strict-FOSD criterion. There are genuine zero
+amounts, but with alpha FIXED to 1, the amount utility is linear and its
+one-sided derivative at zero is finite. The bank is still a mixed discrete
+experimental design; for derivative integration respect those conditions.
+
+This isolates the stimulus design effect when comparing CR4 and CR5.
+Both have the same 500-trial count, three-parameter generating function,
+subject prior draws and S3 hyperparameter choice. Physical X is kept raw
+in S1 and standardized only in the CR5 training adapter (for both encoder
+and decoder); the scaler is saved in the checkpoint as in CR4.
+
+CR5 requires the actual CR3 **S0 BANK**, but does not require its subject
+dataset or trained checkpoint. Do not run another CR3 design generation
+if an immutable CR3 bank is already present.
+
+```cmd
+python np/reference/cr5/s0_s1_cr5.py --stage selftest
+python np/s1_generate.py --model CR5 --subjects 5000
+python np/s2_precheck.py --model CR5 --oracle-precheck --oracle-subjects 100 --oracle-starts 4
+python np/s3_train.py --model CR5 --latent-dim 3 --beta 0.0005 --lambda-sparse 0 --repeat 1 --device auto
+python np/s4_evaluate.py --model CR5 --latent-dim 3 --beta 0.0005 --lambda-sparse 0 --repeat 1
+python np/s5_extract_z.py --model CR5 --latent-dim 3 --beta 0.0005 --lambda-sparse 0 --repeat 1
+python np/s6_pca.py --model CR5 --latent-dim 3 --beta 0.0005 --lambda-sparse 0 --fa-factors 3 --repeat 1
+python np/s7_regression.py --model CR5 --latent-dim 3 --beta 0.0005 --lambda-sparse 0 --repeat 1
+```
+
+CR5 outputs: `outputs/choice/CR5/`, alongside CR3 and CR4 without
+collisions. Read `s2_precheck/s2_precheck__oracle_recovery.json` for
+lambda/tau error correlation, 3P Pearson/R2/RMSE and Fisher information.
+This Oracle is the EXACT CR4 implementation (same random seed policy,
+priors/bounds, and restarts) rerun against the CR3 X bank.
+Do not equate improvement in Oracle recovery with automatic parameter-axis
+recovery under free NP latent rotations.

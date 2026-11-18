@@ -1,4 +1,4 @@
-"""Post-freeze-only CR4 parameter evaluation. Never imported by fit/objective."""
+"""Post-freeze-only CR4/CR5 evaluation. Not imported by objective."""
 from __future__ import annotations
 
 import json
@@ -23,7 +23,7 @@ def parameter_diagnostics(source,U,R,out):
     with np.load(source["dataset"],allow_pickle=False) as file:
         theta=np.asarray(file["parameters"],dtype=float)
     if theta.shape!=(len(U),3):
-        raise ValueError("CR4 theta is not (subjects,3)")
+        raise ValueError("CR4/CR5 theta is not (subjects,3)")
     labels=["lambda_loss","gamma","tau"]
     tr,te=source["tr"],source["te"]
     scores={}
@@ -47,7 +47,7 @@ def parameter_diagnostics(source,U,R,out):
         fig,ax=plt.subplots(figsize=(5.5,4.5))
         im=ax.imshow(c_test,vmin=-1,vmax=1,cmap="coolwarm")
         ax.set(xticks=range(3),yticks=range(3),xticklabels=["u1","u2","u3"],
-               yticklabels=labels,title=f"CR4 {label}: held-out TEST Pearson r")
+               yticklabels=labels,title=f"{source['model']} {label}: held-out TEST Pearson r")
         for ii in range(3):
             for jj in range(3):
                 ax.text(jj,ii,f"{c_test[ii,jj]:+.2f}",ha="center",va="center",

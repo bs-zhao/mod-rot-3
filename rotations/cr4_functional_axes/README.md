@@ -97,3 +97,23 @@ constant direction implementing tau scaling or lambda affinity may not
 exist. Gate failures are scientifically meaningful and retained. Do not
 select variants based on TEST theta. If successful, compare against
 independent repeat-2 NP after defining the same precommitted protocol.
+
+
+## Controlled CR5 transfer, same rotation algorithm
+
+The exact SAME function-supported gain-axis / low-axial-curvature algorithm,
+constants, no-oracle-fit contract and UX audit are applicable to CR5.
+CR5 changes only the stimulus design to the EXACT original CR3 500-row
+bank, including gain-only, loss-only, gamma-neutral and general trials,
+while retaining CR4 alpha=1, three parameters and standardized decoder X.
+No condition labels enter the rotation objectives, so this is a clean
+out-of-sample design comparison; native labels remain in the CR5 bank
+for **after-fit** diagnostic stratification.
+
+After completing CR5 S3 and S5:
+
+    python rotations/cr4_functional_axes/run.py --model CR5 --condition beta0p0005_lambda0_ctx0p25to0p8_L3 --repeat 1 --tag main
+
+Results are isolated in `outputs/choice/CR5/rotations/cr4_functional_axes/`.
+Never reuse the CR4 checkpoint, Z or stimulus scaler on CR5. Strict
+CR5 source, checkpoint and S1/S5 hashes are checked before optimization.

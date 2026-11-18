@@ -5,7 +5,7 @@ No multi-stage dispatch and no automatic execution of later experiments.
 from __future__ import annotations
 import argparse
 
-MODELS = ('C1','C2','C3','CR3','CR4')
+MODELS = ('C1','C2','C3','CR3','CR4','CR5')
 
 
 def parse_args(description: str, argv=None, *, configure_parser=None):
@@ -40,7 +40,7 @@ def parse_args(description: str, argv=None, *, configure_parser=None):
         configure_parser(p)
     args = p.parse_args(argv)
     if args.data_seed is None:
-        args.data_seed = 20261028 if args.model in ('CR3','CR4') else 20261006
+        args.data_seed = 20261028 if args.model in ('CR3','CR4','CR5') else 20261006
     if (args.latent_dim < 1 or args.batch_size < 1 or args.inference_batch < 1
         or args.beta < 0 or args.lambda_sparse < 0 or args.repeat < 1
         or args.max_epochs < 1 or args.patience < 1 or args.log_every < 1
