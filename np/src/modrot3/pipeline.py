@@ -37,9 +37,16 @@ def precheck_path(model: str) -> Path:
     return out_dir(model) / 's2_precheck' / 's2_precheck__report.json'
 
 def condition(args) -> str:
-    return training_condition_tag(args.beta, args.lambda_sparse,
-                                  args.context_min, args.context_max,
-                                  args.latent_dim)
+    tag = training_condition_tag(args.beta, args.lambda_sparse,
+                                 args.context_min, args.context_max,
+                                 args.latent_dim)
+    # CR3 now uses the same standardized decoder-X protocol as CR4/CR5.
+    # Preserve all existing raw-X CR3 checkpoints, Z and reports in the
+    # historical unsuffixed condition directory. New CR3 outputs are
+    # isolated and cannot silently load or overwrite old raw-X runs.
+    if args.model == 'CR3':
+        tag += '_xstd'
+    return tag
 
 def stage_folder(args, stage: str) -> Path:
     return out_dir(args.model) / stage / condition(args) / f'repeat{args.repeat:02d}'
@@ -91,6 +98,25 @@ def _cr4_oracle_ref() -> Path:
     return ROOT / 'np' / 'reference' / 'cr4' / 's2_oracle_cr4.py'
 
 
+def cr3_input_scaler():
+    """CR3 standardized X: same train-equivalent bank moments as CR4/CR5.
+
+    The original physical 500-trial bank remains untouched, including
+    its zero amounts, sure outcomes and gamma-neutral conditions. Every
+    TRAIN subject has the exact same X bank, so bank moments are identical
+    to train-subject X moments without reading TEST choices or theta.
+    """
+    with np.load(_cr3_bank(), allow_pickle=False) as stored:
+        x = np.asarray(stored['X'], dtype=np.float64)
+    if x.shape != (500, 6) or not np.isfinite(x).all():
+        raise ValueError('Invalid CR3 fixed bank for decoder X standardization')
+    mu = x.mean(axis=0)
+    sd = x.std(axis=0, ddof=0)
+    if np.any(sd <= 1e-8):
+        raise ValueError('CR3 bank has a near-constant X coordinate')
+    return mu, sd
+
+
 def cr4_input_scaler():
     """Identical bank X for all subjects => bank statistics equal TRAIN-X stats.
 
@@ -133,14 +159,14 @@ def _discrete_data(args, data):
         if not np.all(np.asarray(data.trial_counts) == 500):
             raise ValueError(f'{args.model} requires 500 trials per subject')
         x = np.asarray(data.x, np.float64).reshape(n, 500, 6)
-        if args.model in ('CR4','CR5'):
-            # Decoder gets standardized X for 3P models while retaining the
-            # original physical bank in the S1 disk data. The unchanged
-            # trainer also scales encoder context X. CR5 has zero-amount
-            # trials, so never filter or alter the underlying X values.
-            mu, sd = (cr4_input_scaler() if args.model == 'CR4'
-                      else cr5_input_scaler())
-            x = (x - mu) / sd
+        # CR3, CR4 and CR5 share the exact same X preprocessing policy:
+        # six X coordinates are z-scored BEFORE the unchanged NP receives
+        # them, so both context encoder and decoder see scaled X. Retain
+        # physical X and all special/boundary trials in S1 on disk.
+        mu, sd = {'CR3': cr3_input_scaler,
+                  'CR4': cr4_input_scaler,
+                  'CR5': cr5_input_scaler}[args.model]()
+        x = (x - mu) / sd
         return DiscreteData(
             x=torch.from_numpy(np.asarray(x, np.float32).copy()),
             choice=torch.from_numpy(np.asarray(data.y, np.int64).reshape(n,500).copy()),

@@ -7,7 +7,9 @@ sys.path.insert(0, str(NP_ROOT / 'src'))
 import numpy as np
 from modrot3.cli import parse_args
 from modrot3.pipeline import (dataset_path, train_path, latent_path, condition, sha256,
-                               _require_qualified, _discrete_data, _run_seed, cr4_input_scaler, _cr4_bank,
+                               _require_qualified, _discrete_data, _run_seed,
+                               cr3_input_scaler, _cr3_bank,
+                               cr4_input_scaler, _cr4_bank,
                                cr5_input_scaler, _cr5_bank)
 from modlearn_rot.generators.dataset import load_dataset
 from modlearn_rot.nn.np.point.discrete import DiscreteNPConfig
@@ -22,6 +24,15 @@ def train(args):
     if ckpt.exists() and not args.overwrite:
         old = load_checkpoint(ckpt)
         source = old.get('extra_state', {})
+        if args.model in ('CR3', 'CR4', 'CR5'):
+            pre = source.get('decoder_x_standardization')
+            bank = {'CR3': _cr3_bank, 'CR4': _cr4_bank,
+                    'CR5': _cr5_bank}[args.model]()
+            if (not isinstance(pre, dict) or
+                pre.get('bank_sha256') != sha256(bank)):
+                raise RuntimeError(
+                    'Existing checkpoint has a missing/mismatched decoder X scaler. '
+                    'This model requires standardized X; do not reuse raw-X weights.')
         if source.get('dataset_sha256') != sha256(dataset_path(args.model)):
             raise RuntimeError('Existing checkpoint belongs to a different dataset')
         if (int(old['model_config']['latent_dim']) != args.latent_dim or
@@ -62,9 +73,13 @@ def train(args):
     result = trainer.fit(data, subject_splits=splits,
                          fixed_context_masks=masks, epoch_callback=progress)
     input_transform={}
-    if args.model in ('CR4','CR5'):
-        x_mu,x_sd=(cr4_input_scaler() if args.model=='CR4' else cr5_input_scaler())
-        bank=(_cr4_bank() if args.model=='CR4' else _cr5_bank())
+    if args.model in ('CR3','CR4','CR5'):
+        scaler={'CR3': cr3_input_scaler,
+                'CR4': cr4_input_scaler,
+                'CR5': cr5_input_scaler}[args.model]
+        bank={'CR3': _cr3_bank, 'CR4': _cr4_bank,
+              'CR5': _cr5_bank}[args.model]()
+        x_mu,x_sd=scaler()
         input_transform=dict(
             decoder_x_standardization=dict(
                 policy=f'{args.model}: physical X -> (X - bank_mean)/bank_sd',

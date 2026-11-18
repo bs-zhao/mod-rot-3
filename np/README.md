@@ -307,3 +307,33 @@ This Oracle is the EXACT CR4 implementation (same random seed policy,
 priors/bounds, and restarts) rerun against the CR3 X bank.
 Do not equate improvement in Oracle recovery with automatic parameter-axis
 recovery under free NP latent rotations.
+
+## CR3 decoder X preprocessing: same as CR4/CR5 by default
+
+**CR3 now uses exactly the same six-feature X z-scoring as CR4/CR5, in
+both the context Encoder and frozen Decoder.** The 500 original CR3
+stimuli, type codes, true 4P CPT simulator, S1 dataset, S2 oracle and
+all boundary/special trial conditions remain unchanged. Bank-only X
+moments equal TRAIN-only X moments because every subject sees the
+same bank. The complete scaler (mean, std and bank SHA256) is stored
+in the new S3 checkpoint and reused for S5.
+
+To protect **all historical CR3 raw-X neural-network weights and Z**,
+the default CR3 S3-S7 training condition ends in `_xstd`.
+This is automatic, **not a new command-line flag**; do not rename,
+overwrite or manually delete the old raw-X runs. Same beta, 4P
+model and exact X; only preprocessing changes.
+
+```cmd
+python np/s3_train.py --model CR3 --beta 0.0005 --lambda-sparse 0 --latent-dim 4 --repeat 1 --device auto
+python np/s4_evaluate.py --model CR3 --beta 0.0005 --latent-dim 4 --repeat 1
+python np/s5_extract_z.py --model CR3 --beta 0.0005 --latent-dim 4 --repeat 1
+python np/s6_pca.py --model CR3 --beta 0.0005 --latent-dim 4 --repeat 1
+python np/s7_regression.py --model CR3 --beta 0.0005 --latent-dim 4 --repeat 1
+```
+
+CR3 L4 normalized checkpoint path:
+`outputs/choice/CR3/s3_train/beta0p0005_lambda0_ctx0p25to0p8_L4_xstd/repeat01/s3_train__checkpoint.pt`.
+The unsuffixed `..._L4/repeat01` remains the historical raw-X run.
+For four-parameter coordinate recovery, use **latent_dim >= 4**;
+an L3 checkpoint can represent at most three independent axes.

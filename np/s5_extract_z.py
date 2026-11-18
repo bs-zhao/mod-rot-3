@@ -18,8 +18,17 @@ def extract(args):
     if not source.is_file():
         raise FileNotFoundError(f'Train first: {source}')
     ck = load_checkpoint(source)
-    if ck.get('extra_state', {}).get('dataset_sha256') != sha256(dataset_path(args.model)):
+    extra = ck.get('extra_state', {})
+    if extra.get('dataset_sha256') != sha256(dataset_path(args.model)):
         raise RuntimeError('Checkpoint/dataset mismatch')
+    if args.model in ('CR3','CR4','CR5'):
+        from modrot3.pipeline import _cr3_bank, _cr4_bank, _cr5_bank
+        bank = {'CR3': _cr3_bank, 'CR4': _cr4_bank,
+                'CR5': _cr5_bank}[args.model]()
+        pre = extra.get('decoder_x_standardization')
+        if not isinstance(pre,dict) or pre.get('bank_sha256') != sha256(bank):
+            raise RuntimeError('Checkpoint has missing or incorrect decoder-X standardization; '
+                               'do not extract Z from a raw-X legacy checkpoint')
     target = latent_path(args)
     if target.exists() and not args.overwrite:
         with np.load(target, allow_pickle=False) as old:
