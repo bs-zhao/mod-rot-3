@@ -46,6 +46,9 @@ def condition(args) -> str:
     # isolated and cannot silently load or overwrite old raw-X runs.
     if getattr(args, 'model', None) == 'CR3':
         tag += '_xstd'
+    if getattr(args, 'model', None) == 'CR4':
+        # New IID-per-subject/trial X protocol; isolate old fixed-X checkpoints.
+        tag += '_iidX'
     return tag
 
 def stage_folder(args, stage: str) -> Path:
@@ -118,21 +121,26 @@ def cr3_input_scaler():
 
 
 def cr4_input_scaler():
-    """Identical bank X for all subjects => bank statistics equal TRAIN-X stats.
+    """Exact population moments of CR4's independent uniform X distribution.
 
-    CR4 ONLY. Return values for converting physical lottery X into the
-    standardized coordinates used by *both* encoder and decoder. Physical X
-    stays unchanged in the S1 dataset and downstream analytic generators.
+    No fixed bank and no need to read any subject's X or Y for scaling.
+    This transformation is shared by S3 and S5, for encoder and decoder.
+    Bounds come from the S1 manifest, including nondefault direct-generator
+    ranges, and must match the new IID-per-subject/trial protocol.
     """
-    with np.load(_cr4_bank(), allow_pickle=False) as stored:
-        x = np.asarray(stored['X'], dtype=np.float64)
-    if x.shape != (500, 6) or not np.isfinite(x).all():
-        raise ValueError('Invalid CR4 bank for X standardization')
-    mu = x.mean(axis=0)
-    sd = x.std(axis=0, ddof=0)
-    if np.any(sd <= 1e-8):
-        raise ValueError('CR4 bank X has near-constant dimension')
-    return mu, sd
+    manifest_file = dataset_path('CR4').with_name('s1_generate__manifest.json')
+    if not manifest_file.is_file():
+        raise FileNotFoundError('Missing CR4 IID-X generator manifest')
+    manifest = json.loads(manifest_file.read_text(encoding='utf-8'))
+    if manifest.get('x_sampling_policy') != 'iid_subject_trial_uniform_v1':
+        raise RuntimeError('Legacy CR4 fixed-bank dataset is incompatible with IID-X scaling')
+    alo, ahi = map(float, manifest['amount_range'])
+    plo, phi = map(float, manifest['probability_range'])
+    if not (0 < alo < ahi and 0 < plo < phi < 1):
+        raise ValueError('Invalid CR4 IID-X distribution bounds')
+    lo = np.asarray([alo, alo, plo, alo, alo, plo], dtype=np.float64)
+    hi = np.asarray([ahi, ahi, phi, ahi, ahi, phi], dtype=np.float64)
+    return (lo + hi) / 2, (hi - lo) / np.sqrt(12.0)
 
 
 def cr5_input_scaler():
@@ -159,10 +167,9 @@ def _discrete_data(args, data):
         if not np.all(np.asarray(data.trial_counts) == 500):
             raise ValueError(f'{args.model} requires 500 trials per subject')
         x = np.asarray(data.x, np.float64).reshape(n, 500, 6)
-        # CR3, CR4 and CR5 share the exact same X preprocessing policy:
-        # six X coordinates are z-scored BEFORE the unchanged NP receives
-        # them, so both context encoder and decoder see scaled X. Retain
-        # physical X and all special/boundary trials in S1 on disk.
+        # All three models standardize physical X before the same encoder and
+        # decoder. CR3/CR5 use bank moments; CR4 uses theoretical IID-uniform
+        # moments from its generator. S1 always retains raw physical X.
         mu, sd = {'CR3': cr3_input_scaler,
                   'CR4': cr4_input_scaler,
                   'CR5': cr5_input_scaler}[args.model]()
@@ -198,6 +205,8 @@ def _require_qualified(args):
     report = json.loads(path.read_text(encoding='utf-8'))
     if not report.get('qualified'):
         raise RuntimeError('Dataset was not qualified by precheck')
+    if args.model == 'CR4' and report.get('model_version') != '3P_iidX_alpha1':
+        raise RuntimeError('CR4 precheck belongs to legacy shared-X protocol; rerun S2')
     if args.model in ('CR3','CR4','CR5') and report.get('dataset_sha256') != sha256(dataset_path(args.model)):
         raise RuntimeError(f'{args.model} precheck belongs to a different dataset')
 
