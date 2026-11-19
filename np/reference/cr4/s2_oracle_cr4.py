@@ -1,10 +1,8 @@
-"""CR4 S2 Oracle MLE and Fisher identifiability; independent of the NP.
+"""CR4 S2 Oracle MLE/Fisher with per-subject IID X; CR5 legacy 2D API kept.
 
-Reuses the EXACT CR2/CR3 logit and priors, fixing alpha=1. All three parameters
-are fitted jointly with bounded multi-start Bernoulli MLE on the CR4 random
-500-trial bank. No simulated true theta enters optimization.
-
-    python np/reference/cr4/s2_oracle_cr4.py --subjects 100 --starts 4
+CR4 uses X_i from its S1 dataset without assuming a shared bank. The fitted
+parameters use only X_i and choices; true parameters evaluate recovery only.
+The 2D-X evaluate/fisher functions remain compatible with CR5's fixed bank.
 """
 from __future__ import annotations
 
@@ -19,8 +17,9 @@ from scipy.special import expit, logit as logit_probability
 
 HERE = Path(__file__).resolve().parent
 sys.path[:0] = [str(HERE), str(HERE.parent)]
-from s0_s1_cr4 import BANK, OUT, sample_theta, logits, hash_file
+from s0_s1_cr4 import DATASET, SAMPLING_POLICY, OUT, sample_theta, logits, hash_file
 from s0_cr2_design_recovery import BOUNDS
+from modlearn_rot.generators.dataset import load_dataset
 
 BOUNDS3 = np.asarray(BOUNDS[4][1:], dtype=float)
 NAMES = ["lambda_loss", "gamma", "tau"]
@@ -65,12 +64,19 @@ def gradient(x, theta):
 
 
 def fisher_diagnostics(x, reference_thetas):
+    """2D shared X (CR5), or 3D X_i per reference subject (CR4)."""
+    x = np.asarray(x, dtype=np.float64)
+    if x.ndim not in (2, 3) or x.shape[-1] != 6:
+        raise ValueError('Fisher X must be (trials,6) or (subjects,trials,6)')
+    if x.ndim == 3 and len(x) != len(reference_thetas):
+        raise ValueError('Fisher needs one X_i for each reference theta')
     prior_sd = np.std(reference_thetas, axis=0, ddof=1)
     scaled = []
     eigen = []
-    for theta in reference_thetas:
-        p = expit(logits(x, theta))
-        grads = gradient(x, theta) * prior_sd
+    for idx, theta in enumerate(reference_thetas):
+        subject_x = x[idx] if x.ndim == 3 else x
+        p = expit(logits(subject_x, theta))
+        grads = gradient(subject_x, theta) * prior_sd
         f = grads.T @ (grads * (p * (1 - p))[:, None])
         scaled.append(np.linalg.cond(f) if np.linalg.eigvalsh(f).min() > 1e-12
                       else float("inf"))
@@ -103,15 +109,23 @@ def fit_subject(x, choice, starts, rng):
 
 
 def evaluate(x, subjects, starts, seed):
+    """Simulate and recover 3P theta on variable X_i or a shared CR5 bank."""
+    x = np.asarray(x, dtype=np.float64)
+    if x.ndim not in (2, 3) or x.shape[-1] != 6:
+        raise ValueError('Oracle X must be (trials,6) or (subjects,trials,6)')
+    if x.ndim == 3 and x.shape[0] != subjects:
+        raise ValueError('IID-X oracle requires a bank for each subject')
     rng_theta = np.random.default_rng(seed)
     rng_choice = np.random.default_rng(seed + 101)
     rng_fit = np.random.default_rng(seed + 202)
     truth = sample_theta(subjects, rng_theta)
-    p = expit(logits(x[None, :, :], truth[:, None, :]))
+    p = expit(logits(x[None] if x.ndim == 2 else x,
+                     truth[:, None, :]))
     y = (rng_choice.random(p.shape) < p).astype(np.int64)
     fitted = np.zeros_like(truth)
     for i in range(subjects):
-        fitted[i] = fit_subject(x, y[i], starts, rng_fit)
+        subject_x = x if x.ndim == 2 else x[i]
+        fitted[i] = fit_subject(subject_x, y[i], starts, rng_fit)
         if (i + 1) % 25 == 0:
             print(f"CR4 Oracle MLE {i+1}/{subjects}", flush=True)
     error = fitted - truth
@@ -123,7 +137,8 @@ def evaluate(x, subjects, starts, seed):
         r2.append(float(1 - np.square(h - t).sum() /
                         max(np.square(t - t.mean()).sum(), 1e-15)))
     result = dict(model="CR4", parameters=NAMES,
-                  subjects=subjects, trials_per_subject=len(x), starts=starts,
+                  subjects=subjects, trials_per_subject=x.shape[-2],
+                  starts=starts,
                   pearson_r=pearson, r2=r2,
                   rmse=np.sqrt(np.mean(error**2, axis=0)).tolist(),
                   bias=np.mean(error, axis=0).tolist(),
@@ -133,7 +148,7 @@ def evaluate(x, subjects, starts, seed):
                       (fitted <= BOUNDS3[:, 0] + 1e-4) |
                       (fitted >= BOUNDS3[:, 1] - 1e-4), axis=0).tolist(),
                   oracle_r_ge_0p8=bool(np.all(np.asarray(pearson) >= .8)),
-                  note="Independent oracle theta and binary choices; fitted only to X,Y.")
+                  note="Independent oracle theta and binary choices; fitted only to X_i,Y_i.")
     return result, truth, fitted, y
 
 
@@ -146,16 +161,28 @@ def main():
     args = parser.parse_args()
     if args.subjects < 3 or args.starts < 1 or args.fisher_subjects < 3:
         parser.error("Need >=3 MLE and Fisher subjects, >=1 start")
-    if not BANK.exists():
-        raise FileNotFoundError(f"Generate CR4 bank first: {BANK}")
-    with np.load(BANK, allow_pickle=False) as stored:
-        x = np.asarray(stored["X"], dtype=float)
-    truth_refs = sample_theta(args.fisher_subjects, np.random.default_rng(args.seed+810))
-    fisher = fisher_diagnostics(x, truth_refs)
+    if not DATASET.is_file():
+        raise FileNotFoundError(f"Generate CR4 IID-X S1 dataset first: {DATASET}")
+    manifest_path = DATASET.with_name("s1_generate__manifest.json")
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if manifest.get("x_sampling_policy") != SAMPLING_POLICY:
+        raise RuntimeError("Legacy CR4 shared-X dataset cannot be used for IID-X oracle")
+    if manifest.get("dataset_sha256") != hash_file(DATASET):
+        raise RuntimeError("CR4 dataset changed since S1")
+    data = load_dataset(DATASET)
+    total_subjects = len(data.parameters)
+    needed = max(args.subjects, args.fisher_subjects)
+    if total_subjects < needed:
+        raise ValueError(f"Need {needed} generated CR4 subjects; found {total_subjects}")
+    x_all = np.asarray(data.x, dtype=np.float64).reshape(total_subjects, 500, 6)
+    truth_refs = sample_theta(args.fisher_subjects,
+                              np.random.default_rng(args.seed + 810))
+    fisher = fisher_diagnostics(x_all[:args.fisher_subjects], truth_refs)
     result, truth, fitted, choices = evaluate(
-        x, args.subjects, args.starts, args.seed + 719)
+        x_all[:args.subjects], args.subjects, args.starts, args.seed + 719)
     result["fisher"] = fisher
-    result["bank_sha256"] = hash_file(BANK)
+    result["dataset_sha256"] = hash_file(DATASET)
+    result["x_sampling_policy"] = SAMPLING_POLICY
     folder = OUT / "s2_precheck"
     folder.mkdir(parents=True, exist_ok=True)
     (folder/"s2_precheck__oracle_recovery.json").write_text(
