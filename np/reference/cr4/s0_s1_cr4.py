@@ -77,10 +77,13 @@ def sample_bank(seed=20261023, n=N_TRIALS,
         raise ValueError("Need 0 < amount_min < amount_max and 0 < p_min < p_max < 1")
     if n < 1:
         raise ValueError("n must be positive")
-    rng = np.random.default_rng(seed)
+    # Use separate RNG streams: prefix subjects/trials are reproducible
+    # even when the total subject count changes. All six draws stay IID.
+    rng_amount = np.random.default_rng(seed)
+    rng_prob = np.random.default_rng(seed + 1)
     x = np.empty((n, 6), dtype=np.float64)
-    x[:, [0, 1, 3, 4]] = rng.uniform(alo, ahi, size=(n, 4))
-    x[:, [2, 5]] = rng.uniform(plo, phi, size=(n, 2))
+    x[:, [0, 1, 3, 4]] = rng_amount.uniform(alo, ahi, size=(n, 4))
+    x[:, [2, 5]] = rng_prob.uniform(plo, phi, size=(n, 2))
     return x
 
 
@@ -172,6 +175,7 @@ def selftest():
     x = sample_subject_x(3, seed=17)
     assert x.shape == (3, N_TRIALS, 6) and verify_x(x)
     assert np.array_equal(x, sample_subject_x(3, seed=17))
+    assert np.array_equal(x[:2], sample_subject_x(2, seed=17))
     assert not np.array_equal(x[0], x[1])
     assert not np.array_equal(x[0, 0], x[0, 1])
     theta = sample_theta(3, np.random.default_rng(19))
