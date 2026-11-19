@@ -213,36 +213,60 @@ desirable only relative to the finite-sample correlations of true theta;
 the JSON includes that baseline to avoid interpreting sampling noise as
 parameter leakage.
 
-## CR4 (additive model, existing S1-S7 pipeline)
+## CR4: independent continuous lottery X per subject and trial
 
-CR4 removes **only alpha** from CR3 by fixing alpha=1; the three fitted
-parameters are (lambda_loss, gamma, tau) with the same marginal priors as CR3.
-The generating Bernoulli choice probability calls the **unchanged CR2/CR3
-formula** with alpha=1. No unrelated model or pipeline mathematics is changed.
+CR4 fixes **alpha=1** in the original CR2/CR3 CPT formula. Each
+subject's true parameters are (lambda_loss, gamma, tau) with the same
+marginal priors as CR3. The response is Bernoulli with
+`P(choice_A)=sigmoid(tau*(V(A)-V(B)))`; all 3P valuation logic is unchanged.
 
-CR4 has a new **shared 500-X continuous random bank**. All six raw lottery
-coordinates are independently sampled: four amounts Uniform(5,200) and two
-gain probabilities Uniform(0.05,0.95). Amounts are strictly positive and
-probabilities interior; there are NO intentionally inserted gain-only,
-loss-only, equal-probability, or sure-outcome trials, and NO FOSD filter or
-Fisher optimization. The bank is one fixed draw of 500 trials shared by every subject;
-the six X attributes are independently sampled within that bank.
-The sampling distributions are configurable when explicitly calling
-`np/reference/cr4/s0_s1_cr4.py --stage design`; keep defaults for comparisons.
+**New X sampling (IID-X protocol v1):** for every subject `i` and trial
+`t=1,...,500`, independently draw
 
-**Training X scaling:** CR4 saves original physical X in the S1 dataset.
-Only in the CR4 data adapter does it standardize *all six* X coordinates
-with means/SDs from the shared stimulus bank; both encoder and unchanged
-decoder therefore receive appropriately scaled X. Since every TRAIN subject
-has exactly the same fixed bank, bank-X statistics equal TRAIN-X statistics
-(no held-out-subject or Y leakage). S5 uses the identical adapter. Decoder
-physical-X derivatives later require the stored checkpoint X transform.
-CR3 and C1/C2/C3 preprocessing remain untouched.
+- `gain_A, loss_A, gain_B, loss_B ~ Uniform(5,200)`
+- `p_gain_A, p_gain_B ~ Uniform(.05,.95)`
 
-Run these independently, one at a time (for the first diagnostic use
-`--subjects 5000` in S1 and `--oracle-precheck` in S2):
+No fixed X bank is created or used. The entire `X` array has shape
+`(subjects,500,6)`, and the S1 dataset stores the physical values as
+`(subjects*500,6)` in contiguous subject/trial order. Random draws use
+`data_seed+2004`, separate from theta (`data_seed+4`) and choice
+(`data_seed+1004`) RNGs. All distributions remain configurable when
+invoking `np/reference/cr4/s0_s1_cr4.py --stage dataset` directly.
+CR4 does not inject special trials, reject FOSD, or optimize Fisher
+information. Thus CR4 has the same type of varying-per-subject input
+design as the C1/C2/C3 simulations.
+
+**No data leakage in X standardization:** S3 and S5 scale all six X
+features with the known *population* uniform moments, not by fitting
+a common 500-trial bank or pooling held-out subjects:
+
+```text
+amount:  mean = (5+200)/2 = 102.5, sd = (200-5)/sqrt(12)
+p_gain:  mean = (.05+.95)/2 = .5, sd = (.95-.05)/sqrt(12)
+X_std = (X - mean) / sd
+```
+
+Both the original NP context encoder and decoder receive scaled X. The
+checkpoint records the distribution-derived scaler and S1 dataset hash.
+CR4 checkpoints have the `_iidX` condition suffix to avoid reusing
+historical fixed-bank checkpoints. S2 checks raw X support, distinct
+subject/trial X, CPT generator fidelity and S1 provenance. The optional
+S2 Oracle MLE uses each subject's own 500 input trials; Fisher diagnostics
+also use distinct X across reference subjects. The shared-2D-X Oracle
+interface is retained for CR5 without changing CR5.
+
+**Migration:** previous CR4 S1 data/checkpoints were generated using a
+shared 500-trial bank. They are NOT converted automatically, overwritten
+or reused. Before rerunning S1, archive or rename
+`outputs/choice/CR4/` (preserving the original results), or move that
+entire folder outside the outputs tree. Running S1 on the legacy folder
+will deliberately fail with a clear error. Do not rename a legacy S1
+dataset into a new protocol folder; regenerate it.
+
+Commands (run each step separately):
 
 ```cmd
+python np/reference/cr4/s0_s1_cr4.py --stage selftest
 python np/s1_generate.py --model CR4 --subjects 5000
 python np/s2_precheck.py --model CR4 --oracle-precheck --oracle-subjects 100 --oracle-starts 4
 python np/s3_train.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 --context-min 0.25 --context-max 0.80 --repeat 1 --device auto
@@ -252,18 +276,12 @@ python np/s6_pca.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 -
 python np/s7_regression.py --model CR4 --beta 0.0005 --lambda-sparse 0 --latent-dim 3 --repeat 1
 ```
 
-All CR4 outputs go to `outputs/choice/CR4/`; notably
-`s2_precheck/s2_precheck__report.json` and the optional
-`s2_precheck/s2_precheck__oracle_recovery.json` include model-design
-validity and individual bounded MLE recovery of all three parameters,
-lambda-tau estimation error correlation, and Fisher information eigenspectra.
-Oracle information is NOT supplied to the NP trainer or latent extraction.
-Inspect these before committing to expensive S3 training; 500 random trials
-do not automatically guarantee high practical parameter recovery.
-
-The CR4 branch neither overwrites CR3 assets nor silently reuses CR3
-checkpoints. Any attempt to overwrite an existing CR4 bank/dataset is blocked.
-
+The S1 output path remains `outputs/choice/CR4/s1_generate/s1_generate__dataset.npz`;
+the new manifest records `x_sampling_policy=iid_subject_trial_uniform_v1`,
+distribution bounds, X seed and dataset checksum. CR3 retains its own
+4P fixed bank; CR5 continues using an **exact copy of CR3's fixed X**
+with the CR4 3P valuation/parameter priors. CR4 versus CR5 now contrasts
+IID subject/trial X against CR3's structured fixed bank.
 
 ## CR5: exact CR3 stimulus bank with CR4 three-parameter CPT (controlled contrast)
 
