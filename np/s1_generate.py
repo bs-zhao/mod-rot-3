@@ -1,4 +1,5 @@
 from pathlib import Path
+import json
 import sys
 # Support direct invocation as: python np/sN_*.py ...
 NP_ROOT = Path(__file__).resolve().parent
@@ -15,6 +16,12 @@ from modlearn_rot.utils.io import save_json
 def generate(args):
     target = dataset_path(args.model)
     if target.exists():
+        if args.model == 'CR4':
+            manifest_path = target.with_name('s1_generate__manifest.json')
+            manifest = json.loads(manifest_path.read_text(encoding='utf-8')) if manifest_path.is_file() else {}
+            if manifest.get('x_sampling_policy') != 'iid_subject_trial_uniform_v1':
+                raise RuntimeError('Legacy CR4 fixed-X dataset found. Archive outputs/choice/CR4 '
+                                   'and regenerate before using IID-X CR4.')
         if args.overwrite:
             raise RuntimeError('Never overwrite a generated dataset in place; archive its output directory first.')
         print('Existing dataset preserved:', target)
@@ -31,10 +38,7 @@ def generate(args):
                           '--data-seed', str(args.data_seed)])
         return
     if args.model == 'CR4':
-        # New model only: independent continuous 500-X bank and 3P CPT.
-        if not _cr4_bank().is_file():
-            _run_legacy(_cr4_ref(), ['--stage', 'design',
-                                     '--seed', str(args.design_seed)])
+        # Fresh independent X for each subject and trial; no S0 bank.
         _run_legacy(_cr4_ref(), ['--stage', 'dataset',
                                  '--subjects', str(args.subjects),
                                  '--data-seed', str(args.data_seed)])
