@@ -36,6 +36,7 @@ class TestCR4IIDX(unittest.TestCase):
         self.assertFalse(np.array_equal(x[0], x[1]))
         self.assertFalse(np.array_equal(x[0, 0], x[0, 1]))
         self.assertTrue(np.array_equal(x, sample_subject_x(5, seed=100)))
+        self.assertTrue(np.array_equal(x[:2], sample_subject_x(2, seed=100)))
         self.assertFalse(np.array_equal(x, sample_subject_x(5, seed=101)))
         self.assertTrue(np.all((x[..., [0,1,3,4]] > 0)))
 
