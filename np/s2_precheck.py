@@ -72,9 +72,17 @@ def _verify_cr4(data):
         raise ValueError('CR4 X geometry mismatch')
     x = np.asarray(data.x, dtype=np.float64).reshape(n, 500, 6)
     sys.path.insert(0, str(ROOT / 'np' / 'reference' / 'cr4'))
-    from s0_s1_cr4 import verify_x, logits
+    from s0_s1_cr4 import verify_x, logits, sample_subject_x
     if not verify_x(x, manifest['amount_range'], manifest['probability_range']):
         raise ValueError('CR4 X contains amounts/probabilities outside sampling support')
+    if manifest.get('subjects') != n:
+        raise RuntimeError('CR4 manifest subject count disagrees with dataset')
+    audit_n = min(n, 2)
+    audit_x = sample_subject_x(audit_n, seed=manifest['x_seed'],
+                               amount_range=manifest['amount_range'],
+                               prob_range=manifest['probability_range'])
+    if not np.array_equal(x[:audit_n], audit_x):
+        raise RuntimeError('CR4 stored X does not match deterministic IID RNG stream')
     if n > 1 and np.array_equal(x[0], x[1]):
         raise ValueError('CR4 first two subjects share identical 500-trial X')
     if np.array_equal(x[0, 0], x[0, 1]):
