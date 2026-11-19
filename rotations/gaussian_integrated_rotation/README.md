@@ -65,11 +65,12 @@ By default:
     --set z_method=sobol
     --set z_cutoff=2.0
 
-This samples QMC Sobol points distributed as the **coordinatewise
-truncated standard normal** q_j~N(0,1) conditioned on
-\`-2<=q_j<=2\`. It is NOT a uniformly distributed [-2,2]^d box.
-Inverse Gaussian CDF gives correctly weighted points; every Sobol
-point represents an equal mass of the target truncated-normal law.
+This samples QMC Sobol points from the **radially truncated
+isotropic Gaussian**: q~N(0,I) conditioned on ||q||<=2.
+The radius is sampled from a truncated chi-square_d law, while
+the direction is uniform on the sphere. This target IS SO(d)-invariant.
+All its points have coordinates in [-2,2], but it excludes the corners
+of the coordinatewise truncated [-2,2]^d hypercube.
 
 Alternative full Gaussian: \`--set z_cutoff=null\`.
 Gaussian point counts must be powers of two, default 512 FIT points
@@ -82,10 +83,15 @@ For low-dimensional deterministic quadrature use either:
     --set z_method=grid --set z_cutoff=2 --set z_grid_order=7
 
 Hermite integrates the **full** normal distribution (order^d nodes).
-Grid integrates a truncated Gaussian using per-axis Gaussian density
-and trapezoidal quadrature weights; never a uniform average.
-VALID uses z_grid_validation_order=9 by default (larger grid).
-In every mode the integration weights are explicitly normalized.
+Grid integrates a **coordinatewise** truncated Gaussian using
+Gaussian-density/trapezoidal weights, not a uniform average.
+IMPORTANT: the axis-aligned GRID measure is **not SO(d)-invariant**,
+so this option is only a numerical sensitivity check. Our precomputed
+Hessian congruence keeps the original q quadrature points fixed;
+the grid-based complexity is not exactly an integral of the rotated
+function over an unchanged isotropic measure.
+Prefer radially truncated Sobol or full Gaussian/Hermite for actual
+rotation research. VALID uses a different grid order (9 by default).
 
 A full Gaussian is only an *approximation* to the distribution of NP
 posterior means. Marginal normality is not sufficient to establish

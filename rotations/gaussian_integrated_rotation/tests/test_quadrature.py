@@ -3,7 +3,7 @@ from types import SimpleNamespace
 import json
 import numpy as np
 import pytest
-from scipy.special import ndtr
+from scipy.stats import chi2
 
 from rotations.gaussian_integrated_rotation.data import fit_gaussian
 from rotations.gaussian_integrated_rotation.quadrature import gaussian_nodes
@@ -27,14 +27,14 @@ def test_full_covariance_gaussian_whitens_all_subjects_not_just_marginal_sd(dim)
 def test_sobol_truncated_nodes_have_gaussian_not_uniform_quadrature(dim):
     q,w,meta=gaussian_nodes(dim,"sobol",n=1024,cutoff=2.,seed=20)
     assert q.shape==(1024,dim)
-    assert np.all(np.abs(q)<2)
+    assert np.max(np.linalg.norm(q,axis=1))<=2
     assert np.isclose(w.sum(),1)
-    # E[z^2 ||z|<=a] = 1 - 2a phi(a)/(2Phi(a)-1)
-    a=2.
-    phi=np.exp(-a*a/2)/np.sqrt(2*np.pi)
-    conditional_second=1-(2*a*phi)/(2*ndtr(a)-1)
-    assert np.max(abs((q*q).T@w-conditional_second))<.02
-    assert meta["distribution"]=="coordinatewise_truncated_N0I"
+    # For chi2_d radially truncated at r²=a², E[q_j²] =
+    # P(chi2_(d+2) <= a²) / P(chi2_d <= a²).
+    conditional_second=chi2.cdf(4,df=dim+2)/chi2.cdf(4,df=dim)
+    assert np.max(abs((q*q).T@w-conditional_second))<.035
+    assert meta["distribution"]=="radially_truncated_N0I"
+    assert meta["SO_invariant_measure"]
 
 
 def test_full_normal_hermite_and_trapezoidal_grid():
@@ -46,6 +46,8 @@ def test_full_normal_hermite_and_trapezoidal_grid():
     assert q2.shape==(9**3,3) and np.isclose(w2.sum(),1)
     assert np.all(((q2*q2).T@w2)>0)
     assert np.all(((q2*q2).T@w2)<1)
+    _,_,meta=gaussian_nodes(3,"grid",order=9,cutoff=2)
+    assert meta["SO_invariant_measure"] is False
 
 
 def test_no_grid_uniform_unweighted_and_incompatible_hermite_cutoff():
