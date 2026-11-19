@@ -96,3 +96,16 @@ Decoder, independently held-out VALID and TEST evaluation.
     python rotations/hessian_sparsity/run.py --model CR3 --mode joint
     python rotations/hessian_sparsity/run.py --model CR4 --mode joint
     python rotations/hessian_sparsity/run.py --model CR5 --mode joint
+
+## Gaussian-integrated functional rotation (subject-free Decoder evaluation)
+
+[Read the standalone Gaussian integration suite](gaussian_integrated_rotation/README.md).
+CR3 SO(4), CR4/CR5 SO(3); estimate full Z mean/cov using all subjects,
+then integrate frozen Decoder's UU Hessian on synthetic Gaussian q nodes
+and the actual shared 500-X bank or declared CR4 continuous X generator.
+Blind FIT/VALID Gaussian simplicity and post-freeze ALL-subject Oracle
+loss comparison. No observed participant Z is used as a derivative node.
+
+    python rotations/gaussian_integrated_rotation/run.py --model CR3
+    python rotations/gaussian_integrated_rotation/run.py --model CR4
+    python rotations/gaussian_integrated_rotation/run.py --model CR5
