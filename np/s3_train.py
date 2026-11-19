@@ -9,7 +9,7 @@ from modrot3.cli import parse_args
 from modrot3.pipeline import (dataset_path, train_path, latent_path, condition, sha256,
                                _require_qualified, _discrete_data, _run_seed,
                                cr3_input_scaler, _cr3_bank,
-                               cr4_input_scaler, _cr4_bank,
+                               cr4_input_scaler,
                                cr5_input_scaler, _cr5_bank)
 from modlearn_rot.generators.dataset import load_dataset
 from modlearn_rot.nn.np.point.discrete import DiscreteNPConfig
@@ -26,13 +26,19 @@ def train(args):
         source = old.get('extra_state', {})
         if args.model in ('CR3', 'CR4', 'CR5'):
             pre = source.get('decoder_x_standardization')
-            bank = {'CR3': _cr3_bank, 'CR4': _cr4_bank,
-                    'CR5': _cr5_bank}[args.model]()
-            if (not isinstance(pre, dict) or
-                pre.get('bank_sha256') != sha256(bank)):
-                raise RuntimeError(
-                    'Existing checkpoint has a missing/mismatched decoder X scaler. '
-                    'This model requires standardized X; do not reuse raw-X weights.')
+            if not isinstance(pre, dict):
+                raise RuntimeError('Checkpoint missing decoder X scaler')
+            if args.model == 'CR4':
+                mu, sd = cr4_input_scaler()
+                if (pre.get('policy') != 'CR4:iid_uniform_theoretical_moments_v1' or
+                    pre.get('dataset_sha256') != sha256(dataset_path('CR4')) or
+                    not np.allclose(pre.get('mean', []), mu) or
+                    not np.allclose(pre.get('sd', []), sd)):
+                    raise RuntimeError('Existing CR4 checkpoint does not use current IID-X scaler')
+            else:
+                bank = {'CR3': _cr3_bank, 'CR5': _cr5_bank}[args.model]()
+                if pre.get('bank_sha256') != sha256(bank):
+                    raise RuntimeError('Existing checkpoint has missing/mismatched bank X scaler')
         if source.get('dataset_sha256') != sha256(dataset_path(args.model)):
             raise RuntimeError('Existing checkpoint belongs to a different dataset')
         if (int(old['model_config']['latent_dim']) != args.latent_dim or
@@ -72,18 +78,22 @@ def train(args):
                   f'betaKL={args.beta*tr["kl"]:.5f}', flush=True)
     result = trainer.fit(data, subject_splits=splits,
                          fixed_context_masks=masks, epoch_callback=progress)
-    input_transform={}
-    if args.model in ('CR3','CR4','CR5'):
+    input_transform = {}
+    if args.model == 'CR4':
+        x_mu, x_sd = cr4_input_scaler()
+        input_transform = dict(decoder_x_standardization=dict(
+            policy='CR4:iid_uniform_theoretical_moments_v1',
+            mean=x_mu.tolist(), sd=x_sd.tolist(),
+            dataset_sha256=sha256(dataset_path('CR4'))))
+    elif args.model in ('CR3', 'CR5'):
         scaler={'CR3': cr3_input_scaler,
-                'CR4': cr4_input_scaler,
                 'CR5': cr5_input_scaler}[args.model]
-        bank={'CR3': _cr3_bank, 'CR4': _cr4_bank,
-              'CR5': _cr5_bank}[args.model]()
-        x_mu,x_sd=scaler()
-        input_transform=dict(
+        bank={'CR3': _cr3_bank, 'CR5': _cr5_bank}[args.model]()
+        x_mu, x_sd = scaler()
+        input_transform = dict(
             decoder_x_standardization=dict(
                 policy=f'{args.model}: physical X -> (X - bank_mean)/bank_sd',
-                mean=x_mu.tolist(),sd=x_sd.tolist(),
+                mean=x_mu.tolist(), sd=x_sd.tolist(),
                 bank_sha256=sha256(bank)))
     save_checkpoint(ckpt, result, model_cfg, config, splits, masks,
                     extra_state=dict(model_id=args.model, repeat=args.repeat,
