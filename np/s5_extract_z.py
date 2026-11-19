@@ -22,13 +22,22 @@ def extract(args):
     if extra.get('dataset_sha256') != sha256(dataset_path(args.model)):
         raise RuntimeError('Checkpoint/dataset mismatch')
     if args.model in ('CR3','CR4','CR5'):
-        from modrot3.pipeline import _cr3_bank, _cr4_bank, _cr5_bank
-        bank = {'CR3': _cr3_bank, 'CR4': _cr4_bank,
-                'CR5': _cr5_bank}[args.model]()
         pre = extra.get('decoder_x_standardization')
-        if not isinstance(pre,dict) or pre.get('bank_sha256') != sha256(bank):
-            raise RuntimeError('Checkpoint has missing or incorrect decoder-X standardization; '
-                               'do not extract Z from a raw-X legacy checkpoint')
+        if not isinstance(pre, dict):
+            raise RuntimeError('Checkpoint missing decoder X standardization metadata')
+        if args.model == 'CR4':
+            from modrot3.pipeline import cr4_input_scaler
+            mu, sd = cr4_input_scaler()
+            if (pre.get('policy') != 'CR4:iid_uniform_theoretical_moments_v1' or
+                pre.get('dataset_sha256') != sha256(dataset_path('CR4')) or
+                not np.allclose(pre.get('mean', []), mu) or
+                not np.allclose(pre.get('sd', []), sd)):
+                raise RuntimeError('Checkpoint CR4 IID-X scaler mismatch')
+        else:
+            from modrot3.pipeline import _cr3_bank, _cr5_bank
+            bank = {'CR3': _cr3_bank, 'CR5': _cr5_bank}[args.model]()
+            if pre.get('bank_sha256') != sha256(bank):
+                raise RuntimeError('Checkpoint has incorrect fixed-bank decoder-X scaler')
     target = latent_path(args)
     if target.exists() and not args.overwrite:
         with np.load(target, allow_pickle=False) as old:
