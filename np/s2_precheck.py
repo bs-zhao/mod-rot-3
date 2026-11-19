@@ -8,7 +8,7 @@ import json
 import numpy as np
 from modrot3.cli import parse_args
 from modrot3.pipeline import (ROOT, dataset_path, precheck_path, sha256,
-                              _cr3_bank, _cr4_bank, _cr4_oracle_ref, _cr5_bank,
+                              _cr3_bank, _cr4_oracle_ref, _cr5_bank,
                               _cr5_oracle_ref, _run_legacy)
 from modlearn_rot.generators.registry import get_model
 from modlearn_rot.generators.dataset import load_dataset
@@ -54,41 +54,41 @@ def _verify_cr3(data):
 
 
 def _verify_cr4(data):
-    """Exact 3P shared bank, positive amounts, interior probabilities, hashes."""
-    bank = _cr4_bank()
-    if not bank.is_file():
-        raise FileNotFoundError(f'Missing CR4 bank: {bank}')
-    with np.load(bank, allow_pickle=False) as stored:
-        x = np.asarray(stored['X'], dtype=np.float64)
-    design_file = bank.parent / 'CR4_3P_design.json'
-    design = json.loads(design_file.read_text(encoding='utf-8'))
-    sys.path.insert(0, str(ROOT / 'np' / 'reference' / 'cr4'))
-    from s0_s1_cr4 import verify_bank, logits
-    if not verify_bank(x, design['amount_range'], design['probability_range']):
-        raise ValueError('CR4 bank invalid: expected 500 independent-design interior rows')
+    """Verify independent per-subject/trial X, continuous support and CPT."""
     manifest_file = dataset_path('CR4').with_name('s1_generate__manifest.json')
+    if not manifest_file.is_file():
+        raise FileNotFoundError('Missing CR4 generator manifest')
     manifest = json.loads(manifest_file.read_text(encoding='utf-8'))
-    if manifest['bank_sha256'] != sha256(bank) or design['bank_sha256'] != sha256(bank):
-        raise RuntimeError('CR4 dataset/design bank SHA mismatch')
+    if manifest.get('x_sampling_policy') != 'iid_subject_trial_uniform_v1':
+        raise RuntimeError('Legacy CR4 shared-bank dataset found; archive and regenerate IID-X CR4')
+    if manifest.get('x_shared') is not False:
+        raise RuntimeError('CR4 manifest does not declare subject-specific X')
     if manifest['dataset_sha256'] != sha256(dataset_path('CR4')):
-        raise RuntimeError('CR4 dataset SHA mismatch')
+        raise RuntimeError('CR4 IID-X dataset checksum mismatch')
     n = len(data.parameters)
-    if data.parameters.shape != (n,3) or not np.all(data.trial_counts == 500):
-        raise ValueError('CR4 must have exactly 3 parameters, 500 trials per subject')
-    if data.x.shape != (500*n, 6):
-        raise ValueError('CR4 X trial dimension mismatch')
-    if not np.array_equal(data.x.reshape(n,500,6), np.broadcast_to(x, (n,500,6))):
-        raise ValueError('CR4 subject X differs from frozen continuous-random bank')
-    # Audit numerical generator equivalence without scanning all 2.5M records.
+    if data.parameters.shape != (n, 3) or not np.all(data.trial_counts == 500):
+        raise ValueError('CR4 requires three parameters and 500 trials per subject')
+    if data.x.shape != (n * 500, 6):
+        raise ValueError('CR4 X geometry mismatch')
+    x = np.asarray(data.x, dtype=np.float64).reshape(n, 500, 6)
+    sys.path.insert(0, str(ROOT / 'np' / 'reference' / 'cr4'))
+    from s0_s1_cr4 import verify_x, logits
+    if not verify_x(x, manifest['amount_range'], manifest['probability_range']):
+        raise ValueError('CR4 X contains amounts/probabilities outside sampling support')
+    if n > 1 and np.array_equal(x[0], x[1]):
+        raise ValueError('CR4 first two subjects share identical 500-trial X')
+    if np.array_equal(x[0, 0], x[0, 1]):
+        raise ValueError('CR4 trial X is repeated instead of independently sampled')
     from scipy.special import expit
-    ids = sorted(set((0, n//2, n-1)))
-    max_error = max(float(np.max(np.abs(
-        expit(logits(x[None], data.parameters[s:s+1])) -
-        np.asarray(data.predictive_true).reshape(n,500)[s:s+1]
-    ))) for s in ids)
-    if max_error > 1e-12:
-        raise RuntimeError(f'CR4 generator fidelity error {max_error}')
-    return x, manifest, max_error
+    ids = sorted({0, n // 2, n - 1})
+    true_p = np.asarray(data.predictive_true).reshape(n, 500)
+    error = max(float(np.max(np.abs(
+        expit(logits(x[i], data.parameters[i])) - true_p[i]
+    ))) for i in ids)
+    if error > 1e-12:
+        raise RuntimeError(f'CR4 IID-X generator fidelity error {error}')
+    return x, manifest, error
+
 
 def _verify_cr5(data):
     """Verify exact CR3 trial bank/codes, 3P CR4 generator and strong provenance."""
@@ -159,32 +159,36 @@ def precheck(args):
         print('CR5 exact CR3 bank / 3P CPT precheck:',qualified)
     elif args.model == 'CR4':
         x, manifest, logit_prob_error = _verify_cr4(data)
-        prob = np.asarray(data.predictive_true,dtype=float)
-        y = np.asarray(data.y,dtype=int)
+        prob = np.asarray(data.predictive_true, dtype=float)
+        y = np.asarray(data.y, dtype=int)
         qualified = bool(np.isfinite(prob).all() and
-                         np.all((prob >= 0) & (prob <= 1)) and
-                         np.isin(y,[0,1]).all())
+                         np.all((prob > 0) & (prob < 1)) and
+                         np.isin(y, [0, 1]).all())
         report = dict(
-            model_id='CR4', model_version='3P_random500_alpha1',
+            model_id='CR4', model_version='3P_iidX_alpha1',
             qualified=qualified, subjects=len(data.parameters), trials=500,
-            parameter_names=['lambda_loss','gamma','tau'], alpha_fixed=1.0,
-            mean_accuracy_bayes=float(np.maximum(prob,1-prob).mean()),
+            parameter_names=['lambda_loss', 'gamma', 'tau'], alpha_fixed=1.0,
+            x_shared=False, x_sampling_policy=manifest['x_sampling_policy'],
+            x_seed=manifest['x_seed'],
+            amount_range=manifest['amount_range'],
+            probability_range=manifest['probability_range'],
+            mean_accuracy_bayes=float(np.maximum(prob, 1 - prob).mean()),
             response_rate=float(y.mean()), true_p_std=float(prob.std()),
-            parameter_correlation=np.corrcoef(data.parameters,rowvar=False).tolist(),
-            bank_sha256=sha256(_cr4_bank()), dataset_sha256=sha256(target),
+            parameter_correlation=np.corrcoef(data.parameters, rowvar=False).tolist(),
+            dataset_sha256=sha256(target),
             checks={
-                'structure_provenance':{'passed':True},
-                'six_independent_random_X_design':{'passed':True,
-                    'note':'Unconstrained draws; independence is a sampling policy, not a finite-sample hypothesis test'},
-                'no_zero_amounts_or_probability_boundaries':{'passed':True},
-                'generator_matches_CR2_alpha1':{'passed':logit_prob_error<=1e-12,
+                'iid_subject_trial_X_provenance': {'passed':True},
+                'continuous_X_support': {'passed':True},
+                'distinct_subject_and_trial_X': {'passed':True},
+                'generator_matches_CR2_alpha1': {'passed':logit_prob_error <= 1e-12,
                     'max_abs_error':logit_prob_error},
-                'valid_binary_probabilities':{'passed':qualified},
+                'valid_binary_probabilities': {'passed':qualified},
             },
-            note='CR4 adds to existing S1-S7. S2 Oracle MLE/Fisher optional via --oracle-precheck; no special trial classes.',
+            note='CR4 independently samples six X attributes for every subject and trial; '
+                 'no shared bank or special trial classes. Oracle MLE/Fisher optional.',
         )
         save_json(report, precheck_path(args.model))
-        print('CR4 random-bank structural precheck:',qualified)
+        print('CR4 IID-per-subject/trial precheck:', qualified)
     elif args.model == 'CR3':
         x = _verify_cr3(data)
         probability = np.asarray(data.predictive_true, dtype=float).reshape(len(data.parameters), 500)
